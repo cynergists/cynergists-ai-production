@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'filament' => [
+        'admin_emails' => array_filter(
+            array_map(
+                static fn (string $email): string => strtolower(trim($email)),
+                explode(',', env('FILAMENT_ADMIN_EMAILS', '')),
+            ),
+        ),
+    ],
+
 ];

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
@@ -57,5 +59,22 @@ class User extends Authenticatable
     public function cynergists(): BelongsToMany
     {
         return $this->belongsToMany(Cynergist::class);
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin' && $this->isFilamentAdmin();
+    }
+
+    private function isFilamentAdmin(): bool
+    {
+        $allowed = array_filter(
+            array_map(
+                static fn (string $email): string => strtolower(trim($email)),
+                config('services.filament.admin_emails', []),
+            ),
+        );
+
+        return in_array(strtolower($this->email), $allowed, true);
     }
 }
