@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Head } from '@inertiajs/react';
+import { login, register } from '@/routes';
+import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
     ChartColumn,
@@ -327,10 +328,17 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </div>
 
                             <div className="hidden items-center gap-4 md:flex">
-                                <Button variant="ghost">Sign In</Button>
+                                <Button asChild variant="ghost">
+                                    <Link href={login()}>Sign In</Link>
+                                </Button>
                                 {canRegister && (
-                                    <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-accent/40">
-                                        Get Started Free
+                                    <Button
+                                        asChild
+                                        className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-accent/40"
+                                    >
+                                        <Link href={register()}>
+                                            Get Started Free
+                                        </Link>
                                     </Button>
                                 )}
                             </div>
@@ -775,11 +783,14 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </p>
                             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                                 <Button
+                                    asChild
                                     size="lg"
                                     className="group h-14 rounded-2xl bg-gradient-to-r from-primary to-accent px-10 text-base text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-accent/40"
                                 >
-                                    Get Started Free
-                                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                    <Link href={register()}>
+                                        Get Started Free
+                                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                    </Link>
                                 </Button>
                                 <Button
                                     size="lg"
