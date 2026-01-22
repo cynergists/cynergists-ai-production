@@ -44,6 +44,11 @@ class UserResource extends Resource
                         TextEntry::make('name'),
                         TextEntry::make('email')
                             ->label('Email address'),
+                        TextEntry::make('is_active')
+                            ->label('Active')
+                            ->badge()
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Active' : 'Inactive')
+                            ->columnSpanFull(),
                         TextEntry::make('created_at')
                             ->label('Created')
                             ->dateTime()

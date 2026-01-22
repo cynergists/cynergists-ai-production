@@ -23,6 +23,7 @@ it('updates a user password from the Filament edit form', function () {
     Livewire::test(EditUser::class, ['record' => $user->getKey()])
         ->set('data.name', 'Updated User')
         ->set('data.email', 'updated@example.com')
+        ->set('data.is_active', true)
         ->set('data.password', 'new-password')
         ->set('data.password_confirmation', 'new-password')
         ->call('save')
@@ -31,6 +32,7 @@ it('updates a user password from the Filament edit form', function () {
     $user->refresh();
 
     expect(Hash::check('new-password', $user->password))->toBeTrue();
+    expect($user->is_active)->toBeTrue();
 });
 
 it('shows connected cynergists on the user view page', function () {
