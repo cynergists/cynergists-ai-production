@@ -524,7 +524,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                             {agent.mission}
                                         </p>
 
-                                        <ul className="mb-6 space-y-2">
+                                        <ul className="mb-6 flex-1 space-y-2">
                                             {agent.capabilities.map((capability) => (
                                                 <li
                                                     key={capability}
@@ -538,7 +538,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
 
                                         <Button
                                             variant="outline"
-                                            className="agent-outline w-full rounded-xl border-border/50 bg-card/50 backdrop-blur-xl transition-all duration-300 hover:bg-card/70"
+                                            className="agent-outline mt-auto w-full rounded-xl border-border/50 bg-card/50 backdrop-blur-xl transition-all duration-300 hover:bg-card/70"
                                         >
                                             Meet {agent.name}
                                             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -589,7 +589,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                             {agent.mission}
                                         </p>
 
-                                        <ul className="mb-6 space-y-2">
+                                        <ul className="mb-6 flex-1 space-y-2">
                                             {agent.capabilities.map((capability) => (
                                                 <li
                                                     key={capability}
@@ -603,7 +603,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
 
                                         <Button
                                             variant="outline"
-                                            className="agent-outline w-full rounded-xl border-border/50 bg-card/50 backdrop-blur-xl transition-all duration-300 hover:bg-card/70"
+                                            className="agent-outline mt-auto w-full rounded-xl border-border/50 bg-card/50 backdrop-blur-xl transition-all duration-300 hover:bg-card/70"
                                         >
                                             Meet {agent.name}
                                             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
