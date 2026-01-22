@@ -51,30 +51,17 @@ const subscribe = (callback: () => void) => {
 
 const notify = (): void => listeners.forEach((listener) => listener());
 
-const mediaQuery = (): MediaQueryList | null => {
-    if (typeof window === 'undefined') return null;
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const handleSystemThemeChange = (): void => {
-    applyTheme(currentAppearance);
-    notify();
-};
-
 export function initializeTheme(): void {
     if (typeof window === 'undefined') return;
 
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
-        setCookie('appearance', 'system');
+    // Force dark theme for the welcome experience.
+    if (localStorage.getItem('appearance') !== 'dark') {
+        localStorage.setItem('appearance', 'dark');
+        setCookie('appearance', 'dark');
     }
 
-    currentAppearance = getStoredAppearance();
+    currentAppearance = 'dark';
     applyTheme(currentAppearance);
-
-    // Set up system theme change listener
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 
 export function useAppearance(): UseAppearanceReturn {
