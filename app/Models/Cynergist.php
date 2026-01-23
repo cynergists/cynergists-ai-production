@@ -21,6 +21,8 @@ class Cynergist extends Model
         'color_key',
         'type',
         'capabilities',
+        'images',
+        'main_image',
         'popular',
     ];
 
@@ -36,6 +38,7 @@ class Cynergist extends Model
     {
         return [
             'capabilities' => 'array',
+            'images' => 'array',
             'popular' => 'boolean',
         ];
     }
