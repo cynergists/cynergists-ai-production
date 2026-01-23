@@ -22,6 +22,7 @@ class Cynergist extends Model
         'type',
         'capabilities',
         'images',
+        'image_file_names',
         'main_image',
         'popular',
     ];
@@ -39,6 +40,7 @@ class Cynergist extends Model
         return [
             'capabilities' => 'array',
             'images' => 'array',
+            'image_file_names' => 'array',
             'popular' => 'boolean',
         ];
     }
