@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Upload, X, Bot, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -15,9 +14,10 @@ interface AgentMediaUploadProps {
   media: MediaItem[];
   onChange: (media: MediaItem[]) => void;
   agentName?: string;
+  maxItems?: number;
 }
 
-export function AgentMediaUpload({ media, onChange, agentName }: AgentMediaUploadProps) {
+export function AgentMediaUpload({ media, onChange, agentName, maxItems }: AgentMediaUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -51,26 +51,43 @@ export function AgentMediaUpload({ media, onChange, agentName }: AgentMediaUploa
     setIsUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `agents/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const { data, error } = await supabase.storage
-        .from("plan-product-images")
-        .upload(fileName, file);
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
 
-      if (error) throw error;
+      const response = await fetch("/api/admin/ai-agents/media", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: csrfToken ? { "X-CSRF-TOKEN": csrfToken } : undefined,
+        body: formData,
+      });
 
-      const { data: urlData } = supabase.storage
-        .from("plan-product-images")
-        .getPublicUrl(data.path);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Upload failed");
+      }
+
+      const urlData = await response.json();
 
       const newMedia: MediaItem = {
-        url: urlData.publicUrl,
+        url: urlData.url,
         type: isVideo ? "video" : "image",
       };
 
-      onChange([...media, newMedia]);
-      setCurrentIndex(media.length);
+      let nextMedia: MediaItem[];
+      if (maxItems === 1) {
+        nextMedia = [newMedia];
+      } else if (typeof maxItems === "number" && maxItems > 0) {
+        nextMedia = [...media, newMedia].slice(-maxItems);
+      } else {
+        nextMedia = [...media, newMedia];
+      }
+
+      onChange(nextMedia);
+      setCurrentIndex(Math.max(0, nextMedia.length - 1));
       
       toast({
         title: "File uploaded",

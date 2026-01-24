@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,34 +53,29 @@ export function CategoryManagerDialog({ open, onOpenChange }: CategoryManagerDia
   const { data: categories, isLoading } = useQuery({
     queryKey: ["agent-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agent_categories")
-        .select("*")
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data as Category[];
+      return callAdminApi<Category[]>("get_agent_categories");
     },
   });
 
   const { data: agents } = useQuery({
     queryKey: ["portal-agents-for-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("id, name, category");
-      if (error) throw error;
-      return data as Agent[];
+      const data = await callAdminApi<Agent[]>("get_ai_agents");
+      return data.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        category: agent.category,
+      }));
     },
   });
 
   const addCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       const maxOrder = categories?.reduce((max, cat) => Math.max(max, cat.display_order), 0) || 0;
-      const { error } = await supabase.from("agent_categories").insert([{
+      await callAdminApi("create_agent_category", undefined, {
         name,
         display_order: maxOrder + 1,
-      }]);
-      if (error) throw error;
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agent-categories"] });
@@ -99,22 +94,8 @@ export function CategoryManagerDialog({ open, onOpenChange }: CategoryManagerDia
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (category: Category) => {
-      // First, update any agents using this category to "General"
-      const { error: updateError } = await supabase
-        .from("portal_available_agents")
-        .update({ category: "General" })
-        .eq("category", category.name);
-      
-      if (updateError) throw updateError;
+      await callAdminApi("delete_agent_category", { id: category.id }, { name: category.name });
 
-      // Then delete the category
-      const { error: deleteError } = await supabase
-        .from("agent_categories")
-        .delete()
-        .eq("id", category.id);
-      
-      if (deleteError) throw deleteError;
-      
       return affectedAgents.length;
     },
     onSuccess: (updatedCount) => {

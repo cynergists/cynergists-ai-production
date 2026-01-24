@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class PublicDataController extends Controller
 {
@@ -142,5 +143,74 @@ class PublicDataController extends Controller
             ->get();
 
         return response()->json($products);
+    }
+
+    public function activeAgents(): JsonResponse
+    {
+        if (! Schema::hasTable('portal_available_agents')) {
+            return response()->json([]);
+        }
+
+        $agents = DB::table('portal_available_agents')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (object $agent): array => $this->mapAgentRecord($agent))
+            ->values();
+
+        return response()->json($agents);
+    }
+
+    public function agentBySlug(string $slug): JsonResponse
+    {
+        if (! Schema::hasTable('portal_available_agents')) {
+            return response()->json(null);
+        }
+
+        $agent = null;
+
+        if (Schema::hasColumn('portal_available_agents', 'slug')) {
+            $agent = DB::table('portal_available_agents')
+                ->where('slug', $slug)
+                ->first();
+        }
+
+        if (! $agent) {
+            $agent = DB::table('portal_available_agents')
+                ->get()
+                ->first(fn (object $row): bool => Str::slug((string) $row->name) === $slug);
+        }
+
+        if (! $agent) {
+            return response()->json(null);
+        }
+
+        return response()->json($this->mapAgentRecord($agent));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapAgentRecord(object $agent): array
+    {
+        $data = (array) $agent;
+
+        foreach (['features', 'perfect_for', 'integrations', 'card_media', 'product_media', 'tiers', 'website_category'] as $field) {
+            $value = $data[$field] ?? null;
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                $data[$field] = is_array($decoded) ? $decoded : [];
+            } elseif (is_array($value)) {
+                $data[$field] = $value;
+            } else {
+                $data[$field] = [];
+            }
+        }
+
+        $data['category'] = $data['category'] ?? 'General';
+        $data['slug'] = $data['slug'] ?? null;
+        $data['slug'] = $data['slug'] ?: Str::slug((string) ($data['name'] ?? 'agent'));
+
+        return $data;
     }
 }

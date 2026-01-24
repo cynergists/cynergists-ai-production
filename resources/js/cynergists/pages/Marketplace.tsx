@@ -9,7 +9,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import Layout from "@/components/layout/Layout";
 import { type AIAgent } from "@/components/ui/AIAgentCard";
@@ -33,13 +33,7 @@ export default function Marketplace() {
   const { data: agents, isLoading } = useQuery({
     queryKey: ["marketplace-agents"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return data as unknown as AIAgent[];
+      return apiClient.get<AIAgent[]>("/api/public/agents");
     },
   });
 
@@ -79,6 +73,18 @@ export default function Marketplace() {
   ));
 
   const isSearching = searchQuery.length > 0 || selectedCategories.length > 0;
+  const renderDescription = (description?: string | null) => {
+    if (!description) {
+      return null;
+    }
+
+    return (
+      <div
+        className="text-muted-foreground text-sm line-clamp-2 [&>p]:m-0 [&>p]:inline"
+        dangerouslySetInnerHTML={{ __html: description }}
+      />
+    );
+  };
 
   return (
     <Layout 
@@ -147,7 +153,7 @@ export default function Marketplace() {
                             {agent.job_title && (
                               <p className="text-sm text-muted-foreground mb-2">{agent.job_title}</p>
                             )}
-                            <p className="text-muted-foreground text-sm line-clamp-2">{agent.description}</p>
+                            {renderDescription(agent.description)}
                           </CardContent>
                         </Card>
                       </Link>
@@ -191,6 +197,42 @@ export default function Marketplace() {
               agents={softwareAgents}
             />
           )}
+
+              <section className="px-4 md:px-0">
+                <h2 className="text-2xl font-bold mb-6">
+                  All agents {filteredAgents.length > 0 && `(${filteredAgents.length})`}
+                </h2>
+                {filteredAgents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAgents.map((agent) => (
+                      <div key={agent.id}>
+                        <Link href={`/marketplace/${agent.slug}`} className="block">
+                          <Card className="h-full [box-shadow:0_0_20px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_30px_rgba(132,204,22,0.25)] transition-shadow">
+                            <CardContent className="p-6">
+                              <Badge variant="secondary" className="mb-3">{agent.category}</Badge>
+                              <h3 className="font-semibold text-lg mb-1">{agent.name}</h3>
+                              {agent.job_title && (
+                                <p className="text-sm text-muted-foreground mb-2">{agent.job_title}</p>
+                              )}
+                              {renderDescription(agent.description)}
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="[box-shadow:0_0_20px_rgba(132,204,22,0.15)]">
+                    <CardContent className="text-center py-12">
+                      <Bot className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No agents available</h3>
+                      <p className="text-muted-foreground">
+                        Check back soon for new drops.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </section>
 
               <UpcomingAgentsSection />
             </div>

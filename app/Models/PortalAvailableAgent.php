@@ -20,17 +20,24 @@ class PortalAvailableAgent extends Model
     protected $fillable = [
         'id',
         'name',
+        'job_title',
+        'slug',
         'description',
         'price',
         'category',
+        'website_category',
         'icon',
         'features',
         'is_popular',
         'is_active',
         'sort_order',
+        'section_order',
         'perfect_for',
         'integrations',
         'image_url',
+        'card_media',
+        'product_media',
+        'tiers',
         'long_description',
     ];
 
@@ -46,6 +53,10 @@ class PortalAvailableAgent extends Model
             'is_active' => 'boolean',
             'perfect_for' => 'array',
             'integrations' => 'array',
+            'website_category' => 'array',
+            'card_media' => 'array',
+            'product_media' => 'array',
+            'tiers' => 'array',
         ];
     }
 }

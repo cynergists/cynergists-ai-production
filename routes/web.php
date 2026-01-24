@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDataController;
+use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
@@ -140,6 +141,8 @@ Route::prefix('api')->group(function () {
     Route::get('/public/products/id/{id}', [PublicDataController::class, 'productById']);
     Route::get('/public/products/category/{name}', [PublicDataController::class, 'productsByCategory']);
     Route::post('/public/products/categories', [PublicDataController::class, 'productsByCategories']);
+    Route::get('/public/agents', [PublicDataController::class, 'activeAgents']);
+    Route::get('/public/agents/{slug}', [PublicDataController::class, 'agentBySlug']);
 });
 
 Route::middleware('auth')->prefix('api')->group(function () {
@@ -160,6 +163,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
 
 Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(function () {
     Route::match(['get', 'post', 'delete'], '/admin-data', AdminDataController::class);
+    Route::post('/admin/ai-agents/media', [AiAgentMediaController::class, 'store']);
 });
 
 Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');

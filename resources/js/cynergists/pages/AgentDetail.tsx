@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,8 +43,9 @@ interface Agent {
   product_media: MediaItem[] | null;
 }
 
-const getAgentIcon = (category: string) => {
-  switch (category.toLowerCase()) {
+const getAgentIcon = (category?: string | null) => {
+  const normalizedCategory = (category ?? "general").toLowerCase();
+  switch (normalizedCategory) {
     case "admin":
       return Users;
     case "communication":
@@ -77,13 +78,7 @@ export default function AgentDetail({ slug }: { slug: string }) {
   const { data: agent, isLoading, error } = useQuery({
     queryKey: ["agent-detail", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("*")
-        .eq("slug", slug)
-        .single();
-      if (error) throw error;
-      return data as unknown as Agent;
+      return apiClient.get<Agent>(`/api/public/agents/${slug}`);
     },
     enabled: !!slug,
   });

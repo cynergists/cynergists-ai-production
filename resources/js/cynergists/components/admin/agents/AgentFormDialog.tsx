@@ -193,6 +193,7 @@ export function AgentFormDialog({
                     media={formData.card_media}
                     onChange={(card_media) => setFormData({ ...formData, card_media })}
                     agentName={formData.name}
+                  maxItems={1}
                   />
                 </div>
 
@@ -206,6 +207,7 @@ export function AgentFormDialog({
                     media={formData.product_media}
                     onChange={(product_media) => setFormData({ ...formData, product_media })}
                     agentName={formData.name}
+                  maxItems={1}
                   />
                 </div>
 

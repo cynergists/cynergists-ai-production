@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link, router } from "@inertiajs/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
+import { callAdminApi } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +30,27 @@ interface MediaItem {
 interface AgentTier {
   price: number;
   description: string;
+}
+
+interface AgentRecord {
+  id: string;
+  name: string;
+  job_title?: string | null;
+  description?: string | null;
+  price?: number | null;
+  category?: string | null;
+  website_category?: string[] | null;
+  section_order?: number | null;
+  icon?: string | null;
+  is_popular?: boolean | null;
+  is_active?: boolean | null;
+  features?: string[] | null;
+  perfect_for?: string[] | null;
+  integrations?: string[] | null;
+  image_url?: string | null;
+  card_media?: MediaItem[] | null;
+  product_media?: MediaItem[] | null;
+  tiers?: AgentTier[] | null;
 }
 
 const WEBSITE_CATEGORIES = ["New", "Popular", "Software", "Planned", "Roadmap", "Beta", "Vote"] as const;
@@ -63,27 +83,17 @@ export default function AIAgentEdit({ id }: { id: string }) {
   const { data: categories = [] } = useQuery({
     queryKey: ["agent-categories-names"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agent_categories")
-        .select("name")
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data.map(c => c.name);
+      const data = await callAdminApi<{ name: string }[]>("get_agent_categories");
+      return data.map((category) => category.name);
     },
   });
 
   // Fetch existing agent if editing
-  const { data: existingAgent, isLoading: isLoadingAgent } = useQuery({
+  const { data: existingAgent, isLoading: isLoadingAgent } = useQuery<AgentRecord | null>({
     queryKey: ["agent-edit", id],
     queryFn: async () => {
       if (isNew) return null;
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw error;
-      return data;
+      return callAdminApi<AgentRecord | null>("get_ai_agent", { id });
     },
     enabled: !isNew,
   });
@@ -189,17 +199,12 @@ export default function AIAgentEdit({ id }: { id: string }) {
         perfect_for: perfectForArray,
         integrations: integrationsArray,
         image_url: formData.card_media[0]?.url || "",
-        card_media: formData.card_media as unknown as Json,
-        product_media: formData.product_media as unknown as Json,
-        tiers: formData.tiers as unknown as Json,
+        card_media: formData.card_media,
+        product_media: formData.product_media,
+        tiers: formData.tiers,
       };
 
-      const { error } = await supabase
-        .from("portal_available_agents")
-        .update(agentData)
-        .eq("id", id);
-      
-      if (error) throw error;
+      await callAdminApi("update_ai_agent", { id }, agentData);
       
       toast.success("Agent saved successfully");
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });
@@ -233,18 +238,17 @@ export default function AIAgentEdit({ id }: { id: string }) {
         perfect_for: perfectForArray,
         integrations: integrationsArray,
         image_url: formData.card_media[0]?.url || "",
-        card_media: formData.card_media as unknown as Json,
-        product_media: formData.product_media as unknown as Json,
-        tiers: formData.tiers as unknown as Json,
+        card_media: formData.card_media,
+        product_media: formData.product_media,
+        tiers: formData.tiers,
       };
 
       const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const { error } = await supabase.from("portal_available_agents").insert([{
+      await callAdminApi("create_ai_agent", undefined, {
         ...agentData,
         slug,
         sort_order: 999,
-      }]);
-      if (error) throw error;
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });
@@ -392,6 +396,7 @@ export default function AIAgentEdit({ id }: { id: string }) {
                     media={formData.card_media}
                     onChange={(card_media) => setFormData({ ...formData, card_media })}
                     agentName={formData.name}
+                    maxItems={1}
                   />
                 </div>
 
@@ -405,6 +410,7 @@ export default function AIAgentEdit({ id }: { id: string }) {
                     media={formData.product_media}
                     onChange={(product_media) => setFormData({ ...formData, product_media })}
                     agentName={formData.name}
+                    maxItems={1}
                   />
                 </div>
 

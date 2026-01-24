@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
+import { callAdminApi } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -60,12 +59,7 @@ export default function ManageAgents() {
   const { data: agents, isLoading } = useQuery({
     queryKey: ["portal-agents"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("*")
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return data as Agent[];
+      return callAdminApi<Agent[]>("get_ai_agents");
     },
   });
 
@@ -79,9 +73,9 @@ export default function ManageAgents() {
       // Generate slug from name
       const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       
-      const { error } = await supabase.from("portal_available_agents").insert([{
+      await callAdminApi("create_ai_agent", undefined, {
         name: data.name,
-        slug: slug,
+        slug,
         job_title: data.job_title || null,
         description: data.description,
         price: typeof data.price === "number" ? data.price : 0,
@@ -90,10 +84,9 @@ export default function ManageAgents() {
         is_popular: data.is_popular,
         is_active: data.is_active,
         features: featuresArray,
-        tiers: (data.tiers || []) as unknown as Json,
+        tiers: data.tiers || [],
         sort_order: (agents?.length || 0) + 1,
-      }]);
-      if (error) throw error;
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });
@@ -112,22 +105,18 @@ export default function ManageAgents() {
         .map((f) => f.trim())
         .filter(Boolean);
 
-      const { error } = await supabase
-        .from("portal_available_agents")
-        .update({
-          name: data.name,
-          job_title: data.job_title || null,
-          description: data.description,
-          price: typeof data.price === "number" ? data.price : 0,
-          category: data.category,
-          icon: data.icon,
-          is_popular: data.is_popular,
-          is_active: data.is_active,
-          features: featuresArray,
-          tiers: (data.tiers || []) as unknown as Json,
-        })
-        .eq("id", id);
-      if (error) throw error;
+      await callAdminApi("update_ai_agent", { id }, {
+        name: data.name,
+        job_title: data.job_title || null,
+        description: data.description,
+        price: typeof data.price === "number" ? data.price : 0,
+        category: data.category,
+        icon: data.icon,
+        is_popular: data.is_popular,
+        is_active: data.is_active,
+        features: featuresArray,
+        tiers: data.tiers || [],
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });
@@ -141,11 +130,7 @@ export default function ManageAgents() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("portal_available_agents")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      await callAdminApi("delete_ai_agent", { id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });

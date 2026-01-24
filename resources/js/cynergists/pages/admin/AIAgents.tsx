@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, router } from "@inertiajs/react";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -40,12 +40,7 @@ export default function AIAgents() {
   const { data: agents, isLoading } = useQuery({
     queryKey: ["portal-agents"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("id, name, job_title, description, price, category, website_category, is_popular, is_active")
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return data as Agent[];
+      return callAdminApi<Agent[]>("get_ai_agents");
     },
   });
 
@@ -94,11 +89,7 @@ export default function AIAgents() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("portal_available_agents")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      await callAdminApi("delete_ai_agent", { id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portal-agents"] });

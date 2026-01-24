@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
+use App\Models\PortalAvailableAgent;
 use App\Models\User;
 use App\Models\UserRole;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +45,14 @@ class AdminDataController extends Controller
             'update_note' => response()->json(['success' => true]),
             'delete_note' => response()->json(['success' => true]),
             'get_agreements' => response()->json([]),
+            'get_agent_categories' => $this->getAgentCategories(),
+            'create_agent_category' => $this->createAgentCategory($request),
+            'delete_agent_category' => $this->deleteAgentCategory($request),
+            'get_ai_agents' => $this->getAiAgents(),
+            'get_ai_agent' => $this->getAiAgent($request),
+            'create_ai_agent' => $this->createAiAgent($request),
+            'update_ai_agent' => $this->updateAiAgent($request),
+            'delete_ai_agent' => $this->deleteAiAgent($request),
             'get_sessions' => response()->json([]),
             'get_page_views' => response()->json([]),
             'get_plan_interactions' => response()->json([]),
@@ -429,5 +438,222 @@ class AdminDataController extends Controller
             ->where('user_id', $user->id)
             ->where('role', 'admin')
             ->delete();
+    }
+
+    private function getAgentCategories(): JsonResponse
+    {
+        if (! Schema::hasTable('agent_categories')) {
+            return response()->json([
+                ['id' => (string) Str::uuid(), 'name' => 'General', 'display_order' => 0],
+            ]);
+        }
+
+        $categories = DB::table('agent_categories')->orderBy('display_order')->get();
+
+        return response()->json($categories);
+    }
+
+    private function createAgentCategory(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string'],
+            'display_order' => ['nullable', 'integer'],
+        ]);
+
+        if (! Schema::hasTable('agent_categories')) {
+            return response()->json($data);
+        }
+
+        $id = (string) Str::uuid();
+        DB::table('agent_categories')->insert([
+            'id' => $id,
+            'name' => $data['name'],
+            'display_order' => $data['display_order'] ?? 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['id' => $id] + $data);
+    }
+
+    private function deleteAgentCategory(Request $request): JsonResponse
+    {
+        $id = (string) $request->query('id', '');
+        $name = (string) $request->input('name', '');
+
+        if (! Schema::hasTable('agent_categories') || $id === '') {
+            return response()->json(['success' => true]);
+        }
+
+        if (Schema::hasTable('portal_available_agents') && $name !== '') {
+            DB::table('portal_available_agents')
+                ->where('category', $name)
+                ->update(['category' => 'General']);
+        }
+
+        DB::table('agent_categories')->where('id', $id)->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    private function getAiAgents(): JsonResponse
+    {
+        if (! Schema::hasTable('portal_available_agents')) {
+            return response()->json([]);
+        }
+
+        $agents = PortalAvailableAgent::query()
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (PortalAvailableAgent $agent): array => $this->mapAgent($agent))
+            ->values();
+
+        return response()->json($agents);
+    }
+
+    private function getAiAgent(Request $request): JsonResponse
+    {
+        $id = (string) $request->query('id', '');
+
+        if (! Schema::hasTable('portal_available_agents') || $id === '') {
+            return response()->json(null);
+        }
+
+        $agent = PortalAvailableAgent::query()->find($id);
+
+        return response()->json($agent ? $this->mapAgent($agent) : null);
+    }
+
+    private function createAiAgent(Request $request): JsonResponse
+    {
+        if (! Schema::hasTable('portal_available_agents')) {
+            return response()->json(['success' => true]);
+        }
+
+        $data = $this->extractAgentData($request);
+        $data['id'] = (string) Str::uuid();
+        $data['slug'] = $data['slug'] ?: Str::slug($data['name'] ?? '');
+        $data['created_at'] = now();
+        $data['updated_at'] = now();
+        $data = $this->filterTableColumns('portal_available_agents', $data);
+
+        DB::table('portal_available_agents')->insert([$data]);
+
+        $agent = PortalAvailableAgent::query()->find($data['id']);
+
+        return response()->json($agent ? $this->mapAgent($agent) : $data);
+    }
+
+    private function updateAiAgent(Request $request): JsonResponse
+    {
+        $id = (string) $request->query('id', '');
+
+        if (! Schema::hasTable('portal_available_agents') || $id === '') {
+            return response()->json(['success' => true]);
+        }
+
+        $data = $this->extractAgentData($request);
+        $data['updated_at'] = now();
+        $data = $this->filterTableColumns('portal_available_agents', $data);
+
+        DB::table('portal_available_agents')->where('id', $id)->update($data);
+
+        $agent = PortalAvailableAgent::query()->find($id);
+
+        return response()->json($agent ? $this->mapAgent($agent) : $data);
+    }
+
+    private function deleteAiAgent(Request $request): JsonResponse
+    {
+        $id = (string) $request->query('id', '');
+
+        if (! Schema::hasTable('portal_available_agents') || $id === '') {
+            return response()->json(['success' => true]);
+        }
+
+        DB::table('portal_available_agents')->where('id', $id)->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractAgentData(Request $request): array
+    {
+        return [
+            'name' => $request->input('name'),
+            'job_title' => $request->input('job_title'),
+            'description' => $request->input('description'),
+            'price' => $request->input('price', 0),
+            'category' => $request->input('category', 'General'),
+            'website_category' => $this->encodeJson($request->input('website_category')),
+            'section_order' => $request->input('section_order', 0),
+            'icon' => $request->input('icon', 'bot'),
+            'is_popular' => (bool) $request->input('is_popular', false),
+            'is_active' => (bool) $request->input('is_active', true),
+            'features' => $this->encodeJson($request->input('features')),
+            'perfect_for' => $this->encodeJson($request->input('perfect_for')),
+            'integrations' => $this->encodeJson($request->input('integrations')),
+            'image_url' => $request->input('image_url'),
+            'card_media' => $this->encodeJson($request->input('card_media')),
+            'product_media' => $this->encodeJson($request->input('product_media')),
+            'tiers' => $this->encodeJson($request->input('tiers')),
+            'slug' => $request->input('slug'),
+            'sort_order' => $request->input('sort_order', 0),
+        ];
+    }
+
+    private function encodeJson(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return json_encode($value);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapAgent(PortalAvailableAgent $agent): array
+    {
+        return [
+            'id' => (string) $agent->id,
+            'name' => $agent->name,
+            'job_title' => $agent->job_title,
+            'description' => $agent->description,
+            'price' => (float) $agent->price,
+            'category' => $agent->category,
+            'website_category' => $agent->website_category,
+            'section_order' => $agent->section_order,
+            'icon' => $agent->icon,
+            'is_popular' => (bool) $agent->is_popular,
+            'is_active' => (bool) $agent->is_active,
+            'features' => $agent->features ?? [],
+            'perfect_for' => $agent->perfect_for ?? [],
+            'integrations' => $agent->integrations ?? [],
+            'image_url' => $agent->image_url,
+            'card_media' => $agent->card_media ?? [],
+            'product_media' => $agent->product_media ?? [],
+            'tiers' => $agent->tiers ?? [],
+            'slug' => $agent->slug,
+            'sort_order' => $agent->sort_order,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function filterTableColumns(string $table, array $data): array
+    {
+        if (! Schema::hasTable($table)) {
+            return $data;
+        }
+
+        $columns = Schema::getColumnListing($table);
+
+        return array_intersect_key($data, array_flip($columns));
     }
 }

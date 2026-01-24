@@ -8,9 +8,10 @@ use Inertia\Response;
 
 class CynergistsPageController extends Controller
 {
-    public function page(Request $request, string $component): Response
+    public function page(Request $request): Response
     {
         $props = $request->route()->parameters();
+        $component = (string) ($props['component'] ?? '');
         unset($props['component']);
 
         return Inertia::render($component, $props);
