@@ -7,6 +7,8 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -61,20 +63,26 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Cynergist::class);
     }
 
-    public function canAccessPanel(Panel $panel): bool
+    public function profile(): HasOne
     {
-        return $panel->getId() === 'admin' && $this->isFilamentAdmin();
+        return $this->hasOne(Profile::class);
     }
 
-    private function isFilamentAdmin(): bool
+    public function userRoles(): HasMany
     {
-        $allowed = array_filter(
-            array_map(
-                static fn (string $email): string => strtolower(trim($email)),
-                config('services.filament.admin_emails', []),
-            ),
-        );
+        return $this->hasMany(UserRole::class);
+    }
 
-        return in_array(strtolower($this->email), $allowed, true);
+    /**
+     * @return list<string>
+     */
+    public function roleNames(): array
+    {
+        return $this->userRoles->pluck('role')->all();
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin';
     }
 }
