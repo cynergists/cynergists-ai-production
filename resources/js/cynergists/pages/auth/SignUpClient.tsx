@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, router } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -12,8 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import cynergistsLogo from "@/assets/cynergists-logo-new.png";
 import { z } from "zod";
-import { isUserExistsError } from "@/utils/errorMessages";
-import { getErrorMessage } from "@/lib/logger";
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
@@ -56,102 +53,76 @@ export default function SignUpClient() {
     try {
       const validated = signupSchema.parse(formData);
 
-      // Check for checkout redirect - but client signup goes to onboarding
       const checkoutRedirect = sessionStorage.getItem("checkout_redirect");
 
-      // Pass all profile data in user metadata - trigger handles profile/role creation server-side
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: validated.email,
-        password: validated.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/portal/onboarding`,
-          data: {
-            first_name: validated.firstName,
-            last_name: validated.lastName,
-            company_name: validated.companyName,
-            phone: validated.phone || null,
-            user_type: "client",
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Check if this is a cynergists.com email - they need admin approval
-        const isCynergistsEmail = validated.email.toLowerCase().endsWith("@cynergists.com");
-        
-        if (isCynergistsEmail) {
-          // Send approval request email
-          try {
-            await supabase.functions.invoke("send-admin-approval-request", {
-              body: {
-                user_id: authData.user.id,
-                requester_email: validated.email,
-                requester_name: `${validated.firstName} ${validated.lastName}`.trim(),
-                approval_token: authData.user.id,
-              },
-            });
-          } catch (emailError) {
-            console.error("Failed to send approval email:", emailError);
-          }
-          
-          toast({
-            title: "Account created - Admin approval required",
-            description: "Your admin access request has been submitted. You'll receive an email once approved.",
-          });
-          
-          router.visit("/admin");
-          return;
-        }
-        
-        // Create portal tenant with temp subdomain
-        try {
-          await supabase.functions.invoke("create-portal-tenant", {
-            body: {
-              user_id: authData.user.id,
-              company_name: validated.companyName,
-            },
-          });
-        } catch (tenantError) {
-          console.error("Failed to create portal tenant:", tenantError);
-          // Don't block signup if tenant creation fails
-        }
-        
-        // Save registration data to localStorage for checkout pre-population
-        const contactData = {
-          firstName: validated.firstName,
-          lastName: validated.lastName,
+      router.post(
+        "/register",
+        {
+          first_name: validated.firstName,
+          last_name: validated.lastName,
           email: validated.email,
-          phone: validated.phone || "",
-        };
-        const companyData = {
-          jobTitle: "",
-          companyName: validated.companyName,
-          streetAddress: "",
-          city: "",
-          state: "",
-          zip: "",
-        };
-        localStorage.setItem("cynergists_checkout_contact", JSON.stringify(contactData));
-        localStorage.setItem("cynergists_checkout_company", JSON.stringify(companyData));
+          password: validated.password,
+          password_confirmation: validated.password,
+          company_name: validated.companyName,
+          phone: validated.phone || null,
+          accept_terms: validated.acceptTerms,
+          user_type: "client",
+        },
+        {
+          onSuccess: () => {
+            const contactData = {
+              firstName: validated.firstName,
+              lastName: validated.lastName,
+              email: validated.email,
+              phone: validated.phone || "",
+            };
+            const companyData = {
+              jobTitle: "",
+              companyName: validated.companyName,
+              streetAddress: "",
+              city: "",
+              state: "",
+              zip: "",
+            };
+            localStorage.setItem("cynergists_checkout_contact", JSON.stringify(contactData));
+            localStorage.setItem("cynergists_checkout_company", JSON.stringify(companyData));
 
-        // Mark as new signup for onboarding
-        sessionStorage.setItem("isNewSignup", "true");
+            sessionStorage.setItem("isNewSignup", "true");
 
-        // Clear checkout redirect if used
-        if (checkoutRedirect) {
-          sessionStorage.removeItem("checkout_redirect");
-        }
-        
-        toast({
-          title: "Account created",
-          description: "Welcome to Cynergists! Your portal is ready.",
-        });
+            if (checkoutRedirect) {
+              sessionStorage.removeItem("checkout_redirect");
+            }
 
-        // Redirect directly to portal (subdomain is auto-assigned)
-        router.visit("/portal");
-      }
+            toast({
+              title: "Account created",
+              description: "Welcome to Cynergists! Your portal is ready.",
+            });
+          },
+          onError: (serverErrors) => {
+            const mappedErrors: Record<string, string> = {};
+            Object.entries(serverErrors).forEach(([key, value]) => {
+              const message = Array.isArray(value) ? value[0] : value;
+              const field = key
+                .replace("first_name", "firstName")
+                .replace("last_name", "lastName")
+                .replace("company_name", "companyName")
+                .replace("accept_terms", "acceptTerms");
+              mappedErrors[field] = message;
+            });
+            setErrors(mappedErrors);
+            const firstError = Object.values(mappedErrors)[0];
+            if (firstError) {
+              toast({
+                title: "Sign up failed",
+                description: firstError,
+                variant: "destructive",
+              });
+            }
+          },
+          onFinish: () => setLoading(false),
+        },
+      );
+      return;
     } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -161,27 +132,15 @@ export default function SignUpClient() {
           }
         });
         setErrors(fieldErrors);
-      } else if (isUserExistsError(getErrorMessage(error))) {
-        toast({
-          title: "Account already exists",
-          description: (
-            <span>
-              An account with this email already exists.{" "}
-              <Link href={`/signin?email=${encodeURIComponent(formData.email)}`} className="underline font-medium text-primary">
-                Sign in instead
-              </Link>
-            </span>
-          ),
-        });
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
+        setLoading(false);
+    } else {
+      toast({
+        title: "Sign up failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+        setLoading(false);
+    }
     }
   };
 
