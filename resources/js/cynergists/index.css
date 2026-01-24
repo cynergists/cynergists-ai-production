@@ -1,0 +1,494 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Cynergists Design System - Dark futuristic theme with lime accents */
+
+@layer base {
+  :root {
+    /* Main dark blue background - default is dark */
+    --background: 220 45% 13%;
+    --foreground: 210 40% 98%;
+
+    /* Cards - slightly lighter dark blue with transparency */
+    --card: 220 40% 18%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 220 40% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary - Lime green accent */
+    --primary: 84 81% 44%;
+    --primary-foreground: 220 45% 13%;
+
+    /* Secondary - Teal/cyan accent */
+    --secondary: 180 60% 35%;
+    --secondary-foreground: 210 40% 98%;
+
+    /* Muted */
+    --muted: 220 30% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Accent - bright lime */
+    --accent: 84 81% 44%;
+    --accent-foreground: 220 45% 13%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Borders and inputs */
+    --border: 220 30% 25%;
+    --input: 220 30% 22%;
+    --ring: 84 81% 44%;
+
+    --radius: 0.75rem;
+
+    /* Custom colors */
+    --navy: 220 45% 13%;
+    --navy-light: 220 40% 18%;
+    --lime: 84 81% 44%;
+    --lime-glow: 84 81% 55%;
+    --teal: 180 60% 35%;
+    --cyan: 185 70% 50%;
+
+    /* Sidebar */
+    --sidebar-background: 220 45% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 84 81% 44%;
+    --sidebar-primary-foreground: 220 45% 13%;
+    --sidebar-accent: 220 40% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 30% 25%;
+    --sidebar-ring: 84 81% 44%;
+  }
+
+  .dark {
+    --background: 220 45% 13%;
+    --foreground: 210 40% 98%;
+    --card: 220 40% 18%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 40% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 84 81% 44%;
+    --primary-foreground: 220 45% 13%;
+    --secondary: 180 60% 35%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 30% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 84 81% 44%;
+    --accent-foreground: 220 45% 13%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 30% 25%;
+    --input: 220 30% 22%;
+    --ring: 84 81% 44%;
+    --sidebar-background: 220 45% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 84 81% 44%;
+    --sidebar-primary-foreground: 220 45% 13%;
+    --sidebar-accent: 220 40% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 30% 25%;
+    --sidebar-ring: 84 81% 44%;
+  }
+
+  .light {
+    /* Light mode - clean professional look with lime accents */
+    --background: 210 20% 98%;
+    --foreground: 220 45% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 45% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 45% 13%;
+
+    /* Primary - Darker lime for better contrast on light */
+    --primary: 84 81% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Darker teal */
+    --secondary: 180 60% 30%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 210 20% 93%;
+    --muted-foreground: 220 20% 40%;
+
+    /* Accent - Dark blue for text in light mode */
+    --accent: 220 45% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 220 20% 85%;
+    --input: 220 20% 90%;
+    --ring: 84 81% 38%;
+
+    /* Custom colors for light mode */
+    --navy: 220 45% 20%;
+    --navy-light: 220 30% 30%;
+    --lime: 84 81% 38%;
+    --lime-glow: 84 81% 45%;
+    --teal: 180 60% 30%;
+    --cyan: 185 70% 40%;
+
+    /* Sidebar */
+    --sidebar-background: 210 20% 96%;
+    --sidebar-foreground: 220 45% 13%;
+    --sidebar-primary: 84 81% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 90%;
+    --sidebar-accent-foreground: 220 45% 13%;
+    --sidebar-border: 220 20% 85%;
+    --sidebar-ring: 84 81% 38%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* Typography System - Mobile First */
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.25rem;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.625rem;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.3125rem;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+
+  h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 1rem;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* Desktop Typography */
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 3.5rem;
+    }
+
+    h2 {
+      font-size: 2.25rem;
+    }
+
+    h3 {
+      font-size: 1.625rem;
+    }
+
+    p {
+      font-size: 1.125rem;
+    }
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50;
+  }
+
+  .glow-lime {
+    box-shadow: 0 0 30px hsl(84 81% 44% / 0.3);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px hsl(84 81% 44% / 0.5);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(220 45% 13%) 0%, hsl(220 40% 18%) 50%, hsl(180 60% 20%) 100%);
+  }
+
+  .light .gradient-hero,
+  .gradient-hero-light {
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 30%, hsl(0 0% 100% / 0.7) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, hsl(0 0% 100% / 0.5) 0%, transparent 45%),
+      radial-gradient(ellipse 50% 60% at 50% 80%, hsl(0 0% 100% / 0.4) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(220 15% 92%) 0%, hsl(220 12% 88%) 50%, hsl(210 15% 85%) 100%);
+  }
+
+  /* Light mode base - sections start white */
+  .light .scroll-reveal-section {
+    will-change: background, transform, opacity;
+  }
+
+  /* Light mode section color schemes when revealed */
+  .light .reveal-dark {
+    --reveal-bg: hsl(220 45% 8%);
+  }
+  
+  .light .reveal-teal {
+    --reveal-bg: hsl(180 60% 15%);
+  }
+  
+  .light .reveal-lime {
+    --reveal-bg: hsl(84 60% 20%);
+  }
+  
+  .light .reveal-slate {
+    --reveal-bg: hsl(220 20% 15%);
+  }
+
+  .gradient-card {
+    background: linear-gradient(180deg, hsl(220 40% 18% / 0.8) 0%, hsl(220 45% 13% / 0.9) 100%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(90deg, #81CA16 0%, #26908B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-lg 
+           hover:bg-primary/90 transition-all duration-300;
+    box-shadow: 0 0 30px hsl(84 81% 44% / 0.3);
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary font-semibold px-6 py-3 rounded-lg 
+           hover:bg-primary hover:text-primary-foreground transition-all duration-300;
+  }
+
+  .card-glass {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl p-6 transition-all duration-300 hover:border-primary/50;
+  }
+
+  /* Agreement content styling - renders HTML from rich text editor */
+  .agreement-content {
+    @apply text-foreground;
+  }
+  
+  .agreement-content h1 {
+    @apply text-2xl font-bold text-foreground mt-6 mb-3;
+  }
+  
+  .agreement-content h2 {
+    @apply text-lg font-semibold text-foreground mt-5 mb-2;
+  }
+  
+  .agreement-content h3 {
+    @apply text-base font-semibold text-foreground mt-4 mb-2;
+  }
+  
+  .agreement-content p {
+    @apply my-2 text-sm leading-relaxed;
+  }
+  
+  .agreement-content hr {
+    @apply my-6 border-border;
+  }
+  
+  .agreement-content strong {
+    @apply font-semibold;
+  }
+  
+  .agreement-content ul, .agreement-content ol {
+    @apply my-2 pl-6;
+  }
+  
+  .agreement-content ul {
+    @apply list-disc;
+  }
+  
+  .agreement-content ol {
+    @apply list-decimal;
+  }
+  
+  .agreement-content li {
+    @apply my-1 text-sm;
+  }
+}
+
+/* Logo Carousel Animation */
+@keyframes logo-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.logo-carousel {
+  animation: logo-scroll 25s linear infinite;
+  width: max-content;
+}
+
+.logo-carousel:hover {
+  animation-play-state: paused;
+}
+
+/* Accessibility Styles */
+.high-contrast {
+  --foreground: 0 0% 100%;
+  --background: 0 0% 0%;
+  --muted-foreground: 0 0% 85%;
+  --border: 0 0% 40%;
+}
+
+.high-contrast * {
+  border-color: hsl(0 0% 60%) !important;
+}
+
+.reduced-motion,
+.reduced-motion * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+.focus-highlight *:focus {
+  outline: 3px solid hsl(var(--primary)) !important;
+  outline-offset: 2px !important;
+}
+
+.focus-highlight *:focus-visible {
+  outline: 3px solid hsl(var(--primary)) !important;
+  outline-offset: 2px !important;
+}
+
+/* Cynessa Avatar Animations */
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes mouth {
+  0%, 100% { width: 40%; height: 6px; }
+  25% { width: 60%; height: 10px; }
+  50% { width: 50%; height: 8px; }
+  75% { width: 55%; height: 12px; }
+}
+
+@keyframes soundwave {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+.animate-blink {
+  animation: blink 3s infinite;
+}
+
+.animate-mouth {
+  animation: mouth 0.3s infinite;
+}
+
+.animate-soundwave {
+  animation: soundwave 0.5s ease-in-out infinite;
+}
+
+/* Agreement Content Styles - Ensure line breaks are preserved */
+.agreement-content p:empty::before,
+.prose p:empty::before {
+  content: '\00a0'; /* Non-breaking space to give empty paragraphs height */
+}
+
+.agreement-content p:empty,
+.prose p:empty {
+  min-height: 1.6em;
+  display: block;
+}
+
+/* Handle paragraphs that only contain a <br> */
+.agreement-content p:has(br:only-child),
+.prose p:has(br:only-child) {
+  min-height: 1.6em;
+}
+
+/* Orbiting Light Button Effect */
+@keyframes orbit-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.orbiting-button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Orbiting light button - uses rotating conic-gradient */
+.orbiting-button {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orbiting-button::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    rgba(255,255,255,0.15) 40deg,
+    rgba(255,255,255,0.9) 110deg,
+    rgba(255,255,255,0.9) 250deg,
+    rgba(255,255,255,0.15) 320deg,
+    transparent 360deg
+  );
+  animation: orbit-spin 2.5s linear infinite;
+  z-index: -1;
+}
+
+/* Inner mask to show only the edge glow */
+.orbiting-button::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: inherit;
+  z-index: -1;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
