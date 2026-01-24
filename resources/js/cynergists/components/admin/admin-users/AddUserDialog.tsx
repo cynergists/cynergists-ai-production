@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 import { useQueryClient } from "@tanstack/react-query";
 import type { UserType, AccessLevel } from "@/hooks/useAdminUsersList";
 
@@ -63,33 +63,13 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
 
     setIsLoading(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
-      }
-
       // Auto-set access level based on user type
       const dataToSend = {
         ...formData,
         access_level: userTypeToAccessLevel[formData.user_type],
       };
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?action=create_admin_user`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToSend),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create user");
-      }
+      await callAdminApi("create_admin_user", undefined, dataToSend);
 
       toast.success("User created successfully");
       queryClient.invalidateQueries({ queryKey: ["admin", "admin-users"] });

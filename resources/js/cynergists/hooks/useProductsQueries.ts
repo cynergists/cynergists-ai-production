@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 
 export interface Product {
   id: string;
@@ -45,39 +45,7 @@ export interface Product {
 // Make all fields optional except product_name and price for inserts (database has defaults)
 export type ProductInsert = Pick<Product, 'product_name' | 'price'> & Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'product_name' | 'price'>>;
 
-// Helper function to call the admin API
-async function callAdminApi<T>(action: string, params?: Record<string, string>, body?: unknown): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
-    throw new Error("Not authenticated");
-  }
-
-  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`);
-  url.searchParams.set("action", action);
-  
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-  }
-
-  const response = await fetch(url.toString(), {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Authorization": `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "API request failed");
-  }
-
-  return response.json();
-}
+// callAdminApi helper is shared
 
 export function useProducts() {
   return useQuery({

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 
 export interface SalesRep {
   id: string;
@@ -40,42 +40,7 @@ interface SalesRepsResponse {
   summary: SalesRepsSummary;
 }
 
-async function callAdminApi<T>(
-  action: string,
-  params?: Record<string, string>,
-  body?: unknown
-): Promise<T> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData?.session) {
-    throw new Error("Not authenticated");
-  }
-
-  const url = new URL(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`
-  );
-  url.searchParams.set("action", action);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) url.searchParams.set(key, value);
-    });
-  }
-
-  const response = await fetch(url.toString(), {
-    method: body ? "POST" : "GET",
-    headers: {
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "Request failed");
-  }
-
-  return response.json();
-}
+// callAdminApi helper is shared
 
 export function useSalesReps(params: SalesRepsQueryParams) {
   const offset = (params.page - 1) * params.limit;

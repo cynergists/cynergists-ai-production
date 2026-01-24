@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { callAdminApi } from '@/lib/admin-api';
 
 export interface Client {
   id: string;
@@ -83,13 +83,11 @@ export function useClientsList(params: UseClientsListParams): UseClientsListResu
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Not authenticated');
-        return;
-      }
-
-      const queryParams = new URLSearchParams({
+      const result = await callAdminApi<{
+        clients: Client[];
+        total: number;
+        totalPages: number;
+      }>('get_clients', {
         page: params.page.toString(),
         limit: params.limit.toString(),
         sortColumn: params.sortColumn,
@@ -97,33 +95,6 @@ export function useClientsList(params: UseClientsListParams): UseClientsListResu
         search: params.search,
         filters: JSON.stringify(params.filters),
       });
-
-      const { data, error: fnError } = await supabase.functions.invoke('get-clients', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: null,
-        method: 'GET',
-      });
-
-      // Since invoke doesn't support query params well with GET, we'll use POST
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-clients?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch clients');
-      }
-
-      const result = await response.json();
       setClients(result.clients || []);
       setTotal(result.total || 0);
       setTotalPages(result.totalPages || 0);

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { callAdminApi } from "@/lib/admin-api";
 
 export interface PartnerProfile {
   id: string;
@@ -66,23 +66,7 @@ export function usePartnerSettings(partnerId: string | undefined) {
     
     setSaving(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error("Not authenticated");
-        return false;
-      }
-
-      const response = await supabase.functions.invoke("admin-data", {
-        body: {
-          action: "update_partner",
-          partner_id: partnerId,
-          ...data,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to update profile");
-      }
+      await callAdminApi("update_partner", { partner_id: partnerId }, data);
 
       toast.success("Profile updated successfully");
       return true;
@@ -100,45 +84,23 @@ export function usePartnerSettings(partnerId: string | undefined) {
     
     setUploadingW9(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error("Not authenticated");
-        return false;
-      }
+      const formData = new FormData();
+      formData.append("w9", file);
 
-      const userId = session.session.user.id;
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}/w9-${Date.now()}.${fileExt}`;
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
 
-      // Upload file to partner-documents bucket
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("partner-documents")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get the file URL
-      const { data: urlData } = supabase.storage
-        .from("partner-documents")
-        .getPublicUrl(fileName);
-
-      // Update partner record with W9 URL and status
-      const response = await supabase.functions.invoke("admin-data", {
-        body: {
-          action: "update_partner",
-          partner_id: partnerId,
-          w9_file_url: urlData.publicUrl,
-          tax_status: "submitted",
-        },
+      const response = await fetch(`/api/partners/${partnerId}/w9`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: csrfToken ? { "X-CSRF-TOKEN": csrfToken } : undefined,
+        body: formData,
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to update W-9 status");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to upload W-9");
       }
 
       toast.success("W-9 submitted successfully");
@@ -157,28 +119,14 @@ export function usePartnerSettings(partnerId: string | undefined) {
     
     setSaving(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error("Not authenticated");
-        return false;
-      }
-
-      const response = await supabase.functions.invoke("admin-data", {
-        body: {
-          action: "update_partner",
-          partner_id: partnerId,
-          payout_provider: "pending",
-          payout_bank_name: data.payout_bank_name,
-          payout_account_type: data.payout_account_type,
-          payout_token_reference: data.payout_token_reference,
-          payout_last4: data.payout_last4,
-          payout_status: "submitted",
-        },
+      await callAdminApi("update_partner", { partner_id: partnerId }, {
+        payout_provider: "pending",
+        payout_bank_name: data.payout_bank_name,
+        payout_account_type: data.payout_account_type,
+        payout_token_reference: data.payout_token_reference,
+        payout_last4: data.payout_last4,
+        payout_status: "submitted",
       });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to submit payout method");
-      }
 
       toast.success("Payout method submitted for verification");
       return true;
@@ -194,30 +142,26 @@ export function usePartnerSettings(partnerId: string | undefined) {
   const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<boolean> => {
     setSaving(true);
     try {
-      // Get current user email
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error("Unable to get current user");
-      }
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
 
-      // Verify current password by re-authenticating
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
+      const response = await fetch("/api/user/password", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          password: newPassword,
+        }),
       });
 
-      if (signInError) {
-        toast.error("Current password is incorrect");
-        return false;
-      }
-
-      // Now update to new password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to change password");
       }
 
       toast.success("Password updated successfully");
@@ -234,15 +178,23 @@ export function usePartnerSettings(partnerId: string | undefined) {
   const sendMagicLink = useCallback(async (email: string): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/partner`,
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
+
+      const response = await fetch("/api/partner/magic-link", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
         },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to send magic link");
       }
 
       toast.success("Magic link sent to your email");
@@ -261,17 +213,9 @@ export function usePartnerSettings(partnerId: string | undefined) {
     
     setSaving(true);
     try {
-      const response = await supabase.functions.invoke("admin-data", {
-        body: {
-          action: "update_partner",
-          partner_id: partnerId,
-          mfa_enabled: enabled,
-        },
+      await callAdminApi("update_partner", { partner_id: partnerId }, {
+        mfa_enabled: enabled,
       });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to update MFA setting");
-      }
 
       toast.success(enabled ? "MFA requirement enabled" : "MFA requirement disabled");
       return true;

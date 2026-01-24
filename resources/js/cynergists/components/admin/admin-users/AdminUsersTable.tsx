@@ -25,8 +25,8 @@ import { CenteredDash } from "@/components/admin/CenteredDash";
 import type { AdminUser, UserType, UserStatus } from "@/hooks/useAdminUsersList";
 import { useUpdateAdminUser } from "@/hooks/useAdminUsersList";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { callAdminApi } from "@/lib/admin-api";
 
 interface ColumnConfig {
   key: string;
@@ -280,26 +280,7 @@ export function AdminUsersTable({
     
     setIsDeleting(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?action=delete_admin_user&id=${deleteUserId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete user");
-      }
+      await callAdminApi("delete_admin_user", { id: deleteUserId });
 
       toast.success("User deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["admin", "admin-users"] });

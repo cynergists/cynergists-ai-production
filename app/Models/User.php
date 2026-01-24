@@ -83,18 +83,6 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $panel->getId() === 'admin' && $this->isFilamentAdmin();
-    }
-
-    private function isFilamentAdmin(): bool
-    {
-        $allowed = array_filter(
-            array_map(
-                static fn (string $email): string => strtolower(trim($email)),
-                config('services.filament.admin_emails', []),
-            ),
-        );
-
-        return in_array(strtolower($this->email), $allowed, true);
+        return $panel->getId() === 'admin';
     }
 }

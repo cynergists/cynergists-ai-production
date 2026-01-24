@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 
 interface DashboardStats {
   total_referrals: number;
@@ -70,20 +70,8 @@ export function usePartnerDashboard(partnerId: string | undefined): UsePartnerDa
     try {
       setIsLoading(true);
       setError(null);
-
-      const { data, error: rpcError } = await supabase.rpc('get_partner_dashboard_stats', {
-        _partner_id: partnerId
-      });
-
-      if (rpcError) {
-        throw rpcError;
-      }
-
-      if (data && data.length > 0) {
-        setStats(data[0] as DashboardStats);
-      } else {
-        setStats(defaultStats);
-      }
+      const data = await apiClient.get<DashboardStats>(`/api/partner-dashboard/${partnerId}`);
+      setStats(data || defaultStats);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setError('Failed to load dashboard stats');

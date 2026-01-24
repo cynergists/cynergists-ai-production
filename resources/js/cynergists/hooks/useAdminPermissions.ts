@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { usePage } from "@inertiajs/react";
 
 export type PermissionKey =
   | "dashboard.view_basic"
@@ -53,7 +52,7 @@ export type PermissionKey =
 export type AdminUserType = "employee" | "sales_rep" | "admin";
 
 interface AdminUser {
-  id: string;
+  id: string | number;
   email: string;
   name: string;
   is_super_admin: boolean;
@@ -73,55 +72,51 @@ interface UseAdminPermissionsResult {
 }
 
 export function useAdminPermissions(): UseAdminPermissionsResult {
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { props } = usePage<{
+    auth?: {
+      user?: {
+        id: number | string;
+        email: string;
+        name: string;
+        is_active?: boolean;
+      } | null;
+      roles?: string[];
+    };
+  }>();
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
-    });
-  }, []);
+  const roles = props.auth?.roles ?? [];
+  const isAdmin = roles.includes("admin");
 
-  // Fetch admin user info
-  const { data: adminUser, isLoading: isLoadingUser, error: userError } = useQuery({
-    queryKey: ["admin-user", userEmail],
-    queryFn: async () => {
-      if (!userEmail) return null;
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("id, email, name, is_super_admin, admin_user_type, is_active")
-        .eq("email", userEmail)
-        .single();
-      if (error) throw error;
-      return data as AdminUser;
-    },
-    enabled: !!userEmail,
-  });
+  const adminUser = useMemo<AdminUser | null>(() => {
+    const user = props.auth?.user;
 
-  // Fetch permissions using the database function
-  const { data: permissionsData, isLoading: isLoadingPerms, error: permsError } = useQuery({
-    queryKey: ["admin-permissions", userEmail],
-    queryFn: async () => {
-      if (!userEmail) return [];
-      const { data, error } = await supabase.rpc("get_user_permissions", {
-        user_email: userEmail,
+    if (!user || !isAdmin) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      is_super_admin: false,
+      admin_user_type: "admin",
+      is_active: user.is_active ?? true,
+    };
+  }, [props.auth?.user, isAdmin]);
+
+  const permissions = useMemo(() => {
+    const map = new Map<PermissionKey, boolean>();
+
+    if (isAdmin) {
+      ALL_PERMISSIONS.forEach((permission) => {
+        map.set(permission, true);
       });
-      if (error) throw error;
-      return data as { permission_key: string; enabled: boolean }[];
-    },
-    enabled: !!userEmail,
-  });
+    }
 
-  // Build permissions map
-  const permissions = new Map<PermissionKey, boolean>();
-  if (permissionsData) {
-    permissionsData.forEach((p) => {
-      permissions.set(p.permission_key as PermissionKey, p.enabled);
-    });
-  }
+    return map;
+  }, [isAdmin]);
 
   const hasPermission = (key: PermissionKey): boolean => {
-    // Super admin has all permissions
-    if (adminUser?.is_super_admin) return true;
     return permissions.get(key) ?? false;
   };
 
@@ -138,10 +133,10 @@ export function useAdminPermissions(): UseAdminPermissionsResult {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    isSuperAdmin: adminUser?.is_super_admin ?? false,
+    isSuperAdmin: false,
     adminUser,
-    isLoading: isLoadingUser || isLoadingPerms,
-    error: userError || permsError,
+    isLoading: false,
+    error: null,
   };
 }
 
@@ -175,6 +170,8 @@ export const PERMISSION_MODULES = {
   Analytics: ["analytics.view"],
   Settings: ["settings.personal", "settings.system"],
 } as const;
+
+const ALL_PERMISSIONS = Object.values(PERMISSION_MODULES).flat();
 
 // Route to required permissions mapping
 export const ROUTE_PERMISSIONS: Record<string, PermissionKey[]> = {

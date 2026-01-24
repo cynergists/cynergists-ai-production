@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 
 export interface PublicPlan {
   id: string;
@@ -26,14 +26,7 @@ export function useActivePlans() {
   return useQuery({
     queryKey: ["public", "plans", "active"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("*")
-        .eq("status", "active")
-        .order("display_order", { ascending: true });
-
-      if (error) throw error;
-      return data as PublicPlan[];
+      return apiClient.get<PublicPlan[]>("/api/public/plans");
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -48,15 +41,7 @@ export function usePlanBySlug(slug: string) {
   return useQuery({
     queryKey: ["public", "plans", "slug", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("*")
-        .eq("slug", slug)
-        .neq("status", "draft") // Exclude draft, allow active/hidden/test
-        .single();
-
-      if (error) throw error;
-      return data as PublicPlan;
+      return apiClient.get<PublicPlan>(`/api/public/plans/${slug}`);
     },
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,

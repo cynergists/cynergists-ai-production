@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { Json } from '@/integrations/supabase/types';
+import { apiClient } from '@/lib/api-client';
 
 export interface SavedView {
   name: string;
@@ -60,19 +59,9 @@ export function useViewPreferences(config: UseViewPreferencesConfig) {
 
   const loadPreferences = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from(config.tableName)
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error loading preferences:', error);
-        return;
-      }
+      const data = await apiClient.get<Record<string, unknown> | null>(
+        `/api/view-preferences/${config.tableName}`,
+      );
 
       if (data) {
         const savedViews = (data.saved_views as unknown as SavedView[]) || [];
@@ -121,55 +110,29 @@ export function useViewPreferences(config: UseViewPreferencesConfig) {
   const savePreferences = useCallback(async (newPrefs: Partial<ViewPreferences>) => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const updatedPrefs = { ...preferences, ...newPrefs };
       setPreferences(updatedPrefs);
-
-      const { data: existing } = await supabase
-        .from(config.tableName)
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
 
       const prefsData = {
         column_order: updatedPrefs.columnOrder,
         hidden_columns: updatedPrefs.hiddenColumns,
-        column_widths: updatedPrefs.columnWidths as Json,
+        column_widths: updatedPrefs.columnWidths,
         sort_column: updatedPrefs.sortColumn,
         sort_direction: updatedPrefs.sortDirection,
-        active_filters: updatedPrefs.activeFilters as Json,
+        active_filters: updatedPrefs.activeFilters,
         rows_per_page: updatedPrefs.rowsPerPage,
-        saved_views: updatedPrefs.savedViews as unknown as Json,
+        saved_views: updatedPrefs.savedViews,
         active_view_name: updatedPrefs.activeViewName,
         default_view_name: updatedPrefs.defaultViewName,
       };
-
-      let error;
-      if (existing) {
-        const result = await supabase
-          .from(config.tableName)
-          .update(prefsData)
-          .eq('user_id', user.id);
-        error = result.error;
-      } else {
-        const result = await supabase
-          .from(config.tableName)
-          .insert([{ user_id: user.id, ...prefsData }]);
-        error = result.error;
-      }
-
-      if (error) {
-        console.error('Error saving preferences:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to save view preferences',
-          variant: 'destructive',
-        });
-      }
+      await apiClient.post(`/api/view-preferences/${config.tableName}`, prefsData);
     } catch (err) {
       console.error('Error saving preferences:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to save view preferences',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }

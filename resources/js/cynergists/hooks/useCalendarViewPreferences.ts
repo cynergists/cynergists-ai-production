@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { Json } from '@/integrations/supabase/types';
+import { apiClient } from '@/lib/api-client';
 
 const DEFAULT_COLUMN_ORDER = [
   'calendar_name',
@@ -39,17 +38,9 @@ export function useCalendarViewPreferences() {
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['calendar-view-preferences'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('calendar_view_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
+      return apiClient.get<Record<string, unknown> | null>(
+        '/api/view-preferences/calendar_view_preferences',
+      );
     },
   });
 
@@ -64,21 +55,10 @@ export function useCalendarViewPreferences() {
   // Mutation to save preferences
   const saveMutation = useMutation({
     mutationFn: async (updates: Partial<CalendarViewPreferences>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('calendar_view_preferences')
-        .upsert({
-          user_id: user.id,
-          column_widths: updates.column_widths as unknown as Json,
-          column_order: updates.column_order || DEFAULT_COLUMN_ORDER,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
-
-      if (error) throw error;
+      await apiClient.post('/api/view-preferences/calendar_view_preferences', {
+        column_widths: updates.column_widths,
+        column_order: updates.column_order || DEFAULT_COLUMN_ORDER,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-view-preferences'] });

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { callAdminApi } from '@/lib/admin-api';
 
 export interface Prospect {
   id: string;
@@ -121,13 +121,12 @@ export function useProspectsList(params: UseProspectsListParams): UseProspectsLi
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Not authenticated');
-        return;
-      }
-
-      const queryParams = new URLSearchParams({
+      const result = await callAdminApi<{
+        prospects: Prospect[];
+        total: number;
+        totalPages: number;
+        summary: ProspectsSummary | null;
+      }>('get_prospects', {
         page: params.page.toString(),
         limit: params.limit.toString(),
         sortColumn: params.sortColumn,
@@ -136,24 +135,6 @@ export function useProspectsList(params: UseProspectsListParams): UseProspectsLi
         filters: JSON.stringify(params.filters),
         includeSummary: 'true',
       });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-prospects?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch prospects');
-      }
-
-      const result = await response.json();
       setProspects(result.prospects || []);
       setTotal(result.total || 0);
       setTotalPages(result.totalPages || 0);

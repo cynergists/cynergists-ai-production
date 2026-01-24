@@ -1,7 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\AdminDataController;
+use App\Http\Controllers\Api\PartnerDashboardController;
+use App\Http\Controllers\Api\PartnerSettingsController;
+use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\PublicDataController;
+use App\Http\Controllers\Api\SystemConfigController;
+use App\Http\Controllers\Api\UserPasswordController;
+use App\Http\Controllers\Api\ViewPreferencesController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CynergistsPageController;
+use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
@@ -121,6 +130,37 @@ Route::get('/admin/ai-agents', [CynergistsPageController::class, 'page'])->defau
 Route::get('/admin/ai-agents/{id}', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentEdit');
 Route::get('/admin/partner-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/PartnerPortalManagement');
 Route::get('/admin/ai-agent-template', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentTemplate');
+
+Route::prefix('api')->group(function () {
+    Route::get('/public/plans', [PublicDataController::class, 'activePlans']);
+    Route::get('/public/plans/{slug}', [PublicDataController::class, 'planBySlug']);
+    Route::get('/public/products', [PublicDataController::class, 'activeProducts']);
+    Route::get('/public/products/slug/{slug}', [PublicDataController::class, 'productBySlug']);
+    Route::get('/public/products/sku/{sku}', [PublicDataController::class, 'productBySku']);
+    Route::get('/public/products/id/{id}', [PublicDataController::class, 'productById']);
+    Route::get('/public/products/category/{name}', [PublicDataController::class, 'productsByCategory']);
+    Route::post('/public/products/categories', [PublicDataController::class, 'productsByCategories']);
+});
+
+Route::middleware('auth')->prefix('api')->group(function () {
+    Route::get('/view-preferences/{table}', [ViewPreferencesController::class, 'show']);
+    Route::post('/view-preferences/{table}', [ViewPreferencesController::class, 'store']);
+    Route::get('/system-config/{key}', [SystemConfigController::class, 'show']);
+    Route::get('/system-config', [SystemConfigController::class, 'index']);
+    Route::put('/system-config/{key}', [SystemConfigController::class, 'update']);
+    Route::get('/notifications/counts', [SystemConfigController::class, 'notificationCounts']);
+    Route::get('/payment-settings', [PaymentSettingsController::class, 'show']);
+    Route::get('/admin/payment-settings', [PaymentSettingsController::class, 'adminShow']);
+    Route::put('/admin/payment-settings', [PaymentSettingsController::class, 'update']);
+    Route::post('/partners/{partner}/w9', [PartnerSettingsController::class, 'uploadW9']);
+    Route::post('/partner/magic-link', [PartnerSettingsController::class, 'sendMagicLink']);
+    Route::patch('/user/password', [UserPasswordController::class, 'update']);
+    Route::get('/partner-dashboard/{partner}', [PartnerDashboardController::class, 'show']);
+});
+
+Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(function () {
+    Route::match(['get', 'post', 'delete'], '/admin-data', AdminDataController::class);
+});
 
 Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');
 Route::get('/meetchris/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetChrisThankYou');

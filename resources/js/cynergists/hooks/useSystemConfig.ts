@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 
 interface SystemConfigValue {
   key: string;
@@ -16,14 +16,8 @@ export function useSystemConfig(key: string) {
   const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from("system_config")
-        .select("value")
-        .eq("key", key)
-        .single();
+      const data = await apiClient.get<{ key: string; value: unknown }>(`/api/system-config/${key}`);
 
-      if (fetchError) throw fetchError;
-      
       // Parse JSONB value - handle various formats
       const rawValue = data?.value;
       if (rawValue === null || rawValue === undefined) {
@@ -63,11 +57,7 @@ export function useSystemConfigs() {
   const fetchConfigs = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from("system_config")
-        .select("key, value, description, updated_at");
-
-      if (fetchError) throw fetchError;
+      const data = await apiClient.get<SystemConfigValue[]>("/api/system-config");
 
       const configMap: Record<string, boolean> = {};
       data?.forEach((config) => {
@@ -100,16 +90,7 @@ export function useUpdateSystemConfig() {
   const updateConfig = async (key: string, value: boolean | string | number) => {
     try {
       setUpdating(true);
-      
-      const { error } = await supabase
-        .from("system_config")
-        .update({ 
-          value: JSON.stringify(value),
-          updated_at: new Date().toISOString()
-        })
-        .eq("key", key);
-
-      if (error) throw error;
+      await apiClient.put(`/api/system-config/${key}`, { value });
       return { success: true };
     } catch (err) {
       return { success: false, error: err as Error };
@@ -128,21 +109,11 @@ export function useNotificationCount() {
 
   const fetchCounts = useCallback(async () => {
     try {
-      // Get unresolved count
-      const { count: totalCount } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .is("resolved_at", null);
-
-      // Get critical count
-      const { count: critical } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .is("resolved_at", null)
-        .eq("severity", "critical");
-
-      setCount(totalCount || 0);
-      setCriticalCount(critical || 0);
+      const data = await apiClient.get<{ count: number; criticalCount: number }>(
+        "/api/notifications/counts",
+      );
+      setCount(data.count || 0);
+      setCriticalCount(data.criticalCount || 0);
     } catch (err) {
       console.error("Failed to fetch notification counts:", err);
     } finally {

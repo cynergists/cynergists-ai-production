@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { callAdminApi } from '@/lib/admin-api';
 
 export interface Calendar {
   id: string;
@@ -54,20 +54,14 @@ export function useCalendarsList(params: UseCalendarsListParams = {}) {
   return useQuery({
     queryKey: ['calendars', { search, sortColumn, sortDirection, page, pageSize, filters }],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: {
-          action: 'get_calendars',
-          search,
-          sortColumn,
-          sortDirection,
-          page,
-          pageSize,
-          filters,
-        },
+      return callAdminApi<{ calendars: Calendar[]; total: number }>('get_calendars', undefined, {
+        search,
+        sortColumn,
+        sortDirection,
+        page,
+        pageSize,
+        filters,
       });
-
-      if (error) throw error;
-      return data as { calendars: Calendar[]; total: number };
     },
   });
 }
@@ -77,11 +71,7 @@ export function useCalendar(id: string | null) {
     queryKey: ['calendar', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: { action: 'get_calendar', id },
-      });
-      if (error) throw error;
-      return data as Calendar;
+      return callAdminApi<Calendar>('get_calendar', { id });
     },
     enabled: !!id,
   });
@@ -92,11 +82,7 @@ export function useCreateCalendar() {
 
   return useMutation({
     mutationFn: async (calendarData: CalendarFormData) => {
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: { action: 'create_calendar', ...calendarData },
-      });
-      if (error) throw error;
-      return data;
+      return callAdminApi('create_calendar', undefined, calendarData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendars'] });
@@ -113,11 +99,7 @@ export function useUpdateCalendar() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CalendarFormData> & { id: string }) => {
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: { action: 'update_calendar', id, ...updates },
-      });
-      if (error) throw error;
-      return data;
+      return callAdminApi('update_calendar', { id }, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendars'] });
@@ -134,11 +116,7 @@ export function useDeleteCalendar() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: { action: 'delete_calendar', id },
-      });
-      if (error) throw error;
-      return data;
+      return callAdminApi('delete_calendar', { id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendars'] });
@@ -153,11 +131,10 @@ export function useDeleteCalendar() {
 export function useCheckSlugUnique() {
   return useMutation({
     mutationFn: async ({ slug, excludeId }: { slug: string; excludeId?: string }) => {
-      const { data, error } = await supabase.functions.invoke('admin-data', {
-        body: { action: 'check_calendar_slug', slug, excludeId },
+      return callAdminApi<{ isUnique: boolean }>('check_calendar_slug', undefined, {
+        slug,
+        excludeId,
       });
-      if (error) throw error;
-      return data as { isUnique: boolean };
     },
   });
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import type { Product } from "./useProductsQueries";
 
 // Extended product type with category info
@@ -15,14 +15,7 @@ export function useActiveProducts() {
   return useQuery({
     queryKey: ["public", "products", "active"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("product_status", "active")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Product[];
+      return apiClient.get<Product[]>("/api/public/products");
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -37,15 +30,7 @@ export function useProductBySlug(slug: string) {
   return useQuery({
     queryKey: ["public", "products", "slug", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("slug", slug)
-        .neq("product_status", "draft") // Exclude draft, allow active/hidden/test
-        .single();
-
-      if (error) throw error;
-      return data as Product;
+      return apiClient.get<Product>(`/api/public/products/slug/${slug}`);
     },
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
@@ -61,15 +46,7 @@ export function useProductBySku(sku: string) {
   return useQuery({
     queryKey: ["public", "products", "sku", sku],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("product_sku", sku)
-        .neq("product_status", "draft") // Exclude draft, allow active/hidden/test
-        .single();
-
-      if (error) throw error;
-      return data as Product;
+      return apiClient.get<Product>(`/api/public/products/sku/${sku}`);
     },
     enabled: !!sku,
     staleTime: 5 * 60 * 1000,
@@ -85,15 +62,7 @@ export function useProductById(id: string) {
   return useQuery({
     queryKey: ["public", "products", "id", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .neq("product_status", "draft") // Exclude draft, allow active/hidden/test
-        .single();
-
-      if (error) throw error;
-      return data as Product;
+      return apiClient.get<Product>(`/api/public/products/id/${id}`);
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -108,26 +77,9 @@ export function useProductsByCategory(categoryName: string) {
   return useQuery({
     queryKey: ["public", "products", "category", categoryName],
     queryFn: async () => {
-      // First get the category ID
-      const { data: category, error: categoryError } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", categoryName)
-        .single();
-
-      if (categoryError || !category) {
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from("products")
-        .select("*, categories(name)")
-        .eq("category_id", category.id)
-        .eq("product_status", "active")
-        .order("product_name", { ascending: true });
-
-      if (error) throw error;
-      return data as ProductWithCategory[];
+      return apiClient.get<ProductWithCategory[]>(
+        `/api/public/products/category/${categoryName}`,
+      );
     },
     enabled: !!categoryName,
     staleTime: 5 * 60 * 1000,
@@ -142,27 +94,10 @@ export function useProductsByCategories(categoryNames: string[]) {
   return useQuery({
     queryKey: ["public", "products", "categories", categoryNames],
     queryFn: async () => {
-      // Get all category IDs
-      const { data: categories, error: categoryError } = await supabase
-        .from("categories")
-        .select("id, name")
-        .in("name", categoryNames);
-
-      if (categoryError || !categories || categories.length === 0) {
-        return [];
-      }
-
-      const categoryIds = categories.map(c => c.id);
-
-      const { data, error } = await supabase
-        .from("products")
-        .select("*, categories(name)")
-        .in("category_id", categoryIds)
-        .eq("product_status", "active")
-        .order("product_name", { ascending: true });
-
-      if (error) throw error;
-      return data as ProductWithCategory[];
+      return apiClient.post<ProductWithCategory[]>(
+        "/api/public/products/categories",
+        { names: categoryNames },
+      );
     },
     enabled: categoryNames.length > 0,
     staleTime: 5 * 60 * 1000,

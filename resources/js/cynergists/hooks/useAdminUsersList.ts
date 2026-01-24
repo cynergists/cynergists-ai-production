@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { callAdminApi } from "@/lib/admin-api";
 
 export type UserType = "client" | "partner" | "employee" | "sales_rep" | "admin" | "super_admin";
 export type AccessLevel = "admin" | "manager" | "standard" | "limited";
@@ -120,42 +120,15 @@ export function useAdminUsers({
     queryKey: ["admin", "admin-users", page, limit, sortColumn, sortDirection, search, role, userType],
     queryFn: async (): Promise<AdminUsersResponse> => {
       const offset = (page - 1) * limit;
-      const params = new URLSearchParams({
-        action: "get_admin_users",
+      return callAdminApi<AdminUsersResponse>("get_admin_users", {
         limit: limit.toString(),
         offset: offset.toString(),
         sortColumn,
         sortDirection,
         search,
         role,
+        userType: userType ?? "",
       });
-      
-      if (userType) {
-        params.set("userType", userType);
-      }
-
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
-      }
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?${params}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to fetch users");
-      }
-
-      return response.json();
     },
     retry: 1,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -167,29 +140,7 @@ export function useUpdateAdminUser() {
 
   return useMutation({
     mutationFn: async ({ id, ...userData }: AdminUserFormData & { id: string }) => {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session?.access_token) {
-        throw new Error("Not authenticated");
-      }
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?action=update_admin_user&id=${id}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userData),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Failed to update user" }));
-        throw new Error(error.error || "Failed to update user");
-      }
-
-      return response.json();
+      return callAdminApi("update_admin_user", { id }, userData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "admin-users"] });
@@ -205,28 +156,7 @@ export function useCompanies() {
   return useQuery({
     queryKey: ["admin", "companies"],
     queryFn: async (): Promise<Company[]> => {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
-      }
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?action=get_companies`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to fetch companies");
-      }
-
-      return response.json();
+      return callAdminApi<Company[]>("get_companies");
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -237,29 +167,7 @@ export function useUserLoginHistory(userId: string | null) {
     queryKey: ["admin", "login-history", userId],
     queryFn: async (): Promise<LoginHistoryEntry[]> => {
       if (!userId) return [];
-      
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
-      }
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?action=get_user_login_history&userId=${userId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.data.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to fetch login history");
-      }
-
-      return response.json();
+      return callAdminApi<LoginHistoryEntry[]>("get_user_login_history", { userId });
     },
     enabled: !!userId,
     staleTime: 1 * 60 * 1000, // 1 minute

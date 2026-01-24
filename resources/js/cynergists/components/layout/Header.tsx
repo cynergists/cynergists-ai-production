@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { Menu, X, Moon, Sun, Search, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +32,13 @@ const Header = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { url } = usePage();
+  const { url, props } = usePage<{
+    auth?: {
+      user?: { id: number } | null;
+    };
+  }>();
   const pathname = url.split("?")[0];
+  const isAuthenticated = Boolean(props.auth?.user);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const isMarketplace = pathname === "/marketplace";
@@ -88,6 +93,10 @@ const Header = ({
     }
   };
 
+  const handleSignOut = () => {
+    router.post("/logout");
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 glass">
@@ -134,14 +143,24 @@ const Header = ({
               {/* Cart - always show on marketplace, conditional elsewhere */}
               <CartButton alwaysShow={isMarketplace} />
 
-              {/* Sign In text link - rightmost */}
-              <Link 
-                href="/signin" 
-                onClick={scrollToTop}
-                className="text-foreground/80 hover:text-foreground transition-colors font-medium"
-              >
-                Sign In
-              </Link>
+              {/* Sign In / Sign Out - rightmost */}
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  href="/signin"
+                  onClick={scrollToTop}
+                  className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
 
             {/* Mobile Menu Toggle & Icons */}
@@ -188,13 +207,29 @@ const Header = ({
                     <Button className="btn-primary w-full">Agent Marketplace</Button>
                   </Link>
                 )}
-                <Link 
-                  href="/signin" 
-                  onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}
-                  className="text-center text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
-                >
-                  Sign In
-                </Link>
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="text-center text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
+                  >
+                    Sign Out
+                  </button>
+                ) : (
+                  <Link
+                    href="/signin"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      scrollToTop();
+                    }}
+                    className="text-center text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
+                  >
+                    Sign In
+                  </Link>
+                )}
               </nav>
             </div>
           )}

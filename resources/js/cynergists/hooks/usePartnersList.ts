@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatErrorMessage } from "@/utils/errorMessages";
+import { callAdminApi } from "@/lib/admin-api";
 
 // Partner from the dedicated partners table
 export interface Partner {
@@ -137,26 +137,11 @@ export function usePartnersList(): UsePartnersListResult {
     setError(null);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setError("Not authenticated");
-        setLoading(false);
-        return;
-      }
-
-      const response = await supabase.functions.invoke("admin-data?action=get_partners", {
-        body: {},
-      });
-      
-      if (response.error) {
-        console.error("Error fetching partners:", response.error);
-        setError(response.error.message);
-        setPartners([]);
-      } else {
-        setPartners(response.data.partners || []);
-        setSummary(response.data.summary || DEFAULT_SUMMARY);
-      }
+      const response = await callAdminApi<{ partners: Partner[]; summary: PartnersSummary }>(
+        "get_partners",
+      );
+      setPartners(response.partners || []);
+      setSummary(response.summary || DEFAULT_SUMMARY);
     } catch (err) {
       console.error("Error in fetchPartners:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -169,18 +154,10 @@ export function usePartnersList(): UsePartnersListResult {
   const createPartner = useCallback(async (data: PartnerFormData): Promise<Partner | null> => {
     setMutating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await supabase.functions.invoke("admin-data?action=create_partner", {
-        body: data,
-      });
-
-      if (response.error) throw new Error(response.error.message);
-      
+      const response = await callAdminApi<Partner>("create_partner", undefined, data);
       toast.success("Partner created successfully");
       await fetchPartners();
-      return response.data as Partner;
+      return response;
     } catch (err) {
       const rawMessage = err instanceof Error ? err.message : "Failed to create partner";
       const message = formatErrorMessage(rawMessage, "partner");
@@ -194,18 +171,10 @@ export function usePartnersList(): UsePartnersListResult {
   const updatePartner = useCallback(async (id: string, data: Partial<PartnerFormData>): Promise<Partner | null> => {
     setMutating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await supabase.functions.invoke(`admin-data?action=update_partner&id=${id}`, {
-        body: data,
-      });
-
-      if (response.error) throw new Error(response.error.message);
-      
+      const response = await callAdminApi<Partner>("update_partner", { id }, data);
       toast.success("Partner updated successfully");
       await fetchPartners();
-      return response.data as Partner;
+      return response;
     } catch (err) {
       const rawMessage = err instanceof Error ? err.message : "Failed to update partner";
       const message = formatErrorMessage(rawMessage, "partner");
@@ -219,15 +188,7 @@ export function usePartnersList(): UsePartnersListResult {
   const deletePartner = useCallback(async (id: string): Promise<boolean> => {
     setMutating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await supabase.functions.invoke(`admin-data?action=delete_partner&id=${id}`, {
-        body: {},
-      });
-
-      if (response.error) throw new Error(response.error.message);
-      
+      await callAdminApi<{ success: boolean }>("delete_partner", { id });
       toast.success("Partner deleted successfully");
       await fetchPartners();
       return true;

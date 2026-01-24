@@ -1,54 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { callAdminApi } from "@/lib/admin-api";
 
 // Cache times in milliseconds
 const STALE_TIME = 5 * 60 * 1000; // 5 minutes
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 
-async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("Not authenticated");
-  }
-  return session;
-}
-
-async function callAdminApi<T>(
-  action: string,
-  params?: Record<string, string>,
-  body?: unknown
-): Promise<T> {
-  const session = await getSession();
-  
-  const queryParams = new URLSearchParams({ action, ...params });
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data?${queryParams}`;
-
-  const options: RequestInit = {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  };
-
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(url, options);
-  const data = await response.json();
-
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      await supabase.auth.signOut();
-      window.location.href = "/signin";
-      throw new Error("Session expired. Please sign in again.");
-    }
-    throw new Error(data.error || "Request failed");
-  }
-
-  return data as T;
-}
+// uses shared callAdminApi helper
 
 // Plans
 
@@ -190,24 +147,7 @@ export interface Agreement {
 export function useAgreements() {
   return useQuery({
     queryKey: ["admin", "agreements"],
-    queryFn: async () => {
-      const session = await getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-agreements`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch agreements");
-      }
-      return response.json() as Promise<Agreement[]>;
-    },
+    queryFn: () => callAdminApi<Agreement[]>("get_agreements"),
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
   });
@@ -473,24 +413,7 @@ export function useAdminSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from("admin_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      return {
-        theme: data?.theme || "system",
-        notification_email: data?.notification_email || user.email || "",
-        email_on_agreement_signed: data?.email_on_agreement_signed ?? true,
-        email_on_plan_click: data?.email_on_plan_click ?? false,
-        email_on_new_session: data?.email_on_new_session ?? false,
-      } as AdminSettings;
+      return callAdminApi<AdminSettings>("get_admin_settings");
     },
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
@@ -502,22 +425,7 @@ export function useSaveAdminSettings() {
   
   return useMutation({
     mutationFn: async (settings: AdminSettings) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { error } = await supabase
-        .from("admin_settings")
-        .upsert({
-          user_id: user.id,
-          theme: settings.theme,
-          notification_email: settings.notification_email,
-          email_on_agreement_signed: settings.email_on_agreement_signed,
-          email_on_plan_click: settings.email_on_plan_click,
-          email_on_new_session: settings.email_on_new_session,
-        });
-
-      if (error) throw error;
-      return settings;
+      return callAdminApi<AdminSettings>("save_admin_settings", undefined, settings);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
