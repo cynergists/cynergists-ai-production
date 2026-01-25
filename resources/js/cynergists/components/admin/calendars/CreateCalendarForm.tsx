@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@cy/components/ui/dialog';
+import { Button } from '@cy/components/ui/button';
+import { Input } from '@cy/components/ui/input';
+import { Label } from '@cy/components/ui/label';
+import { Textarea } from '@cy/components/ui/textarea';
 
 import { toast } from 'sonner';
-import { useCheckSlugUnique, type CalendarFormData } from '@/hooks/useCalendarsList';
-import { applyHeadlineGradient } from '@/utils/headlineGradient';
+import { useCheckSlugUnique, type CalendarFormData } from '@cy/hooks/useCalendarsList';
+import { applyHeadlineGradient } from '@cy/utils/headlineGradient';
 
 interface CreateCalendarFormProps {
   open: boolean;

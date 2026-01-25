@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDebounce } from '@/hooks/useDebounce';
-import { apiClient } from '@/lib/api-client';
+import { useDebounce } from '@cy/hooks/useDebounce';
+import { apiClient } from '@cy/lib/api-client';
 
 const DEFAULT_COLUMN_ORDER = [
   'calendar_name',

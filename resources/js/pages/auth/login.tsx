@@ -8,7 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
+import { email } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
 
 type Props = {
@@ -57,7 +57,7 @@ export default function Login({
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
                                         <TextLink
-                                            href={request()}
+                                            href={email.url()}
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >

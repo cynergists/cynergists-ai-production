@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { formatErrorMessage } from '@/utils/errorMessages';
+import { supabase } from '@cy/integrations/supabase/client';
+import { useToast } from '@cy/hooks/use-toast';
+import { formatErrorMessage } from '@cy/utils/errorMessages';
 import type { Client } from './useClientsList';
 
 interface UseUpdateClientResult {

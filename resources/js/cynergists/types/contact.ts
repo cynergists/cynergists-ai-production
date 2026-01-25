@@ -189,9 +189,9 @@ export interface ContactFormData {
 // Mapper functions to convert between database types and unified Contact type
 // ============================================================================
 
-import type { Prospect } from '@/hooks/useProspectsList';
-import type { Client } from '@/hooks/useClientsList';
-import type { Partner } from '@/hooks/usePartnersList';
+import type { Prospect } from '@cy/hooks/useProspectsList';
+import type { Client } from '@cy/hooks/useClientsList';
+import type { Partner } from '@cy/hooks/usePartnersList';
 
 /**
  * Convert a Prospect to unified Contact

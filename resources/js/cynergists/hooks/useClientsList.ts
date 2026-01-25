@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { callAdminApi } from '@/lib/admin-api';
+import { useToast } from '@cy/hooks/use-toast';
+import { callAdminApi } from '@cy/lib/admin-api';
 
 export interface Client {
   id: string;

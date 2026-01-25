@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Search, Plus, Loader2, Filter, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Input } from '@cy/components/ui/input';
+import { Button } from '@cy/components/ui/button';
+import { Label } from '@cy/components/ui/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@cy/components/ui/popover';
 import {
   Pagination,
   PaginationContent,
@@ -16,14 +16,14 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarsMetricsSummary } from '@/components/admin/calendars/CalendarsMetricsSummary';
-import { CalendarsTable } from '@/components/admin/calendars/CalendarsTable';
-import { CalendarDrawer } from '@/components/admin/calendars/CalendarDrawer';
-import { CreateCalendarForm } from '@/components/admin/calendars/CreateCalendarForm';
+} from '@cy/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@cy/components/ui/select';
+import { CalendarsMetricsSummary } from '@cy/components/admin/calendars/CalendarsMetricsSummary';
+import { CalendarsTable } from '@cy/components/admin/calendars/CalendarsTable';
+import { CalendarDrawer } from '@cy/components/admin/calendars/CalendarDrawer';
+import { CreateCalendarForm } from '@cy/components/admin/calendars/CreateCalendarForm';
 
-import { useCalendarViewPreferences } from '@/hooks/useCalendarViewPreferences';
+import { useCalendarViewPreferences } from '@cy/hooks/useCalendarViewPreferences';
 import {
   useCalendarsList,
   useCreateCalendar,
@@ -31,7 +31,7 @@ import {
   useDeleteCalendar,
   type Calendar,
   type CalendarFormData,
-} from '@/hooks/useCalendarsList';
+} from '@cy/hooks/useCalendarsList';
 
 export default function Calendars() {
   const [search, setSearch] = useState('');

@@ -1,14 +1,14 @@
-import { formatDate } from '@/lib/utils';
+import { formatDate } from '@cy/lib/utils';
 import { AlertTriangle, Lock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@cy/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '@cy/components/ui/dialog';
+import { ScrollArea } from '@cy/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@cy/components/ui/alert';
 import type { TemplateVersion } from './VersionHistorySection';
 
 interface VersionViewModalProps {

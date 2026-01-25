@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Loader2, Send, Users, ChevronRight, ChevronLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Button } from '@cy/components/ui/button';
+import { Label } from '@cy/components/ui/label';
+import { Textarea } from '@cy/components/ui/textarea';
+import { Input } from '@cy/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '@cy/components/ui/dialog';
+import { Alert, AlertDescription } from '@cy/components/ui/alert';
 import { toast } from 'sonner';
-import { useAdminApi } from '@/hooks/useAdminApi';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminApi } from '@cy/hooks/useAdminApi';
+import { supabase } from '@cy/integrations/supabase/client';
 import RichTextEditor from './RichTextEditor';
 
 interface CreateVersionModalProps {

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@cy/components/ui/card';
+import { Button } from '@cy/components/ui/button';
+import { Switch } from '@cy/components/ui/switch';
+import { Label } from '@cy/components/ui/label';
+import { Badge } from '@cy/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@cy/components/ui/tabs';
+import { Input } from '@cy/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@cy/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@cy/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@cy/components/ui/dialog';
+import { ScrollArea } from '@cy/components/ui/scroll-area';
 import { Loader2, AlertTriangle, Activity, DollarSign, Users, Bug, RefreshCw, Play, Zap, Eye, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -21,8 +21,8 @@ import {
   useHealthStats,
   useReplayWebhook,
   useGenerateTestEvent,
-} from '@/hooks/useDebugData';
-import { supabase } from '@/integrations/supabase/client';
+} from '@cy/hooks/useDebugData';
+import { supabase } from '@cy/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
 export default function AdminDebug() {

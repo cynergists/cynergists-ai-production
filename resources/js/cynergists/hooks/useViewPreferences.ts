@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api-client';
+import { useToast } from '@cy/hooks/use-toast';
+import { apiClient } from '@cy/lib/api-client';
 
 export interface SavedView {
   name: string;

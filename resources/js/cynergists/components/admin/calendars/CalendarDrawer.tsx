@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@cy/components/ui/sheet';
+import { Button } from '@cy/components/ui/button';
+import { Input } from '@cy/components/ui/input';
+import { Label } from '@cy/components/ui/label';
+import { Textarea } from '@cy/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@cy/components/ui/select';
+import { Badge } from '@cy/components/ui/badge';
+import { Separator } from '@cy/components/ui/separator';
 import { Copy, Check, ExternalLink, Calendar, Settings, Info, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import type { Calendar as CalendarType, CalendarFormData } from '@/hooks/useCalendarsList';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { applyHeadlineGradient, stripHeadlineGradient } from '@/utils/headlineGradient';
+import type { Calendar as CalendarType, CalendarFormData } from '@cy/hooks/useCalendarsList';
+import { useAutoSave } from '@cy/hooks/useAutoSave';
+import { applyHeadlineGradient, stripHeadlineGradient } from '@cy/utils/headlineGradient';
 
 interface CalendarDrawerProps {
   calendar: CalendarType | null;

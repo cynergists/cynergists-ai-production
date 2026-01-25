@@ -1,6 +1,6 @@
 import { Calendar, CalendarCheck, CalendarX } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import type { Calendar as CalendarType } from '@/hooks/useCalendarsList';
+import { Card } from '@cy/components/ui/card';
+import type { Calendar as CalendarType } from '@cy/hooks/useCalendarsList';
 
 interface CalendarsMetricsSummaryProps {
   calendars: CalendarType[];

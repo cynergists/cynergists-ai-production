@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { Badge } from '@cy/components/ui/badge';
+import { Button } from '@cy/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@cy/components/ui/select';
+import { Input } from '@cy/components/ui/input';
 import { toast } from 'sonner';
-import type { Calendar } from '@/hooks/useCalendarsList';
+import type { Calendar } from '@cy/hooks/useCalendarsList';
 
 interface ColumnConfig {
   key: string;

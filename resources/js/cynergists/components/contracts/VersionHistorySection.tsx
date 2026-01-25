@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Eye, Edit, Bell, BellOff } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@cy/components/ui/badge';
+import { Button } from '@cy/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '@cy/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -14,8 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { formatDate } from "@/lib/utils";
+} from '@cy/components/ui/table';
+import { formatDate } from "@cy/lib/utils";
 import { VersionViewModal } from './VersionViewModal';
 
 export interface TemplateVersion {

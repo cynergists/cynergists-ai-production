@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@cy/integrations/supabase/client';
 import { Helmet } from 'react-helmet';
-import calendarBackground from '@/assets/calendar-background.webp';
+import calendarBackground from '@cy/assets/calendar-background.webp';
 
 interface CalendarData {
   id: string;

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { callAdminApi } from '@/lib/admin-api';
+import { callAdminApi } from '@cy/lib/admin-api';
 
 export interface Calendar {
   id: string;
