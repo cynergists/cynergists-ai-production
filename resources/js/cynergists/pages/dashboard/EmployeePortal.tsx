@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,68 +11,60 @@ interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   email: string;
-  roles: string[];
 }
 
 export default function EmployeePortal() {
+  const { props } = usePage<{
+    auth: {
+      user: { id: number; name?: string; email: string } | null;
+      roles: string[];
+      profile: { first_name: string | null; last_name: string | null; email: string | null } | null;
+    };
+  }>();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    checkAuthAndLoadData();
-  }, []);
+    const user = props.auth?.user;
+    const roles = props.auth?.roles ?? [];
 
-  const checkAuthAndLoadData = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.visit("/signin");
-        return;
-      }
-
-      // Check if user has employee role
-      const { data: hasEmployeeRole } = await supabase.rpc('has_role', {
-        _user_id: session.user.id,
-        _role: 'employee'
-      });
-
-      if (!hasEmployeeRole) {
-        router.visit("/signin");
-        return;
-      }
-
-      // Check if user also has admin role (for @cynergists.com employees)
-      const { data: hasAdminRole } = await supabase.rpc('has_role', {
-        _user_id: session.user.id,
-        _role: 'admin'
-      });
-      setIsAdmin(!!hasAdminRole);
-
-      // Fetch profile data
-      const { data: profileData } = await supabase.rpc('get_user_profile', {
-        _user_id: session.user.id
-      });
-
-      if (profileData && profileData.length > 0) {
-        setProfile(profileData[0]);
-      }
-    } catch (error) {
-      console.error("Error loading employee portal:", error);
-      router.visit("/signin");
-    } finally {
-      setLoading(false);
+    if (!user) {
+      router.visit("/signin?redirect=/employee");
+      return;
     }
-  };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.visit("/signin");
+    if (!roles.includes("employee")) {
+      router.visit("/signin");
+      return;
+    }
+
+    setIsAdmin(roles.includes("admin"));
+
+    const profileData = props.auth?.profile;
+    setProfile({
+      first_name: profileData?.first_name ?? null,
+      last_name: profileData?.last_name ?? null,
+      email: profileData?.email ?? user.email,
+    });
+
+    setLoading(false);
+  }, [props.auth]);
+
+  const handleSignOut = () => {
+    router.post(
+      "/logout",
+      {},
+      {
+        onFinish: () => {
+          router.visit("/signin");
+        },
+      },
+    );
   };
 
   const handleGoToAdmin = () => {
-    navigate("/admin/dashboard");
+    router.visit("/admin/dashboard");
   };
 
   if (loading) {

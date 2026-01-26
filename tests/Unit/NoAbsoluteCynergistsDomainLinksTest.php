@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 it('does not hardcode absolute cynergists.com urls', function () {
     $disallowed = [
