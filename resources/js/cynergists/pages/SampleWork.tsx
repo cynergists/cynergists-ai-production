@@ -165,10 +165,10 @@ const SampleWork = () => {
       <Helmet>
         <title>The Cynergists Arsenal | Creative Services Portfolio</title>
         <meta name="description" content="Explore the Cynergists creative portfolio: websites, brand kits, sales funnels, AI agents, video production, and copywriting. Tactical assets engineered to sell." />
-        <link rel="canonical" href="https://cynergists.com/sample-work" />
+        <link rel="canonical" href="https://cynergists.ai/sample-work" />
         <meta property="og:title" content="The Cynergists Arsenal | Creative Services Portfolio" />
         <meta property="og:description" content="Explore the Cynergists creative portfolio: websites, brand kits, sales funnels, AI agents, video production, and copywriting. Tactical assets engineered to sell." />
-        <meta property="og:url" content="https://cynergists.com/sample-work" />
+        <meta property="og:url" content="https://cynergists.ai/sample-work" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="The Cynergists Arsenal | Creative Services Portfolio" />

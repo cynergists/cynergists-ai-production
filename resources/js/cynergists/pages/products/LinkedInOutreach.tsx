@@ -40,7 +40,7 @@ const LinkedInOutreach = () => {
           name="keywords"
           content="LinkedIn outreach, lead generation, B2B prospecting, human outreach, LinkedIn marketing, appointment setting"
         />
-        <link rel="canonical" href="https://cynergists.com/products/linkedin-outreach" />
+        <link rel="canonical" href="https://cynergists.ai/products/linkedin-outreach" />
       </Helmet>
 
       <main>

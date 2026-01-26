@@ -83,7 +83,7 @@ const Essentials = () => {
       <Helmet>
         <title>Essentials Plan - $497/mo | Cynergists</title>
         <meta name="description" content="15 managed service hours per month. Focused execution without hiring overhead. Access every department and role with fully managed execution." />
-        <link rel="canonical" href="https://cynergists.com/plans/essentials" />
+        <link rel="canonical" href="https://cynergists.ai/plans/essentials" />
       </Helmet>
 
       <main>

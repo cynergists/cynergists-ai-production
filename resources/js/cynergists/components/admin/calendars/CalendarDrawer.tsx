@@ -144,14 +144,14 @@ export function CalendarDrawer({ calendar, open, onClose, onSave, onUpdate, onDe
   };
 
   const copyToClipboard = async () => {
-    const url = `https://cynergists.com/${formData.slug}`;
+    const url = `https://cynergists.ai/${formData.slug}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     toast.success('Link copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const publicUrl = `https://cynergists.com/${formData.slug}`;
+  const publicUrl = `https://cynergists.ai/${formData.slug}`;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>

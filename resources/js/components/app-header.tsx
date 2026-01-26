@@ -31,7 +31,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, Search } from 'lucide-react';
+import { LayoutGrid, Menu, Search, Shield } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
@@ -59,6 +59,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const isAdmin = auth.roles?.includes('admin');
+    const navigationItems = isAdmin
+        ? [
+              ...mainNavItems,
+              {
+                  title: 'Admin',
+                  href: '/admin',
+                  icon: Shield,
+              },
+          ]
+        : mainNavItems;
     return (
         <>
             <div className="border-b border-sidebar-border/80">
@@ -88,7 +99,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
-                                            {mainNavItems.map((item) => (
+                                            {navigationItems.map((item) => (
                                                 <Link
                                                     key={item.title}
                                                     href={item.href}
@@ -136,7 +147,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {mainNavItems.map((item, index) => (
+                                {navigationItems.map((item, index) => (
                                     <NavigationMenuItem
                                         key={index}
                                         className="relative flex h-full items-center"
@@ -168,6 +179,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                     <div className="ml-auto flex items-center space-x-2">
                         <div className="relative flex items-center space-x-1">
+                            {isAdmin && (
+                                <Button asChild size="sm" variant="outline">
+                                    <Link href="/admin" prefetch>
+                                        Admin
+                                    </Link>
+                                </Button>
+                            )}
                             <Button
                                 variant="ghost"
                                 size="icon"

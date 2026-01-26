@@ -60,7 +60,7 @@ const Emerge = () => {
       <Helmet>
         <title>Emerge Plan | Cynergists</title>
         <meta name="description" content="Built for businesses managing growing workloads. Consistent support across multiple functions without the complexity of building or managing internal staff." />
-        <link rel="canonical" href="https://cynergists.com/plans/emerge" />
+        <link rel="canonical" href="https://cynergists.ai/plans/emerge" />
       </Helmet>
 
       <main>

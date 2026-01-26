@@ -57,7 +57,7 @@ const servicesSchemaData = {
   "@type": "WebPage",
   "name": "AI Agents | Cynergists",
   "description": "Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows.",
-  "url": "https://cynergists.com/services",
+  "url": "https://cynergists.ai/services",
   "mainEntity": {
     "@type": "Service",
     "name": "AI Agents",
@@ -85,18 +85,18 @@ const Services = () => {
         <title>AI Agents | Cynergists</title>
         <meta name="description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
         <meta name="keywords" content="AI agents, business automation, AI automation, lead capture, sales automation" />
-        <link rel="canonical" href="https://cynergists.com/services" />
+        <link rel="canonical" href="https://cynergists.ai/services" />
         
         <meta property="og:title" content="AI Agents | Cynergists" />
         <meta property="og:description" content="Cynergists designs, deploys, and manages AI Agents that automate your business." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://cynergists.com/services" />
-        <meta property="og:image" content="https://cynergists.com/og-image.webp" />
+        <meta property="og:url" content="https://cynergists.ai/services" />
+        <meta property="og:image" content="https://cynergists.ai/og-image.webp" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="AI Agents | Cynergists" />
         <meta name="twitter:description" content="AI Agents that automate your business." />
-        <meta name="twitter:image" content="https://cynergists.com/og-image.webp" />
+        <meta name="twitter:image" content="https://cynergists.ai/og-image.webp" />
         
         <script type="application/ld+json">
           {JSON.stringify(servicesSchemaData)}

@@ -137,11 +137,11 @@ export default function SignIn() {
     "@type": "WebPage",
     "name": "Sign In to Cynergists Client Portal",
     "description": "Securely sign in to your Cynergists account to access your dashboard, manage services, and view project updates.",
-    "url": "https://cynergists.com/signin",
+    "url": "/signin",
     "isPartOf": {
       "@type": "WebSite",
       "name": "Cynergists",
-      "url": "https://cynergists.com"
+      "url": "/"
     },
     "breadcrumb": {
       "@type": "BreadcrumbList",
@@ -150,13 +150,13 @@ export default function SignIn() {
           "@type": "ListItem",
           "position": 1,
           "name": "Home",
-          "item": "https://cynergists.com"
+          "item": "/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Sign In",
-          "item": "https://cynergists.com/signin"
+          "item": "/signin"
         }
       ]
     }
@@ -166,16 +166,16 @@ export default function SignIn() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Cynergists",
-    "url": "https://cynergists.com",
-    "logo": "https://cynergists.com/favicon.png",
+    "url": "/",
+    "logo": "/favicon.png",
     "description": "AI Agents that take full ownership of revenue, operations, and internal workflows to help businesses scale.",
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "Customer Service",
-      "url": "https://cynergists.com/contact"
+      "url": "/contact"
     },
     "sameAs": [
-      "https://www.linkedin.com/company/cynergists"
+      "/"
     ]
   };
 
@@ -198,18 +198,18 @@ export default function SignIn() {
         {/* Primary Meta Tags */}
         <title>Sign In to Your Account | Cynergists Client Portal</title>
         <meta name="description" content="Securely sign in to your Cynergists account. Access your dashboard, manage AI agents, and view performance in one place." />
-        <link rel="canonical" href="https://cynergists.com/signin" />
+        <link rel="canonical" href="/signin" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://cynergists.com/signin" />
+        <meta property="og:url" content="/signin" />
         <meta property="og:title" content="Sign In to Your Account | Cynergists Client Portal" />
         <meta property="og:description" content="Securely sign in to your Cynergists account. Access your dashboard, manage AI agents, and view performance." />
         <meta property="og:site_name" content="Cynergists" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:url" content="https://cynergists.com/signin" />
+        <meta name="twitter:url" content="/signin" />
         <meta name="twitter:title" content="Sign In to Your Account | Cynergists Client Portal" />
         <meta name="twitter:description" content="Securely sign in to your Cynergists account. Access your dashboard, manage AI agents, and view performance." />
         

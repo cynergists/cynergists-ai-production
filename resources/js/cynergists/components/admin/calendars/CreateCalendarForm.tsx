@@ -204,7 +204,7 @@ export function CreateCalendarForm({ open, onClose, onSubmit }: CreateCalendarFo
               <p className="text-xs text-destructive mt-1">{slugError}</p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              URL: https://cynergists.com/{formData.slug || 'your-slug'}
+              URL: https://cynergists.ai/{formData.slug || 'your-slug'}
             </p>
           </div>
 

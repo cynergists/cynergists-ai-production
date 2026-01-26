@@ -35,10 +35,12 @@ const Header = ({
   const { url, props } = usePage<{
     auth?: {
       user?: { id: number } | null;
+      roles?: string[];
     };
   }>();
   const pathname = url.split("?")[0];
   const isAuthenticated = Boolean(props.auth?.user);
+  const isAdmin = Boolean(props.auth?.roles?.includes("admin"));
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const isMarketplace = pathname === "/marketplace";
@@ -113,6 +115,11 @@ const Header = ({
               {!isMarketplace && (
                 <Link href="/marketplace" onClick={scrollToTop}>
                   <Button className="btn-primary">Agent Marketplace</Button>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link href="/admin" onClick={scrollToTop}>
+                  <Button variant="outline">Admin</Button>
                 </Link>
               )}
 
@@ -205,6 +212,11 @@ const Header = ({
                 {!isMarketplace && (
                   <Link href="/marketplace" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
                     <Button className="btn-primary w-full">Agent Marketplace</Button>
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
+                    <Button variant="outline" className="w-full">Admin</Button>
                   </Link>
                 )}
                 {isAuthenticated ? (

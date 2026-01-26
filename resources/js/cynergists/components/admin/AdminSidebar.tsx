@@ -118,9 +118,13 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
-          <a href="https://cynergists.com" target="_blank" rel="noopener noreferrer">
-            <img src={cynergistsLogo} alt="Cynergists" className="h-8 hover:opacity-80 transition-opacity" />
-          </a>
+          <Link href="/">
+            <img
+              src={cynergistsLogo}
+              alt="Cynergists"
+              className="h-8 hover:opacity-80 transition-opacity"
+            />
+          </Link>
         )}
         <Button
           variant="ghost"

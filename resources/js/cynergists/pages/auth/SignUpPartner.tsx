@@ -33,7 +33,7 @@ export default function SignUpPartner() {
         <meta property="og:title" content="Cynergists Partner Program | Recurring Revenue for Referrals" />
         <meta property="og:description" content="Earn 20% monthly recurring commissions by referring businesses to Cynergists. We handle delivery. You collect residuals." />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://cynergists.com/signup/partner" />
+        <link rel="canonical" href="https://cynergists.ai/signup/partner" />
       </Helmet>
 
       <div className="bg-background">

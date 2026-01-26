@@ -13,7 +13,7 @@ export default function PartnerApplicationThankYou() {
           name="description" 
           content="Your partner account is active. Start referring clients and earning 20% recurring commissions today." 
         />
-        <link rel="canonical" href="https://cynergists.com/signup/partner/thank-you" />
+        <link rel="canonical" href="https://cynergists.ai/signup/partner/thank-you" />
       </Helmet>
 
       <div className="bg-background py-16 lg:py-24">

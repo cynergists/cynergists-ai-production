@@ -183,10 +183,10 @@ const Blog = () => {
       <Helmet>
         <title>Tactical Briefing Room | Cynergists - Business Intelligence for Scaling Brands</title>
         <meta name="description" content="Access classified intel on AI Agents, Workflow Automation, Digital Marketing, and AEO strategies. Battle-tested doctrine for CEOs and Founders scaling national brands." />
-        <link rel="canonical" href="https://cynergists.com/blog" />
+        <link rel="canonical" href="https://cynergists.ai/blog" />
         <meta property="og:title" content="Tactical Briefing Room | Cynergists - Business Intelligence for Scaling Brands" />
         <meta property="og:description" content="Access classified intel on AI Agents, Workflow Automation, Digital Marketing, and AEO strategies. Battle-tested doctrine for scaling national brands." />
-        <meta property="og:url" content="https://cynergists.com/blog" />
+        <meta property="og:url" content="https://cynergists.ai/blog" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Tactical Briefing Room | Cynergists - Business Intelligence for Scaling Brands" />

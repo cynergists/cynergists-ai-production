@@ -75,10 +75,10 @@ const CaseStudies = () => {
       <Helmet>
         <title>Case Studies | Cynergists - Declassified Mission Reports</title>
         <meta name="description" content="Read declassified mission reports from business owners who escaped burnout and transformed chaos into national empires. See the math, strategy, and results." />
-        <link rel="canonical" href="https://cynergists.com/case-studies" />
+        <link rel="canonical" href="https://cynergists.ai/case-studies" />
         <meta property="og:title" content="Case Studies | Cynergists - Declassified Mission Reports" />
         <meta property="og:description" content="Read declassified mission reports from business owners who transformed chaos into national empires. See the math, strategy, and results." />
-        <meta property="og:url" content="https://cynergists.com/case-studies" />
+        <meta property="og:url" content="https://cynergists.ai/case-studies" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Case Studies | Cynergists - Declassified Mission Reports" />

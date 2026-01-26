@@ -1,5 +1,5 @@
 # Cynergists Robots.txt
-# https://cynergists.com
+# https://cynergists.ai
 
 # Allow all major search engines
 User-agent: Googlebot
@@ -53,4 +53,4 @@ Disallow: /signup/partner/thank-you
 Disallow: /plans/test-plan
 
 # Sitemap location
-Sitemap: https://cynergists.com/sitemap.xml
+Sitemap: https://cynergists.ai/sitemap.xml

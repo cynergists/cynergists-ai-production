@@ -185,10 +185,10 @@ const BlogPost = ({ slug }: { slug: string }) => {
       <Helmet>
         <title>{post.title} | Cynergists Blog</title>
         <meta name="description" content={post.excerpt || ''} />
-        <link rel="canonical" href={`https://cynergists.com/blog/${post.slug}`} />
+        <link rel="canonical" href={`https://cynergists.ai/blog/${post.slug}`} />
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || ''} />
-        <meta property="og:url" content={`https://cynergists.com/blog/${post.slug}`} />
+        <meta property="og:url" content={`https://cynergists.ai/blog/${post.slug}`} />
         <meta property="og:type" content="article" />
         {post.featured_image_url && <meta property="og:image" content={post.featured_image_url} />}
         <meta name="twitter:card" content="summary_large_image" />

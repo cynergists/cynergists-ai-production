@@ -42,7 +42,7 @@ const CRM = () => {
           name="keywords"
           content="CRM, customer relationship management, marketing automation, lead management, appointment scheduling, business growth"
         />
-        <link rel="canonical" href="https://cynergists.com/products/crm" />
+        <link rel="canonical" href="https://cynergists.ai/products/crm" />
       </Helmet>
 
       <main>

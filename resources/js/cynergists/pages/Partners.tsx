@@ -78,10 +78,10 @@ const Partners = () => {
       <Helmet>
         <title>Partner Program | Cynergists - Earn 20% Residual Commissions</title>
         <meta name="description" content="Partner with Cynergists and earn 20% residual commissions by referring businesses to AI Agent services that retain clients long term." />
-        <link rel="canonical" href="https://cynergists.com/partners" />
+        <link rel="canonical" href="https://cynergists.ai/partners" />
         <meta property="og:title" content="Partner Program | Cynergists - Earn 20% Residual Commissions" />
         <meta property="og:description" content="Partner with Cynergists and earn 20% residual commissions by referring businesses to AI Agent services." />
-        <meta property="og:url" content="https://cynergists.com/partners" />
+        <meta property="og:url" content="https://cynergists.ai/partners" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Partner Program | Cynergists - Earn 20% Residual Commissions" />

@@ -229,7 +229,7 @@ export default function PartnerApplication() {
           name="description" 
           content="Apply to become a Cynergists partner. Earn 20% recurring commissions for every client you refer." 
         />
-        <link rel="canonical" href="https://cynergists.com/signup/partner/apply" />
+        <link rel="canonical" href="https://cynergists.ai/signup/partner/apply" />
       </Helmet>
 
       <div className="bg-background py-16 lg:py-24">

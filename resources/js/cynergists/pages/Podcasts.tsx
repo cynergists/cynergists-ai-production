@@ -37,10 +37,10 @@ const Podcasts = () => {
       <Helmet>
         <title>Cynergists Podcast | Strategic Business Intelligence for Scaling Leaders</title>
         <meta name="description" content="Tune into the Cynergists Podcast for operational debriefings on AI Agents, Workflow Automation, and Scale-Up Tactics. Raw, unfiltered conversations with titans building empires." />
-        <link rel="canonical" href="https://cynergists.com/podcasts" />
+        <link rel="canonical" href="https://cynergists.ai/podcasts" />
         <meta property="og:title" content="Cynergists Podcast | Strategic Business Intelligence for Scaling Leaders" />
         <meta property="og:description" content="Tune into the Cynergists Podcast for operational debriefings on AI Agents, Workflow Automation, and Scale-Up Tactics." />
-        <meta property="og:url" content="https://cynergists.com/podcasts" />
+        <meta property="og:url" content="https://cynergists.ai/podcasts" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Cynergists Podcast | Strategic Business Intelligence for Scaling Leaders" />
@@ -51,7 +51,7 @@ const Podcasts = () => {
             "@type": "PodcastSeries",
             "name": "Cynergists Podcast",
             "description": "Operational debriefings with titans building empires. AI Agents, Workflow Automation, and Scale-Up Tactics.",
-            "url": "https://cynergists.com/podcasts",
+            "url": "https://cynergists.ai/podcasts",
             "author": {
               "@type": "Organization",
               "name": "Cynergists"

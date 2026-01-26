@@ -18,12 +18,12 @@ const homepageSchema = {
   "@type": "WebPage",
   "name": "Cynergists | AI Agents That Work For Your Business",
   "description": "Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows.",
-  "url": "https://cynergists.com/",
+  "url": "/",
   "mainEntity": {
     "@type": "Organization",
     "name": "Cynergists",
-    "url": "https://cynergists.com",
-    "logo": "https://cynergists.com/logo.png",
+    "url": "/",
+    "logo": "/logo.png",
     "description": "AI Agents that automate revenue, operations, and internal workflows."
   }
 };
@@ -81,16 +81,16 @@ const Index = () => {
       <Helmet>
         <title>Cynergists | AI Agents That Work For Your Business</title>
         <meta name="description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows. Assemble your team today." />
-        <link rel="canonical" href="https://cynergists.com/" />
+        <link rel="canonical" href="/" />
         <meta property="og:title" content="Cynergists | AI Agents That Work For Your Business" />
         <meta property="og:description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
-        <meta property="og:url" content="https://cynergists.com/" />
+        <meta property="og:url" content="/" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://cynergists.com/og-image.webp" />
+        <meta property="og:image" content="/og-image.webp" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Cynergists | AI Agents That Work For Your Business" />
         <meta name="twitter:description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
-        <meta name="twitter:image" content="https://cynergists.com/og-image.webp" />
+        <meta name="twitter:image" content="/og-image.webp" />
         <script type="application/ld+json">
           {JSON.stringify(homepageSchema)}
         </script>

@@ -60,7 +60,7 @@ const Expansion = () => {
       <Helmet>
         <title>Expansion Plan | Cynergists</title>
         <meta name="description" content="Built for businesses running multiple initiatives at once. Dependable, ongoing support across several functions without the complexity of hiring or managing internal staff." />
-        <link rel="canonical" href="https://cynergists.com/plans/expansion" />
+        <link rel="canonical" href="https://cynergists.ai/plans/expansion" />
       </Helmet>
 
       <main>

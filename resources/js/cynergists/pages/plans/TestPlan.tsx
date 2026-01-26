@@ -92,7 +92,7 @@ const TestPlan = () => {
         <title>{planName} - ${price}/mo | Cynergists</title>
         <meta name="description" content={description} />
         <meta name="robots" content="noindex, nofollow" />
-        <link rel="canonical" href="https://cynergists.com/plans/test-plan" />
+        <link rel="canonical" href="https://cynergists.ai/plans/test-plan" />
       </Helmet>
 
       <main>

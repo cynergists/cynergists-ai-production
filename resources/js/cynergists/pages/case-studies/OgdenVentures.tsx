@@ -47,10 +47,10 @@ const OgdenVentures = () => {
       <Helmet>
         <title>Ogden Ventures Case Study | Cynergists</title>
         <meta name="description" content="How Operational Infrastructure Enabled Scalable Content, Outreach, and Automation for Ogden Ventures. See how Cynergists transformed fragmented systems into an integrated operational backbone." />
-        <link rel="canonical" href="https://cynergists.com/case-studies/ogden-ventures" />
+        <link rel="canonical" href="https://cynergists.ai/case-studies/ogden-ventures" />
         <meta property="og:title" content="Ogden Ventures Case Study | Cynergists" />
         <meta property="og:description" content="How Operational Infrastructure Enabled Scalable Content, Outreach, and Automation for Ogden Ventures." />
-        <meta property="og:url" content="https://cynergists.com/case-studies/ogden-ventures" />
+        <meta property="og:url" content="https://cynergists.ai/case-studies/ogden-ventures" />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Ogden Ventures Case Study | Cynergists" />

@@ -163,10 +163,10 @@ const Contact = () => {
       <Helmet>
         <title>Contact Cynergists | Ready to Light the Signal?</title>
         <meta name="description" content="Contact Cynergists Command to deploy your AI agent team. Get AI automation, workflow support, or strategic intel. Your cavalry is standing by." />
-        <link rel="canonical" href="https://cynergists.com/contact" />
+        <link rel="canonical" href="https://cynergists.ai/contact" />
         <meta property="og:title" content="Contact Cynergists | Ready to Light the Signal?" />
         <meta property="og:description" content="Contact Cynergists Command to deploy your AI agent team. Get AI automation, workflow support, or strategic intel. Your cavalry is standing by." />
-        <meta property="og:url" content="https://cynergists.com/contact" />
+        <meta property="og:url" content="https://cynergists.ai/contact" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact Cynergists | Ready to Light the Signal?" />

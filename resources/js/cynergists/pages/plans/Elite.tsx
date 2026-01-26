@@ -60,7 +60,7 @@ const Elite = () => {
       <Helmet>
         <title>Elite Plan | Cynergists</title>
         <meta name="description" content="Built for businesses with high-volume, multi-function execution needs. Dependable, high-volume support across many functions without the friction of hiring or scaling internal staff." />
-        <link rel="canonical" href="https://cynergists.com/plans/elite" />
+        <link rel="canonical" href="https://cynergists.ai/plans/elite" />
       </Helmet>
 
       <main>

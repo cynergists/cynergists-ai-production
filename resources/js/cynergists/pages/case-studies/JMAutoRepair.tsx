@@ -47,10 +47,10 @@ const JMAutoRepair = () => {
       <Helmet>
         <title>JM Auto Repair SEO Case Study | Cynergists</title>
         <meta name="description" content="How strategic SEO turned a local auto repair shop into a consistent lead engine. See how Cynergists increased organic traffic by 70% and ranking keywords by 91%." />
-        <link rel="canonical" href="https://cynergists.com/case-studies/jm-auto-repair" />
+        <link rel="canonical" href="https://cynergists.ai/case-studies/jm-auto-repair" />
         <meta property="og:title" content="JM Auto Repair SEO Case Study | Cynergists" />
         <meta property="og:description" content="How strategic SEO turned a local auto repair shop into a consistent lead engine. See how Cynergists increased organic traffic by 70% and ranking keywords by 91%." />
-        <meta property="og:url" content="https://cynergists.com/case-studies/jm-auto-repair" />
+        <meta property="og:url" content="https://cynergists.ai/case-studies/jm-auto-repair" />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="JM Auto Repair SEO Case Study | Cynergists" />

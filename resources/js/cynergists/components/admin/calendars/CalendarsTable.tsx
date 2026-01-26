@@ -269,7 +269,7 @@ export function CalendarsTable({
     document.addEventListener('mouseup', handleMouseUp);
   }, [onColumnWidthChange]);
 
-  const getPublicUrl = (slug: string) => `https://cynergists.com/${slug}`;
+  const getPublicUrl = (slug: string) => `https://cynergists.ai/${slug}`;
 
   const copyToClipboard = async (calendar: Calendar) => {
     const url = getPublicUrl(calendar.slug);

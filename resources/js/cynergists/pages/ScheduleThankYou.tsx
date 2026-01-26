@@ -8,7 +8,7 @@ const ScheduleThankYou = () => {
       <Helmet>
         <title>Mission Scheduled | Cynergists</title>
         <meta name="description" content="Your strategy call with Cynergists is confirmed. We look forward to the conversation." />
-        <link rel="canonical" href="https://cynergists.com/schedule/thank-you" />
+        <link rel="canonical" href="https://cynergists.ai/schedule/thank-you" />
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 

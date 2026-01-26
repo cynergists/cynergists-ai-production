@@ -14,22 +14,22 @@
         <meta name="description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
         <meta name="author" content="Cynergists" />
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://cynergists.com/" />
+        <link rel="canonical" href="/" />
 
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://cynergists.com/" />
+        <meta property="og:url" content="/" />
         <meta property="og:title" content="Cynergists | AI Agents That Work For Your Business" />
         <meta property="og:description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
-        <meta property="og:image" content="https://cynergists.com/og-image.webp" />
+        <meta property="og:image" content="/og-image.webp" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="1200" />
         <meta property="og:site_name" content="Cynergists" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://cynergists.com/" />
+        <meta name="twitter:url" content="/" />
         <meta name="twitter:title" content="Cynergists | AI Agents That Work For Your Business" />
         <meta name="twitter:description" content="Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows." />
-        <meta name="twitter:image" content="https://cynergists.com/og-image.webp" />
+        <meta name="twitter:image" content="/og-image.webp" />
 
         @verbatim
         <script type="application/ld+json">
@@ -37,8 +37,8 @@
           "@context": "https://schema.org",
           "@type": "Organization",
           "name": "Cynergists",
-          "url": "https://cynergists.com",
-          "logo": "https://cynergists.com/logo.png",
+          "url": "/",
+          "logo": "/logo.png",
           "description": "Cynergists designs, deploys, and manages AI Agents that take full ownership of revenue, operations, and internal workflows.",
           "sameAs": [],
           "contactPoint": {

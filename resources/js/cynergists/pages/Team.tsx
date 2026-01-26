@@ -49,10 +49,10 @@ const Team = () => {
       <Helmet>
         <title>Our Team | Cynergists - Meet the Experts</title>
         <meta name="description" content="Meet the Cynergists team - experienced professionals in AI agents, automation, and business transformation dedicated to helping your business succeed." />
-        <link rel="canonical" href="https://cynergists.com/team" />
+        <link rel="canonical" href="https://cynergists.ai/team" />
         <meta property="og:title" content="Our Team | Cynergists - Meet the Experts" />
         <meta property="og:description" content="Meet the Cynergists team - experienced professionals in AI agents, automation, and business transformation dedicated to helping your business succeed." />
-        <meta property="og:url" content="https://cynergists.com/team" />
+        <meta property="og:url" content="https://cynergists.ai/team" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Our Team | Cynergists - Meet the Experts" />

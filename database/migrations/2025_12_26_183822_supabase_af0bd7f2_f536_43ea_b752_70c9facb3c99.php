@@ -51,7 +51,7 @@ INSERT INTO public.notification_email_templates (document_type, subject, body) V
 <li>Your continued use of Cynergists services indicates acceptance of the updated policy.</li>
 </ul>
 <p>You can review the full Privacy Policy here:<br>
-<a href="https://cynergists.com/privacy">Privacy Policy Link</a></p>
+<a href="https://cynergists.ai/privacy">Privacy Policy Link</a></p>
 <p>If you have any questions or would like additional clarification, you are welcome to contact us at <a href="mailto:hello@cynergists.com">hello@cynergists.com</a>.</p>
 <p>Thank you for your continued trust in Cynergists.</p>
 <p>Best regards,<br>The Cynergists Team</p>'),
@@ -65,7 +65,7 @@ INSERT INTO public.notification_email_templates (document_type, subject, body) V
 <li>Your continued use of Cynergists services indicates acceptance of the updated terms.</li>
 </ul>
 <p>You can review the full Terms & Conditions here:<br>
-<a href="https://cynergists.com/terms">Terms & Conditions Link</a></p>
+<a href="https://cynergists.ai/terms">Terms & Conditions Link</a></p>
 <p>If you have any questions or would like additional clarification, you are welcome to contact us at <a href="mailto:hello@cynergists.com">hello@cynergists.com</a>.</p>
 <p>Thank you for your continued trust in Cynergists.</p>
 <p>Best regards,<br>The Cynergists Team</p>'),
@@ -79,7 +79,7 @@ INSERT INTO public.notification_email_templates (document_type, subject, body) V
 <li>Your continued use of Cynergists services indicates acceptance of the updated agreement.</li>
 </ul>
 <p>You can review the full Master Services Agreement here:<br>
-<a href="https://cynergists.com/terms">Master Services Agreement Link</a></p>
+<a href="https://cynergists.ai/terms">Master Services Agreement Link</a></p>
 <p>If you have any questions or would like additional clarification, you are welcome to contact us at <a href="mailto:hello@cynergists.com">hello@cynergists.com</a>.</p>
 <p>Thank you for your continued trust in Cynergists.</p>
 <p>Best regards,<br>The Cynergists Team</p>');

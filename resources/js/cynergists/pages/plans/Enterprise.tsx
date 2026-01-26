@@ -55,7 +55,7 @@ const Enterprise = () => {
       <Helmet>
         <title>Enterprise Plan | Cynergists</title>
         <meta name="description" content="Built for organizations with complex, custom execution needs. Customized execution support across multiple departments, initiatives, and systems with flexibility built into both scope and scale." />
-        <link rel="canonical" href="https://cynergists.com/plans/enterprise" />
+        <link rel="canonical" href="https://cynergists.ai/plans/enterprise" />
       </Helmet>
 
       <main>

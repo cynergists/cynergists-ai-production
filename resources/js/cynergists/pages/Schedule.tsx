@@ -42,10 +42,10 @@ const BookCall = () => {
       <Helmet>
         <title>Schedule a Strategy Call | Cynergists</title>
         <meta name="description" content="Schedule a strategy call with Cynergists. A focused 30-minute session to assess where execution is breaking down and whether we can step in as your support team." />
-        <link rel="canonical" href="https://cynergists.com/schedule" />
+        <link rel="canonical" href="https://cynergists.ai/schedule" />
         <meta property="og:title" content="Schedule a Strategy Call | Cynergists" />
         <meta property="og:description" content="Schedule a strategy call with Cynergists. A focused 30-minute session to assess where execution is breaking down and whether we can step in as your support team." />
-        <meta property="og:url" content="https://cynergists.com/schedule" />
+        <meta property="og:url" content="https://cynergists.ai/schedule" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Schedule a Strategy Call | Cynergists" />

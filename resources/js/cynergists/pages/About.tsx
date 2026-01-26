@@ -55,16 +55,16 @@ const About = () => {
       <Helmet>
         <title>About Cynergists | Veteran-Owned AI Agents Headquarters</title>
         <meta name="description" content="Cynergists is a Veteran-Owned company providing AI Agents that automate revenue, operations, and internal workflows. We give entrepreneurs their power back." />
-        <link rel="canonical" href="https://cynergists.com/about" />
+        <link rel="canonical" href="https://cynergists.ai/about" />
         <meta property="og:title" content="About Cynergists | Veteran-Owned AI Agents Headquarters" />
         <meta property="og:description" content="Cynergists is a Veteran-Owned company providing AI Agents that automate revenue, operations, and internal workflows. We give entrepreneurs their power back." />
-        <meta property="og:url" content="https://cynergists.com/about" />
+        <meta property="og:url" content="https://cynergists.ai/about" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://cynergists.com/og-image.webp" />
+        <meta property="og:image" content="https://cynergists.ai/og-image.webp" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About Cynergists | Veteran-Owned AI Agents Headquarters" />
         <meta name="twitter:description" content="Cynergists is a Veteran-Owned company providing AI Agents that automate your business." />
-        <meta name="twitter:image" content="https://cynergists.com/og-image.webp" />
+        <meta name="twitter:image" content="https://cynergists.ai/og-image.webp" />
         <script type="application/ld+json">
           {JSON.stringify(aboutFaqSchema)}
         </script>
