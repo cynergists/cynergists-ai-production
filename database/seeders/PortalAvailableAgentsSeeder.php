@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -109,6 +110,8 @@ class PortalAvailableAgentsSeeder extends Seeder
         $data['is_popular'] = isset($data['is_popular']) ? $this->toBoolean($data['is_popular']) : false;
         $data['is_active'] = isset($data['is_active']) ? $this->toBoolean($data['is_active']) : true;
         $data['category'] = $data['category'] ?? 'General';
+        $data['created_at'] = $this->normalizeDateTime($data['created_at'] ?? null);
+        $data['updated_at'] = $this->normalizeDateTime($data['updated_at'] ?? null);
 
         return $data;
     }
@@ -144,5 +147,18 @@ class PortalAvailableAgentsSeeder extends Seeder
         $normalized = strtolower((string) $value);
 
         return in_array($normalized, ['1', 'true', 'yes'], true);
+    }
+
+    private function normalizeDateTime(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse((string) $value)->toDateTimeString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }
