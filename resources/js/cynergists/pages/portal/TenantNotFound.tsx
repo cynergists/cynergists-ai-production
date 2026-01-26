@@ -46,7 +46,7 @@ export default function TenantNotFound({ subdomain }: TenantNotFoundProps) {
             <Button asChild variant="default">
           <Link href="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Go to cynergists.com
+                Go to home
               </Link>
             </Button>
             <Button asChild variant="outline">

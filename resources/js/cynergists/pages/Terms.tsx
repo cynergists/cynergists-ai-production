@@ -105,7 +105,7 @@ const Terms = () => {
       <Helmet>
         <title>{template.title} | Cynergists</title>
         <meta name="description" content="Terms and Conditions for Cynergists AI Agent services." />
-        <link rel="canonical" href="https://www.cynergists.com/terms" />
+        <link rel="canonical" href="/terms" />
       </Helmet>
 
       {/* Hero Section */}

@@ -105,7 +105,7 @@ const Privacy = () => {
       <Helmet>
         <title>{template.title} | Cynergists</title>
         <meta name="description" content="Cynergists Privacy Policy and Data Processing Addendum. Learn how we collect, use, process, and protect your personal and business information." />
-        <link rel="canonical" href="https://www.cynergists.com/privacy" />
+        <link rel="canonical" href="/privacy" />
       </Helmet>
 
       {/* Hero Section */}
