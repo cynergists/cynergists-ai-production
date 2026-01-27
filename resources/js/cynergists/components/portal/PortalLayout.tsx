@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 import { Link, router, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,12 +75,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     enabled: !!session?.user?.email,
   });
 
-  useEffect(() => {
-    if (!sessionLoading && !session) {
-      router.visit("/signin");
-    }
-  }, [sessionLoading, session]);
-
   // No longer redirect to onboarding - subdomain is auto-assigned
   // Users can change their subdomain in settings if needed
 
@@ -105,10 +99,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     return <TenantNotFound subdomain={subdomain} />;
   }
 
-  if (!session) {
-    return null;
-  }
-
   // Use the appropriate tenant based on access method
   const activeTenant = isTenantDomain ? tenantBySubdomain : userTenant;
 
@@ -130,8 +120,8 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   ];
 
   const getUserInitials = () => {
-    const email = session.user.email || "";
-    return email.substring(0, 2).toUpperCase();
+    const email = session?.user?.email || "";
+    return email.substring(0, 2).toUpperCase() || "CU";
   };
 
   const isActive = (href: string, external?: boolean) => {
@@ -140,9 +130,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   };
 
   // Apply tenant branding if available
-  const portalTitle = activeTenant?.company_name 
-    ? `${activeTenant.company_name} Portal` 
+  const portalTitle = activeTenant?.company_name
+    ? `${activeTenant.company_name} Portal`
     : "Customer Portal";
+
+  const userEmail = session?.user?.email ?? "guest@cynergists.ai";
+  const userDisplayName = session?.user?.user_metadata?.first_name
+    ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
+    : userEmail.split("@")[0];
 
   return (
     <TenantProvider 
@@ -166,7 +161,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             <h1 className="text-xl font-bold text-foreground mt-4">
               {activeTenant?.company_name || "Customer Portal"}
             </h1>
-            <p className="text-sm text-muted-foreground truncate">{session.user.email}</p>
+            <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
           </div>
 
           <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
@@ -220,12 +215,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {session.user.user_metadata?.first_name 
-                    ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`
-                    : session.user.email?.split("@")[0]
-                  }
+                  {userDisplayName}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
               </div>
             </div>
             <Button

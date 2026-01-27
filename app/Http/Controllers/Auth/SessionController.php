@@ -76,6 +76,10 @@ class SessionController extends Controller
             return '/employee';
         }
 
+        if (in_array('client', $roles, true)) {
+            return '/portal';
+        }
+
         if (in_array('partner', $roles, true) && ! in_array('client', $roles, true)) {
             return '/partner';
         }

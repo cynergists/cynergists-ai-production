@@ -27,6 +27,25 @@ it('logs in and redirects based on roles', function () {
     ]);
 });
 
+it('redirects client users to the portal', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('password'),
+    ]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => 'client',
+    ]);
+
+    $response = $this->post('/signin', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect('/portal');
+    $this->assertAuthenticatedAs($user);
+});
+
 it('logs out and redirects home', function () {
     $user = User::factory()->create();
 
