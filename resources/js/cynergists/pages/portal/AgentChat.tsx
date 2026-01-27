@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, Send, ArrowLeft, Loader2, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 
 interface Message {
   role: "user" | "assistant";
@@ -29,34 +29,38 @@ export default function AgentChat({ agentId }: { agentId: string }) {
     queryFn: async () => {
       if (!agentId) return null;
 
-      const { data, error } = await supabase
-        .from('agent_access')
-        .select(`
-          id,
-          agent_type,
-          agent_name,
-          configuration,
-          is_active,
-          usage_count,
-          usage_limit
-        `)
-        .eq('id', agentId)
-        .single();
+      try {
+        const response = await apiClient.get<{
+          agent: {
+            id: string;
+            agent_type: string;
+            agent_name: string;
+            configuration: Record<string, unknown> | null;
+            is_active: boolean;
+            usage_count: number | null;
+            usage_limit: number | null;
+          } | null;
+        }>(`/api/portal/agents/${agentId}`);
 
-      if (error) {
-        console.error('Error fetching agent:', error);
-        toast.error('Agent not found');
-        router.visit('/portal/agents');
+        if (!response.agent) {
+          toast.error("Agent not found");
+          router.visit("/portal/agents");
+          return null;
+        }
+
+        if (!response.agent.is_active) {
+          toast.error("This agent is no longer active");
+          router.visit("/portal/agents");
+          return null;
+        }
+
+        return response.agent;
+      } catch (error) {
+        console.error("Error fetching agent:", error);
+        toast.error("Agent not found");
+        router.visit("/portal/agents");
         return null;
       }
-
-      if (!data.is_active) {
-        toast.error('This agent is no longer active');
-        router.visit('/portal/agents');
-        return null;
-      }
-
-      return data;
     },
     enabled: !!agentId,
   });
@@ -67,20 +71,15 @@ export default function AgentChat({ agentId }: { agentId: string }) {
     queryFn: async () => {
       if (!agentId) return null;
 
-      const { data, error } = await supabase
-        .from('agent_conversations')
-        .select('id, messages')
-        .eq('agent_access_id', agentId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading conversation:', error);
+      try {
+        const response = await apiClient.get<{
+          conversation: { id: string; messages: Message[] } | null;
+        }>(`/api/portal/agents/${agentId}/conversation`);
+        return response.conversation;
+      } catch (error) {
+        console.error("Error loading conversation:", error);
+        return null;
       }
-
-      return data;
     },
     enabled: !!agentId,
   });
@@ -111,76 +110,23 @@ export default function AgentChat({ agentId }: { agentId: string }) {
     mutationFn: async (userMessage: string) => {
       if (!agent || !agentId) throw new Error('No agent selected');
 
-      const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+      const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
       setMessages(newMessages);
       setIsStreaming(true);
 
-      // Call the agent-chat edge function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            agentId,
-            messages: newMessages,
-            agentType: agent.agent_type,
-            agentName: agent.agent_name,
-            configuration: agent.configuration,
-          }),
-        }
-      );
+      const response = await apiClient.post<{
+        success: boolean;
+        assistantMessage: string;
+        messages: Message[];
+      }>(`/api/portal/agents/${agentId}/message`, {
+        message: userMessage,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
-      }
-
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = "";
-
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
-
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: assistantContent };
-                return updated;
-              });
-            }
-          } catch {
-            // Incomplete JSON, skip
-          }
-        }
-      }
-
-      return assistantContent;
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       setIsStreaming(false);
+      setMessages(response.messages);
       queryClient.invalidateQueries({ queryKey: ['agent-details', agentId] });
     },
     onError: (error: Error) => {

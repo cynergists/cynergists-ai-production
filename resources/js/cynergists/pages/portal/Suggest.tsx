@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Lightbulb, Send } from "lucide-react";
 import { toast } from "sonner";
 import { usePortalContext } from "@/contexts/PortalContext";
+import { apiClient } from "@/lib/api-client";
 
 const categories = [
   "Content",
@@ -29,7 +29,7 @@ const categories = [
 ];
 
 export default function Suggest() {
-  const context = usePortalContext() as { session: { user: { id: string } } | null };
+  const { user } = usePortalContext();
   const [formData, setFormData] = useState({
     agent_name: "",
     category: "",
@@ -39,18 +39,11 @@ export default function Suggest() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      if (!context?.session?.user?.id) {
+      if (!user?.id) {
         throw new Error("You must be logged in to submit a suggestion");
       }
-      
-      const { error } = await supabase.from("agent_suggestions").insert({
-        user_id: context.session.user.id,
-        agent_name: data.agent_name,
-        category: data.category,
-        description: data.description,
-        use_case: data.use_case || null,
-      });
-      if (error) throw error;
+
+      await apiClient.post("/api/portal/suggestions", data);
     },
     onSuccess: () => {
       toast.success("Your suggestion has been submitted! We'll review it soon.");

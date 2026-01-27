@@ -9,58 +9,41 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import { apiClient } from "@/lib/api-client";
 
 
 export default function PortalActivity() {
-  const { session } = usePortalContext();
+  const { user } = usePortalContext();
 
-  const { data: conversations, isLoading } = useQuery({
-    queryKey: ['portal-conversations', session?.user?.id],
+  const { data: activity, isLoading } = useQuery({
+    queryKey: ['portal-conversations', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agent_conversations')
-        .select(`
-          id,
-          title,
-          status,
-          created_at,
-          updated_at,
-          agent_access(agent_name, agent_type)
-        `)
-        .order('updated_at', { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error('Error fetching conversations:', error);
-        return [];
-      }
-
-      return data;
+      return apiClient.get<{
+        conversations: Array<{
+          id: string;
+          title: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          access?: { agent_name: string; agent_type: string };
+        }>;
+        agentStats: Array<{
+          id: string;
+          agent_name: string;
+          usage_count: number | null;
+          last_used_at: string | null;
+        }>;
+      }>("/api/portal/activity");
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(user?.id),
   });
 
-  const { data: agentStats, isLoading: statsLoading } = useQuery({
-    queryKey: ['portal-agent-stats', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agent_access')
-        .select('id, agent_name, usage_count, last_used_at')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching agent stats:', error);
-        return [];
-      }
-
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
+  const conversations = activity?.conversations ?? [];
+  const agentStats = activity?.agentStats ?? [];
+  const statsLoading = isLoading;
+  const maxUsage = Math.max(1, ...agentStats.map((agent) => agent.usage_count || 0));
 
   return (
     <div className="p-8">
@@ -92,7 +75,7 @@ export default function PortalActivity() {
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
-              ) : conversations?.length === 0 ? (
+              ) : conversations.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No conversations yet</p>
@@ -100,8 +83,8 @@ export default function PortalActivity() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {conversations?.map((conv) => {
-                    const agent = conv.agent_access as any;
+                  {conversations.map((conv) => {
+                    const agent = conv.access;
                     return (
                       <div key={conv.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
@@ -149,14 +132,14 @@ export default function PortalActivity() {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : agentStats?.length === 0 ? (
+              ) : agentStats.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-sm">No agent usage yet</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {agentStats?.map((agent) => (
+                  {agentStats.map((agent) => (
                     <div key={agent.id} className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="font-medium">{agent.agent_name}</span>
@@ -166,7 +149,7 @@ export default function PortalActivity() {
                         <div
                           className="h-full bg-primary transition-all"
                           style={{
-                            width: `${Math.min(100, ((agent.usage_count || 0) / Math.max(...(agentStats?.map(a => a.usage_count || 0) || [1]))) * 100)}%`,
+                            width: `${Math.min(100, ((agent.usage_count || 0) / maxUsage) * 100)}%`,
                           }}
                         />
                       </div>

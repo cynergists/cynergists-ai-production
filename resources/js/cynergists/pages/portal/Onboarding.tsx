@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { router } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import { Loader2, Check, X, AlertCircle } from "lucide-react";
 import { useCurrentUserTenant } from "@/hooks/useTenant";
 import { useDebounce } from "@/hooks/useDebounce";
 import cynergistsLogo from "@/assets/cynergists-logo-new.png";
+import { apiClient } from "@/lib/api-client";
 
 function slugify(text: string): string {
   return text
@@ -44,9 +44,9 @@ export default function PortalOnboarding() {
   // Redirect if onboarding already completed
   useEffect(() => {
     if (tenant && !tenant.is_temp_subdomain) {
-      navigate("/portal");
+      router.visit("/portal");
     }
-  }, [tenant, navigate]);
+  }, [tenant]);
 
   // Check availability when subdomain changes
   const checkAvailability = useCallback(async (value: string) => {
@@ -58,11 +58,11 @@ export default function PortalOnboarding() {
 
     setIsChecking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("check-subdomain", {
-        body: { subdomain: value },
-      });
-
-      if (error) throw error;
+      const data = await apiClient.post<{
+        available: boolean;
+        reason: string | null;
+        message: string;
+      }>("/api/portal/tenant/check-subdomain", { subdomain: value });
 
       setIsAvailable(data.available);
       if (data.available) {
@@ -102,22 +102,10 @@ export default function PortalOnboarding() {
 
     setIsClaiming(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Session expired",
-          description: "Please sign in again.",
-          variant: "destructive",
-        });
-      router.visit("/signin");
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke("claim-subdomain", {
-        body: { subdomain },
-      });
-
-      if (error) throw error;
+      const data = await apiClient.post<{
+        success: boolean;
+        error?: string;
+      }>("/api/portal/tenant/claim-subdomain", { subdomain });
 
       if (data.success) {
         toast({

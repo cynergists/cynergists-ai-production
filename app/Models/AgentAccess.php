@@ -12,6 +12,8 @@ class AgentAccess extends Model
     /** @use HasFactory<\Database\Factories\AgentAccessFactory> */
     use HasFactory;
 
+    protected $table = 'agent_access';
+
     public $incrementing = false;
 
     protected $keyType = 'string';

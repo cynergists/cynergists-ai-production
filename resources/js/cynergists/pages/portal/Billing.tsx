@@ -10,43 +10,33 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { apiClient } from "@/lib/api-client";
 
 export default function PortalBilling() {
-  const { session } = usePortalContext();
+  const { user } = usePortalContext();
 
   const { data: subscriptions, isLoading } = useQuery({
-    queryKey: ['portal-subscriptions', session?.user?.id],
+    queryKey: ['portal-subscriptions', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customer_subscriptions')
-        .select(`
-          id,
-          status,
-          tier,
-          start_date,
-          end_date,
-          auto_renew,
-          products(name, price)
-        `)
-        .eq('status', 'active');
+      const response = await apiClient.get<{
+        subscriptions: Array<{
+          id: string;
+          status: string;
+          tier: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          auto_renew: boolean | null;
+        }>;
+      }>("/api/portal/billing");
 
-      if (error) {
-        console.error('Error fetching subscriptions:', error);
-        return [];
-      }
-
-      return data;
+      return response.subscriptions;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(user?.id),
   });
 
-  const totalMonthly = subscriptions?.reduce((sum, sub) => {
-    const product = sub.products as any;
-    return sum + (product?.price || 0);
-  }, 0) || 0;
+  const monthlyTotal = null;
 
   return (
     <div className="p-8">
@@ -70,7 +60,7 @@ export default function PortalBilling() {
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-3xl font-bold">${totalMonthly}</div>
+              <div className="text-3xl font-bold">{monthlyTotal !== null ? `$${monthlyTotal}` : "N/A"}</div>
             )}
           </CardContent>
         </Card>
@@ -131,26 +121,22 @@ export default function PortalBilling() {
               </div>
             ) : (
               <div className="space-y-4">
-                {subscriptions?.map((sub) => {
-                  const product = sub.products as any;
-                  return (
-                    <div key={sub.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                      <div>
-                        <p className="font-medium">{product?.name || "AI Agent"}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            Renews {sub.end_date ? format(new Date(sub.end_date), "MMM d, yyyy") : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">${product?.price || 0}/mo</p>
-                        <Badge variant="outline" className="capitalize">{sub.tier}</Badge>
+                {subscriptions?.map((sub) => (
+                  <div key={sub.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
+                    <div>
+                      <p className="font-medium">AI Agent Subscription</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          Renews {sub.end_date ? format(new Date(sub.end_date), "MMM d, yyyy") : "N/A"}
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="text-right">
+                      <Badge variant="outline" className="capitalize">{sub.tier ?? "basic"}</Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

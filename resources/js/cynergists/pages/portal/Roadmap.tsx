@@ -1,4 +1,3 @@
-import { usePortalContext } from "@/contexts/PortalContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -114,8 +113,6 @@ const getCategoryIcon = (category: string) => {
 };
 
 export default function PortalRoadmap() {
-  const { session } = usePortalContext();
-
   const groupedItems = {
     completed: roadmapItems.filter(item => item.status === "completed"),
     inProgress: roadmapItems.filter(item => item.status === "in-progress"),

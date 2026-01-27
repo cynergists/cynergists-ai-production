@@ -63,4 +63,14 @@ class PortalTenant extends Model
     {
         return $this->hasMany(AgentConversation::class, 'tenant_id');
     }
+
+    public static function forUser(User $user): ?self
+    {
+        return static::query()->where('user_id', (string) $user->id)->first();
+    }
+
+    public static function forSubdomain(string $subdomain): ?self
+    {
+        return static::query()->where('subdomain', $subdomain)->first();
+    }
 }

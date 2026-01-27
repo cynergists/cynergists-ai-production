@@ -19,7 +19,6 @@ import {
   Check
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -30,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { type AIAgent } from "@/components/ui/AIAgentCard";
 import { usePortalContext } from "@/contexts/PortalContext";
+import { apiClient } from "@/lib/api-client";
 
 const categories = [
   { id: "all", name: "All Agents", icon: Sparkles },
@@ -76,54 +76,32 @@ const getAgentIcon = (category: string) => {
 };
 
 export default function PortalBrowse() {
-  const { session } = usePortalContext();
+  const { user } = usePortalContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  // Fetch agents from database
-  const { data: agents, isLoading: agentsLoading } = useQuery({
-    queryKey: ["portal-browse-agents"],
+  // Fetch agents and owned agent names from database
+  const { data, isLoading } = useQuery({
+    queryKey: ["portal-browse-agents", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("portal_available_agents")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return data as unknown as AIAgent[];
+      return apiClient.get<{ agents: AIAgent[]; ownedAgentNames: string[] }>("/api/portal/browse");
     },
+    enabled: Boolean(user?.id),
   });
 
-  // Check which agents the user already owns
-  const { data: ownedAgents, isLoading: ownedLoading } = useQuery({
-    queryKey: ['portal-owned-agents', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agent_access')
-        .select('agent_type')
-        .eq('is_active', true);
+  const agents = data?.agents ?? [];
+  const ownedAgentNames = data?.ownedAgentNames ?? [];
 
-      if (error) {
-        console.error('Error fetching owned agents:', error);
-        return [];
-      }
-
-      return data?.map(a => a.agent_type) || [];
-    },
-    enabled: !!session?.user?.id,
-  });
-
-  const isLoading = agentsLoading || ownedLoading;
-
-  const filteredAgents = agents?.filter(agent => {
+  const filteredAgents = agents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (agent.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesCategory = selectedCategory === "all" || agent.category === selectedCategory;
     return matchesSearch && matchesCategory;
-  }) || [];
+  });
 
   const isOwned = (agentId: string) => {
-    return ownedAgents?.includes(agentId);
+    const agent = agents.find((item) => item.id === agentId);
+    return agent ? ownedAgentNames.includes(agent.name) : false;
   };
 
   return (

@@ -11,8 +11,6 @@ import {
   Video
 } from "lucide-react";
 
-import { usePortalContext } from "@/contexts/PortalContext";
-
 const supportOptions = [
   {
     title: "Documentation",
@@ -57,8 +55,6 @@ const faqs = [
 ];
 
 export default function PortalSupport() {
-  const { session } = usePortalContext();
-
   return (
     <div className="p-8">
       <div className="mb-8">

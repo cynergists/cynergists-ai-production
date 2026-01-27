@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePortalContext } from "@/contexts/PortalContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe, Check, X, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUserTenant } from "@/hooks/useTenant";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 
 
 export default function PortalSettings() {
-  const { session } = usePortalContext();
+  const { user } = usePortalContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: tenant, isLoading: tenantLoading } = useCurrentUserTenant();
@@ -27,6 +27,18 @@ export default function PortalSettings() {
   const [availabilityMessage, setAvailabilityMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    companyName: "",
+  });
+  const [profileBaseline, setProfileBaseline] = useState({
+    firstName: "",
+    lastName: "",
+    companyName: "",
+  });
 
   const debouncedSubdomain = useDebounce(subdomain, 500);
 
@@ -36,6 +48,43 @@ export default function PortalSettings() {
       setSubdomain(tenant.subdomain);
     }
   }, [tenant?.subdomain]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const data = await apiClient.get<{
+          profile: {
+            first_name: string | null;
+            last_name: string | null;
+            company_name: string | null;
+          } | null;
+        }>("/api/portal/profile");
+
+        const nextProfile = {
+          firstName: data.profile?.first_name ?? "",
+          lastName: data.profile?.last_name ?? "",
+          companyName: data.profile?.company_name ?? "",
+        };
+
+        setProfileForm(nextProfile);
+        setProfileBaseline(nextProfile);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        toast({
+          title: "Failed to load profile",
+          description: "Please refresh and try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id, toast]);
 
   // Check availability when subdomain changes
   const checkAvailability = useCallback(async (value: string) => {
@@ -57,11 +106,11 @@ export default function PortalSettings() {
     setHasChanges(true);
     setIsChecking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("check-subdomain", {
-        body: { subdomain: value },
-      });
-
-      if (error) throw error;
+      const data = await apiClient.post<{
+        available: boolean;
+        reason: string | null;
+        message: string;
+      }>("/api/portal/tenant/check-subdomain", { subdomain: value });
 
       setIsAvailable(data.available);
       if (data.available) {
@@ -101,11 +150,10 @@ export default function PortalSettings() {
 
     setIsSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("claim-subdomain", {
-        body: { subdomain },
-      });
-
-      if (error) throw error;
+      const data = await apiClient.post<{
+        success: boolean;
+        error?: string;
+      }>("/api/portal/tenant/claim-subdomain", { subdomain });
 
       if (data.success) {
         toast({
@@ -114,7 +162,7 @@ export default function PortalSettings() {
         });
         
         // Refresh tenant data
-        queryClient.invalidateQueries({ queryKey: ["currentUserTenant"] });
+        queryClient.invalidateQueries({ queryKey: ["current-user-tenant"] });
         setHasChanges(false);
         setIsAvailable(null);
         setAvailabilityMessage("");
@@ -130,6 +178,57 @@ export default function PortalSettings() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const hasProfileChanges = useMemo(() => {
+    return (
+      profileForm.firstName !== profileBaseline.firstName ||
+      profileForm.lastName !== profileBaseline.lastName ||
+      profileForm.companyName !== profileBaseline.companyName
+    );
+  }, [profileForm, profileBaseline]);
+
+  const handleSaveProfile = async () => {
+    if (profileSaving || !hasProfileChanges) return;
+
+    setProfileSaving(true);
+    try {
+      const payload = {
+        first_name: profileForm.firstName.trim() || null,
+        last_name: profileForm.lastName.trim() || null,
+        company_name: profileForm.companyName.trim() || null,
+      };
+
+      const data = await apiClient.put<{
+        profile: {
+          first_name: string | null;
+          last_name: string | null;
+          company_name: string | null;
+        };
+      }>("/api/portal/profile", payload);
+
+      const nextProfile = {
+        firstName: data.profile?.first_name ?? payload.first_name ?? "",
+        lastName: data.profile?.last_name ?? payload.last_name ?? "",
+        companyName: data.profile?.company_name ?? payload.company_name ?? "",
+      };
+
+      setProfileForm(nextProfile);
+      setProfileBaseline(nextProfile);
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been saved.",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Failed to update profile",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -243,25 +342,79 @@ export default function PortalSettings() {
             <CardDescription>Your account information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={session?.user?.email || ""} disabled />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" placeholder="Enter first name" />
+            {profileLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading profile...
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" placeholder="Enter last name" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
-              <Input id="company" placeholder="Enter company name" />
-            </div>
-            <Button>Save Changes</Button>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" value={user?.email || ""} disabled />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={profileForm.firstName}
+                      onChange={(event) =>
+                        setProfileForm((current) => ({
+                          ...current,
+                          firstName: event.target.value,
+                        }))
+                      }
+                      placeholder="Enter first name"
+                      disabled={profileSaving}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={profileForm.lastName}
+                      onChange={(event) =>
+                        setProfileForm((current) => ({
+                          ...current,
+                          lastName: event.target.value,
+                        }))
+                      }
+                      placeholder="Enter last name"
+                      disabled={profileSaving}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company</Label>
+                  <Input
+                    id="company"
+                    value={profileForm.companyName}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        companyName: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter company name"
+                    disabled={profileSaving}
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={profileSaving || !hasProfileChanges}
+                >
+                  {profileSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 

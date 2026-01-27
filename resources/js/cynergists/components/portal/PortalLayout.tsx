@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { Link, router, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
-import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, 
   LayoutDashboard, 
@@ -18,7 +17,6 @@ import {
   Lightbulb
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSubdomain } from "@/hooks/useSubdomain";
@@ -28,63 +26,29 @@ import TenantNotFound from "@/pages/portal/TenantNotFound";
 import PortalContext from "@/contexts/PortalContext";
 
 export function PortalLayout({ children }: { children: ReactNode }) {
-  const { url } = usePage();
+  const { url, props } = usePage<{
+    auth: {
+      user: { id: number | string; email?: string | null } | null;
+    };
+  }>();
   const pathname = url.split("?")[0];
-  const { subdomain, isTenantDomain, isDevelopment } = useSubdomain();
-
-  const { data: session, isLoading: sessionLoading } = useQuery({
-    queryKey: ['portal-session'],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
-    },
-  });
+  const { subdomain, isTenantDomain } = useSubdomain();
+  const user = props.auth?.user ?? null;
 
   // Fetch tenant by subdomain (for subdomain-based access)
-  const { data: tenantBySubdomain, isLoading: tenantBySubdomainLoading, error: tenantError } = useTenant(subdomain);
+  const { data: tenantBySubdomain, isLoading: tenantBySubdomainLoading } = useTenant(subdomain);
   
   // Fetch current user's tenant (for checking onboarding status)
   const { data: userTenant, isLoading: userTenantLoading } = useCurrentUserTenant();
-
-  const { data: clientAccess, isLoading: accessLoading } = useQuery({
-    queryKey: ['portal-client-access', session?.user?.email],
-    queryFn: async () => {
-      if (!session?.user?.email) return null;
-      
-      const { data, error } = await supabase
-        .from('agent_access')
-        .select(`
-          id,
-          agent_type,
-          agent_name,
-          is_active,
-          customer_subscriptions!inner(
-            status,
-            clients!inner(email)
-          )
-        `)
-        .eq('is_active', true);
-      
-      if (error) {
-        console.error('Error fetching access:', error);
-        return null;
-      }
-      
-      return data;
-    },
-    enabled: !!session?.user?.email,
-  });
 
   // No longer redirect to onboarding - subdomain is auto-assigned
   // Users can change their subdomain in settings if needed
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.visit("/signin");
+    router.post("/logout");
   };
 
-  const isLoading = sessionLoading || accessLoading || userTenantLoading || 
-    (isTenantDomain && tenantBySubdomainLoading);
+  const isLoading = userTenantLoading || (isTenantDomain && tenantBySubdomainLoading);
 
   if (isLoading) {
     return (
@@ -120,8 +84,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   ];
 
   const getUserInitials = () => {
-    const email = session?.user?.email || "";
-    return email.substring(0, 2).toUpperCase() || "CU";
+    return userEmail.substring(0, 2).toUpperCase() || "CU";
   };
 
   const isActive = (href: string, external?: boolean) => {
@@ -134,18 +97,21 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     ? `${activeTenant.company_name} Portal`
     : "Customer Portal";
 
-  const userEmail = session?.user?.email ?? "guest@cynergists.ai";
-  const userDisplayName = session?.user?.user_metadata?.first_name
-    ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
+  const userEmail = user?.email ?? "guest@cynergists.ai";
+  const userDisplayName = user?.email
+    ? user.email.split("@")[0]
     : userEmail.split("@")[0];
+  const portalTenant = activeTenant
+    ? { ...activeTenant, onboarding_completed_at: activeTenant.onboarding_completed_at ?? null }
+    : null;
 
   return (
     <TenantProvider 
-      tenant={activeTenant || null} 
+      tenant={portalTenant} 
       isLoading={isLoading} 
       isTenantDomain={isTenantDomain}
     >
-      <PortalContext.Provider value={{ session, clientAccess }}>
+      <PortalContext.Provider value={{ user, tenant: portalTenant }}>
         <Helmet>
           <title>{portalTitle} | Cynergists</title>
         </Helmet>

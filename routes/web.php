@@ -5,6 +5,16 @@ use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\Portal\PortalActivityController;
+use App\Http\Controllers\Api\Portal\PortalAgentsController;
+use App\Http\Controllers\Api\Portal\PortalBillingController;
+use App\Http\Controllers\Api\Portal\PortalBrowseController;
+use App\Http\Controllers\Api\Portal\PortalChatController;
+use App\Http\Controllers\Api\Portal\PortalProfileController;
+use App\Http\Controllers\Api\Portal\PortalStatsController;
+use App\Http\Controllers\Api\Portal\PortalSubdomainController;
+use App\Http\Controllers\Api\Portal\PortalSuggestionsController;
+use App\Http\Controllers\Api\Portal\PortalTenantController;
 use App\Http\Controllers\Api\PublicDataController;
 use App\Http\Controllers\Api\SystemConfigController;
 use App\Http\Controllers\Api\UserPasswordController;
@@ -132,6 +142,8 @@ Route::get('/admin/ai-agents/{id}', [CynergistsPageController::class, 'page'])->
 Route::get('/admin/partner-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/PartnerPortalManagement');
 Route::get('/admin/ai-agent-template', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentTemplate');
 
+Route::get('/api/portal/tenant/by-subdomain', [PortalTenantController::class, 'showBySubdomain']);
+
 Route::prefix('api')->group(function () {
     Route::get('/public/plans', [PublicDataController::class, 'activePlans']);
     Route::get('/public/plans/{slug}', [PublicDataController::class, 'planBySlug']);
@@ -159,6 +171,23 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/partner/magic-link', [PartnerSettingsController::class, 'sendMagicLink']);
     Route::patch('/user/password', [UserPasswordController::class, 'update']);
     Route::get('/partner-dashboard/{partner}', [PartnerDashboardController::class, 'show']);
+
+    Route::prefix('portal')->group(function () {
+        Route::get('/stats', [PortalStatsController::class, 'show']);
+        Route::get('/agents', [PortalAgentsController::class, 'index']);
+        Route::get('/agents/{agent}', [PortalAgentsController::class, 'show']);
+        Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
+        Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
+        Route::get('/browse', [PortalBrowseController::class, 'index']);
+        Route::get('/billing', [PortalBillingController::class, 'index']);
+        Route::get('/activity', [PortalActivityController::class, 'index']);
+        Route::get('/tenant', [PortalTenantController::class, 'show']);
+        Route::post('/tenant/check-subdomain', [PortalSubdomainController::class, 'check']);
+        Route::post('/tenant/claim-subdomain', [PortalSubdomainController::class, 'claim']);
+        Route::get('/profile', [PortalProfileController::class, 'show']);
+        Route::put('/profile', [PortalProfileController::class, 'update']);
+        Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
+    });
 });
 
 Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(function () {

@@ -1,4 +1,3 @@
-import { usePortalContext } from "@/contexts/PortalContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,8 +70,6 @@ const integrations: Integration[] = [
 ];
 
 export default function PortalIntegrations() {
-  const { session } = usePortalContext();
-
   const groupedIntegrations = integrations.reduce((acc, integration) => {
     if (!acc[integration.category]) {
       acc[integration.category] = [];
