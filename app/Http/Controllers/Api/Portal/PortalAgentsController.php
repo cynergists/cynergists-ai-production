@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\UpdateAgentConfigurationRequest;
 use App\Models\AgentAccess;
 use App\Models\PortalTenant;
 use Illuminate\Http\JsonResponse;
@@ -67,6 +68,36 @@ class PortalAgentsController extends Controller
         }
 
         return response()->json([
+            'agent' => $agentAccess,
+        ]);
+    }
+
+    public function updateConfiguration(UpdateAgentConfigurationRequest $request, string $agent): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['agent' => null], 401);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if (! $tenant) {
+            return response()->json(['agent' => null], 404);
+        }
+
+        $agentAccess = AgentAccess::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $agent)
+            ->first();
+
+        if (! $agentAccess) {
+            return response()->json(['agent' => null], 404);
+        }
+
+        $agentAccess->configuration = $request->validated('configuration');
+        $agentAccess->save();
+
+        return response()->json([
+            'success' => true,
             'agent' => $agentAccess,
         ]);
     }

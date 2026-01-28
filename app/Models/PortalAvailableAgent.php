@@ -20,6 +20,7 @@ class PortalAvailableAgent extends Model
     protected $fillable = [
         'id',
         'name',
+        'avatar',
         'job_title',
         'slug',
         'description',

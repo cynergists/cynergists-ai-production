@@ -223,7 +223,7 @@ const Checkout = () => {
     if (items.length === 0) {
       router.visit("/cart");
     }
-  }, [items.length, navigate]);
+  }, [items.length]);
 
   const updateContact = (data: Partial<ContactInfo>) => {
     setCheckoutData((prev) => {
