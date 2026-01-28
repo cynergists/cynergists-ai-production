@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\Portal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\UpdateAgentConfigurationRequest;
 use App\Models\AgentAccess;
+use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PortalAgentsController extends Controller
 {
@@ -41,6 +43,22 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
+        // Get avatars from portal_available_agents
+        $agentNames = $agents->pluck('agent_name')->unique()->toArray();
+        $avatars = PortalAvailableAgent::query()
+            ->whereIn('name', $agentNames)
+            ->whereNotNull('avatar')
+            ->pluck('avatar', 'name')
+            ->toArray();
+
+        // Add avatar_url to each agent
+        $agents = $agents->map(function ($agent) use ($avatars) {
+            $avatar = $avatars[$agent->agent_name] ?? null;
+            $agent->avatar_url = $avatar ? Storage::disk('public')->url($avatar) : null;
+
+            return $agent;
+        });
+
         return response()->json([
             'agents' => $agents,
         ]);
@@ -66,6 +84,15 @@ class PortalAgentsController extends Controller
         if (! $agentAccess) {
             return response()->json(['agent' => null], 404);
         }
+
+        // Get avatar from portal_available_agents
+        $availableAgent = PortalAvailableAgent::query()
+            ->where('name', $agentAccess->agent_name)
+            ->first(['avatar']);
+
+        $agentAccess->avatar_url = $availableAgent?->avatar
+            ? Storage::disk('public')->url($availableAgent->avatar)
+            : null;
 
         return response()->json([
             'agent' => $agentAccess,

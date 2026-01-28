@@ -21,6 +21,7 @@ interface AgentAccess {
   usage_count: number | null;
   usage_limit: number | null;
   last_used_at: string | null;
+  avatar_url: string | null;
 }
 
 interface Message {
@@ -235,35 +236,43 @@ export default function PortalWorkspace() {
             ) : (
               <div className="space-y-2 px-2">
                 {paginatedAgents.map((agent) => (
-                  <button
-                    key={agent.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAgentId(agent.id);
-                      router.visit(`/portal/agents/${agent.id}/chat`, {
-                        preserveState: true,
-                        preserveScroll: true,
-                      });
-                    }}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
-                      selectedAgentId === agent.id
-                        ? "border-primary/40 bg-primary/10"
-                        : "hover:bg-accent"
-                    )}
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                      <Bot className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-sm font-medium text-foreground truncate">
-                        {agent.agent_name}
-                      </span>
-                      <span className="text-xs text-muted-foreground capitalize truncate">
-                        {agent.agent_type}
-                      </span>
-                    </div>
-                  </button>
+                                  <button
+                                    key={agent.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedAgentId(agent.id);
+                                      router.visit(`/portal/agents/${agent.id}/chat`, {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                      });
+                                    }}
+                                    className={cn(
+                                      "flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
+                                      selectedAgentId === agent.id
+                                        ? "border-primary/40 bg-primary/10"
+                                        : "hover:bg-accent"
+                                    )}
+                                  >
+                                    {agent.avatar_url ? (
+                                      <img
+                                        src={agent.avatar_url}
+                                        alt={agent.agent_name}
+                                        className="h-9 w-9 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                                        <Bot className="h-4 w-4 text-primary" />
+                                      </div>
+                                    )}
+                                    <div className="flex min-w-0 flex-1 flex-col">
+                                      <span className="text-sm font-medium text-foreground truncate">
+                                        {agent.agent_name}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground capitalize truncate">
+                                        {agent.agent_type}
+                                      </span>
+                                    </div>
+                                  </button>
                 ))}
               </div>
             )}
@@ -298,9 +307,17 @@ export default function PortalWorkspace() {
         {/* Chat */}
         <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <Bot className="h-5 w-5 text-primary" />
-            </div>
+            {agentDetails?.avatar_url ? (
+              <img
+                src={agentDetails.avatar_url}
+                alt={agentDetails.agent_name}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">
                 {agentDetails?.agent_name ?? "Select an agent"}
