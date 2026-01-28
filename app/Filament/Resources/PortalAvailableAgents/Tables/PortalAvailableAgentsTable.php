@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -15,37 +16,32 @@ class PortalAvailableAgentsTable
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label('ID')
-                    ->searchable(),
+                ImageColumn::make('avatar')
+                    ->disk('public')
+                    ->circular()
+                    ->size(40)
+                    ->defaultImageUrl(fn () => 'https://ui-avatars.com/api/?background=84cc16&color=0f172a&name=AI'),
                 TextColumn::make('name')
-                    ->searchable(),
-                TextColumn::make('slug')
-                    ->searchable(),
-                TextColumn::make('job_title')
+                    ->searchable()
+                    ->sortable()
+                    ->description(fn ($record) => $record->job_title),
+                TextColumn::make('category')
+                    ->badge()
                     ->searchable(),
                 TextColumn::make('price')
                     ->money()
                     ->sortable(),
-                TextColumn::make('category')
-                    ->searchable(),
-                TextColumn::make('icon')
-                    ->searchable(),
-                IconColumn::make('is_popular')
-                    ->boolean(),
                 IconColumn::make('is_active')
-                    ->boolean(),
+                    ->boolean()
+                    ->label('Active'),
+                IconColumn::make('is_popular')
+                    ->boolean()
+                    ->label('Popular'),
                 TextColumn::make('sort_order')
                     ->numeric()
-                    ->sortable(),
-                TextColumn::make('section_order')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

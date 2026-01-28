@@ -97,15 +97,14 @@ Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
-Route::redirect('/portal/admin', '/admin/dashboard');
+Route::redirect('/portal/admin', '/filament');
 
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
 Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal');
 Route::get('/employee', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/EmployeePortal');
 
-Route::get('/admin/approve-user', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/ApproveUser');
-Route::get('/admin', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Index');
-Route::get('/admin/dashboard', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Index');
+Route::redirect('/admin', '/filament');
+Route::redirect('/admin/dashboard', '/filament');
 Route::get('/admin/prospects', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Prospects');
 Route::get('/admin/clients', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Clients');
 Route::get('/admin/partners', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Partners');
