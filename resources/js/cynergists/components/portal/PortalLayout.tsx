@@ -1,24 +1,8 @@
 import { ReactNode } from "react";
-import { Link, router, usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
-import { 
-  Loader2, 
-  LayoutDashboard, 
-  Bot, 
-  LogOut, 
-  ArrowLeft,
-  Compass,
-  Map,
-  Settings,
-  HelpCircle,
-  CreditCard,
-  Activity,
-  Plug,
-  Lightbulb
-} from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSubdomain } from "@/hooks/useSubdomain";
 import { useTenant, useCurrentUserTenant } from "@/hooks/useTenant";
 import { TenantProvider } from "@/components/portal/TenantProvider";
@@ -26,12 +10,11 @@ import TenantNotFound from "@/pages/portal/TenantNotFound";
 import PortalContext from "@/contexts/PortalContext";
 
 export function PortalLayout({ children }: { children: ReactNode }) {
-  const { url, props } = usePage<{
+  const { props } = usePage<{
     auth: {
       user: { id: number | string; email?: string | null } | null;
     };
   }>();
-  const pathname = url.split("?")[0];
   const { subdomain, isTenantDomain } = useSubdomain();
   const user = props.auth?.user ?? null;
 
@@ -66,32 +49,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   // Use the appropriate tenant based on access method
   const activeTenant = isTenantDomain ? tenantBySubdomain : userTenant;
 
-  const mainNavItems = [
-    { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
-    { label: "My Agents", href: "/portal/agents", icon: Bot },
-    { label: "Browse Agents", href: "/portal/browse", icon: Compass },
-    { label: "Roadmap", href: "/portal/roadmap", icon: Map },
-    { label: "Suggest Agent", href: "/portal/suggest", icon: Lightbulb },
-  ];
-
-
-  const secondaryNavItems = [
-    { label: "Settings", href: "/portal/settings", icon: Settings },
-    { label: "Support", href: "/portal/support", icon: HelpCircle },
-    { label: "Billing", href: "/portal/billing", icon: CreditCard },
-    { label: "Activity", href: "/portal/activity", icon: Activity },
-    { label: "Integrations", href: "/portal/integrations", icon: Plug },
-  ];
-
-  const getUserInitials = () => {
-    return userEmail.substring(0, 2).toUpperCase() || "CU";
-  };
-
-  const isActive = (href: string, external?: boolean) => {
-    if (external) return false;
-    return pathname === href || (href !== "/portal" && pathname.startsWith(href));
-  };
-
   // Apply tenant branding if available
   const portalTitle = activeTenant?.company_name
     ? `${activeTenant.company_name} Portal`
@@ -106,102 +63,37 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     : null;
 
   return (
-    <TenantProvider 
-      tenant={portalTenant} 
-      isLoading={isLoading} 
-      isTenantDomain={isTenantDomain}
-    >
+    <TenantProvider tenant={portalTenant} isLoading={isLoading} isTenantDomain={isTenantDomain}>
       <PortalContext.Provider value={{ user, tenant: portalTenant }}>
         <Helmet>
           <title>{portalTitle} | Cynergists</title>
         </Helmet>
 
-      <div className="min-h-screen flex bg-background">
-        {/* Sidebar */}
-        <aside className="w-64 border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border">
-            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Site</span>
-            </Link>
-            <h1 className="text-xl font-bold text-foreground mt-4">
-              {activeTenant?.company_name || "Customer Portal"}
-            </h1>
-            <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
-          </div>
-
-          <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-            {/* Main Navigation */}
-            <div className="space-y-1">
-              {mainNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    isActive(item.href)
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
+        <div className="min-h-screen bg-background flex flex-col">
+          <header className="border-b border-border bg-card px-6 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Customer Portal
+              </p>
+              <h1 className="text-lg font-semibold text-foreground">
+                {activeTenant?.company_name || "Customer Portal"}
+              </h1>
+              <p className="text-xs text-muted-foreground">{userEmail}</p>
             </div>
-
-
-            {/* Secondary Navigation */}
-            <div className="space-y-1">
-              {secondaryNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    isActive(item.href)
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
-
-          {/* User Section */}
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-10 w-10 bg-primary/10">
-                <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {userDisplayName}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-foreground">{userDisplayName}</p>
+                <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </aside>
+          </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
+          <main className="flex-1 overflow-hidden">{children}</main>
+        </div>
       </PortalContext.Provider>
     </TenantProvider>
   );

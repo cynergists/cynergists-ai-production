@@ -85,18 +85,18 @@ Route::get('/partner/beta', [CynergistsPageController::class, 'page'])->defaults
 Route::get('/partner/verify-email', [CynergistsPageController::class, 'page'])->defaults('component', 'partner/VerifyEmail');
 Route::get('/partner/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'partner/Marketplace');
 
-Route::get('/portal/onboarding', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Onboarding');
-Route::get('/portal', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Dashboard');
-Route::get('/portal/agents', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Agents');
-Route::get('/portal/agents/{agentId}/chat', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/AgentChat');
-Route::get('/portal/browse', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Browse');
-Route::get('/portal/roadmap', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Roadmap');
-Route::get('/portal/suggest', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Suggest');
-Route::get('/portal/settings', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Settings');
-Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Support');
-Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Billing');
-Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Activity');
-Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Integrations');
+Route::get('/portal/onboarding', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/agents', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/agents/{agentId}/chat', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/browse', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/roadmap', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/suggest', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/settings', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::redirect('/portal/admin', '/admin/dashboard');
 
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
@@ -176,6 +176,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/stats', [PortalStatsController::class, 'show']);
         Route::get('/agents', [PortalAgentsController::class, 'index']);
         Route::get('/agents/{agent}', [PortalAgentsController::class, 'show']);
+        Route::put('/agents/{agent}/configuration', [PortalAgentsController::class, 'updateConfiguration']);
         Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
         Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
