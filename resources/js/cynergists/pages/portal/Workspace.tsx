@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { router, usePage } from "@inertiajs/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bot, Loader2, Send, Settings2 } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, Loader2, Send, Settings2 } from "lucide-react";
 import { usePortalContext } from "@/contexts/PortalContext";
 import { apiClient } from "@/lib/api-client";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,8 @@ interface Message {
   content: string;
 }
 
+const AGENTS_PER_PAGE = 5;
+
 export default function PortalWorkspace() {
   const { user } = usePortalContext();
   const queryClient = useQueryClient();
@@ -36,6 +38,7 @@ export default function PortalWorkspace() {
     props.agentId ?? null
   );
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -64,6 +67,18 @@ export default function PortalWorkspace() {
       `${agent.agent_name} ${agent.agent_type}`.toLowerCase().includes(term)
     );
   }, [agents, search]);
+
+  const totalPages = Math.ceil(filteredAgents.length / AGENTS_PER_PAGE);
+
+  const paginatedAgents = useMemo(() => {
+    const startIndex = (currentPage - 1) * AGENTS_PER_PAGE;
+    return filteredAgents.slice(startIndex, startIndex + AGENTS_PER_PAGE);
+  }, [filteredAgents, currentPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const { data: agentDetails, isLoading: agentLoading } = useQuery({
     queryKey: ["agent-details", selectedAgentId],
@@ -207,7 +222,7 @@ export default function PortalWorkspace() {
               className="mt-3"
             />
           </div>
-          <ScrollArea className="flex-1 px-2 pb-3">
+          <div className="min-h-[340px] flex-1 overflow-hidden px-2">
             {agentsLoading ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -219,7 +234,7 @@ export default function PortalWorkspace() {
               </div>
             ) : (
               <div className="space-y-2 px-2">
-                {filteredAgents.map((agent) => (
+                {paginatedAgents.map((agent) => (
                   <button
                     key={agent.id}
                     type="button"
@@ -252,7 +267,32 @@ export default function PortalWorkspace() {
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border px-4 py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 px-2"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Chat */}

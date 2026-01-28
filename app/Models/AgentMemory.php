@@ -10,6 +10,8 @@ class AgentMemory extends Model
     /** @use HasFactory<\Database\Factories\AgentMemoryFactory> */
     use HasFactory;
 
+    protected $table = 'agent_memory';
+
     public $incrementing = false;
 
     protected $keyType = 'string';

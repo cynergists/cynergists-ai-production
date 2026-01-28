@@ -18,7 +18,11 @@ class CynergistResource extends Resource
 {
     protected static ?string $model = Cynergist::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'AI Agents';
+
+    protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema
     {

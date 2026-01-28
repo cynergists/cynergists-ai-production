@@ -1,0 +1,20 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="limeGradient" x1="0" y1="0" x2="160" y2="160">
+            <stop offset="0%" stop-color="#84cc16" />
+            <stop offset="100%" stop-color="#65a30d" />
+        </linearGradient>
+    </defs>
+    <rect width="160" height="160" rx="36" fill="url(#limeGradient)" />
+    <text
+        x="80"
+        y="98"
+        text-anchor="middle"
+        font-size="48"
+        font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-weight="700"
+        fill="#0f172a"
+    >
+        AI
+    </text>
+</svg>

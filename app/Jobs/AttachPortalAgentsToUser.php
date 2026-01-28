@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\AgentAccess;
+use App\Models\CustomerSubscription;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
@@ -49,6 +50,8 @@ class AttachPortalAgentsToUser implements ShouldQueue
             ]);
         }
 
+        $subscription = $this->getOrCreateSubscription($tenant);
+
         $agents = PortalAvailableAgent::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -61,7 +64,7 @@ class AttachPortalAgentsToUser implements ShouldQueue
                 ->first();
 
             $payload = [
-                'subscription_id' => $access?->subscription_id,
+                'subscription_id' => $access?->subscription_id ?? $subscription->id,
                 'customer_id' => $tenant->id,
                 'agent_type' => $available->category ?: 'general',
                 'agent_name' => $available->name,
@@ -81,6 +84,31 @@ class AttachPortalAgentsToUser implements ShouldQueue
                 ]));
             }
         }
+    }
+
+    private function getOrCreateSubscription(PortalTenant $tenant): CustomerSubscription
+    {
+        $subscription = CustomerSubscription::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->first();
+
+        if ($subscription) {
+            return $subscription;
+        }
+
+        return CustomerSubscription::query()->create([
+            'id' => (string) Str::uuid(),
+            'customer_id' => $tenant->id,
+            'product_id' => (string) Str::uuid(),
+            'payment_id' => null,
+            'status' => 'active',
+            'tier' => 'starter',
+            'start_date' => now(),
+            'end_date' => now()->addYear(),
+            'auto_renew' => false,
+            'tenant_id' => $tenant->id,
+        ]);
     }
 
     private function resolveSubdomain(): string

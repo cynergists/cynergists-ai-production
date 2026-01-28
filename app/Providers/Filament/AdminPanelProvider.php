@@ -7,6 +7,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -26,14 +27,43 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('filament')
             ->login()
             ->brandName('Cynergists AI')
-            ->brandLogo(asset('logo.svg'))
+            ->brandLogo(asset('logo-admin.svg'))
+            ->darkModeBrandLogo(asset('logo-admin.svg'))
             ->brandLogoHeight('2rem')
+            ->favicon(asset('favicon.svg'))
+            ->darkMode(true)
             ->colors([
-                'primary' => Color::Orange,
+                'primary' => '#84cc16',  // Tailwind lime-500: exact match for homepage
+                'gray' => Color::Slate,
             ])
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('AI Agents')
+                    ->icon('heroicon-o-sparkles'),
+                NavigationGroup::make()
+                    ->label('Client Portal')
+                    ->icon('heroicon-o-building-office'),
+                NavigationGroup::make()
+                    ->label('User Management')
+                    ->icon('heroicon-o-users'),
+                NavigationGroup::make()
+                    ->label('Partners')
+                    ->icon('heroicon-o-user-group')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Billing')
+                    ->icon('heroicon-o-credit-card'),
+                NavigationGroup::make()
+                    ->label('Staff')
+                    ->icon('heroicon-o-briefcase'),
+                NavigationGroup::make()
+                    ->label('Reports')
+                    ->icon('heroicon-o-chart-bar'),
+            ])
+            ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
