@@ -41,6 +41,7 @@ const Header = ({
   const pathname = url.split("?")[0];
   const isAuthenticated = Boolean(props.auth?.user);
   const isAdmin = Boolean(props.auth?.roles?.includes("admin"));
+  const isClient = Boolean(props.auth?.roles?.includes("client"));
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const isMarketplace = pathname === "/marketplace";
@@ -107,6 +108,8 @@ const Header = ({
             {/* Logo */}
             <Link href="/" className="flex items-center" onClick={scrollToTop}>
               <img src={cynergistsLogo} alt="Cynergists" className="h-16 w-auto" />
+              {/* Show my role */}
+              <span className="text-sm text-muted-foreground">{props.auth?.roles?.join(", ")}</span>
             </Link>
 
             {/* Desktop Navigation - Right aligned */}
@@ -118,8 +121,13 @@ const Header = ({
                 </Link>
               )}
               {isAdmin && (
-                <Link href="/admin" onClick={scrollToTop}>
+                <a href="/filament">
                   <Button variant="outline">Admin</Button>
+                </a>
+              )}
+              {isClient && (
+                <Link href="/portal" onClick={scrollToTop}>
+                  <Button variant="outline">Portal</Button>
                 </Link>
               )}
 
@@ -215,8 +223,13 @@ const Header = ({
                   </Link>
                 )}
                 {isAdmin && (
-                  <Link href="/admin" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
+                  <a href="/filament" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full">Admin</Button>
+                  </a>
+                )}
+                {isClient && (
+                  <Link href="/portal" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
+                    <Button variant="outline" className="w-full">Portal</Button>
                   </Link>
                 )}
                 {isAuthenticated ? (
