@@ -70,8 +70,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment: production
 
     steps:
       - name: Trigger Forge deployment
-        run: curl -s -X POST "${{ secrets.FORGE_DEPLOY_WEBHOOK }}"
+        env:
+          FORGE_WEBHOOK: ${{ secrets.FORGE_DEPLOY_WEBHOOK }}
+        run: |
+          if [ -z "$FORGE_WEBHOOK" ]; then
+            echo "Error: FORGE_DEPLOY_WEBHOOK secret is not set"
+            exit 1
+          fi
+          
+          response=$(curl -s -w "\n%{http_code}" -X POST "$FORGE_WEBHOOK")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Deployment triggered successfully"
+          else
+            echo "Deployment trigger failed"
+            exit 1
+          fi
