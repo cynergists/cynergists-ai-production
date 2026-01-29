@@ -9,17 +9,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class SessionController extends Controller
 {
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): Response
     {
         $credentials = $request->only(['email', 'password']);
         $remember = $request->boolean('remember');
 
+        // Check if user exists and is inactive
+        $user = \App\Models\User::where('email', $credentials['email'])->first();
+
+        if ($user && ! $user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => 'Your account has been deactivated. Please contact support for assistance.',
+            ]);
+        }
+
         if (! Auth::attempt($credentials, $remember)) {
             throw ValidationException::withMessages([
-                'email' => 'These credentials do not match our records.',
+                'email' => 'The email or password you entered is incorrect. Please check your credentials and try again, or use the "Forgot password?" link to reset your password.',
             ]);
         }
 
@@ -39,11 +50,23 @@ class SessionController extends Controller
 
         $redirect = $request->input('redirect');
         if (is_string($redirect) && $this->isSafeRedirect($redirect)) {
+            // Use full page redirect for Filament routes
+            if (Str::startsWith($redirect, '/filament') || Str::startsWith($redirect, '/admin')) {
+                return Inertia::location($redirect);
+            }
+
             return redirect()->to($redirect);
         }
 
         if ($user) {
-            return redirect()->to($this->resolveRedirectForUser($user->roleNames()));
+            $targetUrl = $this->resolveRedirectForUser($user->roleNames());
+
+            // Admins go to Filament which requires a full page refresh
+            if (in_array('admin', $user->roleNames(), true)) {
+                return Inertia::location($targetUrl);
+            }
+
+            return redirect()->to($targetUrl);
         }
 
         return redirect()->intended('/');
@@ -65,7 +88,7 @@ class SessionController extends Controller
     private function resolveRedirectForUser(array $roles): string
     {
         if (in_array('admin', $roles, true)) {
-            return '/admin/dashboard';
+            return '/filament';
         }
 
         if (in_array('sales_rep', $roles, true)) {

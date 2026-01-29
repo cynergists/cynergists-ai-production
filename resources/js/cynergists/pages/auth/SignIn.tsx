@@ -230,12 +230,6 @@ export default function SignIn() {
 
       <div 
         className={`min-h-screen flex items-center justify-center p-4 ${darkMode ? 'bg-background' : 'bg-slate-100'}`}
-        onClick={(e) => {
-          // If clicking on the background (not the card), redirect to marketplace
-          if (e.target === e.currentTarget) {
-            router.visit('/marketplace');
-          }
-        }}
       >
         {/* Theme toggle */}
         <button
