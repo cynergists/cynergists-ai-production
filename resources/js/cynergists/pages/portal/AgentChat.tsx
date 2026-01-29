@@ -167,8 +167,8 @@ export default function AgentChat({ agentId }: { agentId: string }) {
           </Link>
         </Button>
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-primary" />
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="font-semibold">{agent.agent_name}</h1>
@@ -203,8 +203,8 @@ export default function AgentChat({ agentId }: { agentId: string }) {
                 )}
               >
                 {message.role === "assistant" && (
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-5 w-5 text-primary" />
                   </div>
                 )}
                 <Card
@@ -218,8 +218,8 @@ export default function AgentChat({ agentId }: { agentId: string }) {
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </Card>
                 {message.role === "user" && (
-                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 text-primary-foreground" />
+                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-primary-foreground" />
                   </div>
                 )}
               </div>
@@ -227,8 +227,8 @@ export default function AgentChat({ agentId }: { agentId: string }) {
           )}
           {isStreaming && messages[messages.length - 1]?.role !== 'assistant' && (
             <div className="flex gap-3 justify-start">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-primary" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Bot className="h-5 w-5 text-primary" />
               </div>
               <Card className="px-4 py-3 bg-muted">
                 <Loader2 className="h-4 w-4 animate-spin" />

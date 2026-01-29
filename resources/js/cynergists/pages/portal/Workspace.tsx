@@ -257,11 +257,11 @@ export default function PortalWorkspace() {
                                       <img
                                         src={agent.avatar_url}
                                         alt={agent.agent_name}
-                                        className="h-9 w-9 rounded-full object-cover"
+                                        className="h-11 w-11 rounded-full object-cover"
                                       />
                                     ) : (
-                                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                                        <Bot className="h-4 w-4 text-primary" />
+                                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+                                        <Bot className="h-5 w-5 text-primary" />
                                       </div>
                                     )}
                                     <div className="flex min-w-0 flex-1 flex-col">
@@ -311,11 +311,11 @@ export default function PortalWorkspace() {
               <img
                 src={agentDetails.avatar_url}
                 alt={agentDetails.agent_name}
-                className="h-10 w-10 rounded-full object-cover"
+                className="h-12 w-12 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                <Bot className="h-5 w-5 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Bot className="h-6 w-6 text-primary" />
               </div>
             )}
             <div className="min-w-0">
