@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\PortalAvailableAgents\Schemas;
 
+use App\Models\AgentApiKey;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TagsInput;
@@ -190,6 +192,48 @@ class PortalAvailableAgentForm
                                                     ->placeholder('JSON for product media')
                                                     ->helperText('Product page media config'),
                                             ]),
+                                    ]),
+                            ]),
+
+                        Tab::make('API Keys')
+                            ->icon('heroicon-o-key')
+                            ->schema([
+                                Section::make('Attached API Keys')
+                                    ->description('Select which API keys this agent can use for external integrations')
+                                    ->schema([
+                                        CheckboxList::make('apiKeys')
+                                            ->relationship('apiKeys', 'name')
+                                            ->options(function () {
+                                                return AgentApiKey::query()
+                                                    ->active()
+                                                    ->get()
+                                                    ->mapWithKeys(function ($key) {
+                                                        $label = $key->name;
+                                                        $label .= ' ('.ucfirst($key->provider).')';
+                                                        if ($key->isExpired()) {
+                                                            $label .= ' [EXPIRED]';
+                                                        }
+
+                                                        return [$key->id => $label];
+                                                    });
+                                            })
+                                            ->descriptions(function () {
+                                                return AgentApiKey::query()
+                                                    ->active()
+                                                    ->get()
+                                                    ->mapWithKeys(function ($key) {
+                                                        $desc = 'Provider: '.ucfirst($key->provider);
+                                                        if ($key->expires_at) {
+                                                            $desc .= ' | Expires: '.$key->expires_at->format('M j, Y');
+                                                        }
+
+                                                        return [$key->id => $desc];
+                                                    });
+                                            })
+                                            ->columns(2)
+                                            ->searchable()
+                                            ->bulkToggleable()
+                                            ->helperText('These API keys will be available for this agent to use when interacting with external services like LinkedIn (Unipile), web scraping (Apify), or AI (OpenAI).'),
                                     ]),
                             ]),
                     ])

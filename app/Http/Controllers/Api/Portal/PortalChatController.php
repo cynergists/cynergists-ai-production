@@ -6,13 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\SendMessageRequest;
 use App\Models\AgentAccess;
 use App\Models\AgentConversation;
+use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Apex\ApexAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class PortalChatController extends Controller
 {
+    public function __construct(
+        private ApexAgentHandler $apexAgentHandler
+    ) {}
+
     public function conversation(Request $request, string $agent): JsonResponse
     {
         $user = $request->user();
@@ -85,16 +91,15 @@ class PortalChatController extends Controller
             ]);
         }
 
+        $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
         $messages[] = [
             'role' => 'user',
-            'content' => $request->validated('message'),
+            'content' => $userMessage,
         ];
 
-        $assistantMessage = sprintf(
-            "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
-            $agentAccess->agent_name
-        );
+        // Generate the assistant response based on agent type
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user);
 
         $messages[] = [
             'role' => 'assistant',
@@ -117,5 +122,28 @@ class PortalChatController extends Controller
             'assistantMessage' => $assistantMessage,
             'messages' => $messages,
         ]);
+    }
+
+    /**
+     * Generate a response based on the agent type.
+     */
+    private function generateResponse(AgentAccess $agentAccess, string $message, $user): string
+    {
+        // Check if this is the Apex agent
+        if (strtolower($agentAccess->agent_name) === 'apex') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent) {
+                return $this->apexAgentHandler->handle($message, $user, $availableAgent);
+            }
+        }
+
+        // Default response for other agents
+        return sprintf(
+            "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
+            $agentAccess->agent_name
+        );
     }
 }

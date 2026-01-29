@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, router, usePage } from "@inertiajs/react";
-import { Menu, X, Moon, Sun, Search, Check } from "lucide-react";
+import { Menu, X, Moon, Sun, Search, Check, LayoutDashboard, Shield, Sparkles, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import cynergistsLogo from "@/assets/Cynergists_Word_Script_4.webp";
 import CartButton from "@/components/cart/CartButton";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -41,6 +40,7 @@ const Header = ({
   const pathname = url.split("?")[0];
   const isAuthenticated = Boolean(props.auth?.user);
   const isAdmin = Boolean(props.auth?.roles?.includes("admin"));
+  const isClient = Boolean(props.auth?.roles?.includes("client"));
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const isMarketplace = pathname === "/marketplace";
@@ -101,86 +101,119 @@ const Header = ({
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 glass">
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/40">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center" onClick={scrollToTop}>
-              <img src={cynergistsLogo} alt="Cynergists" className="h-16 w-auto" />
+            <Link href="/" className="flex items-center group" onClick={scrollToTop}>
+              <img 
+                src={cynergistsLogo} 
+                alt="Cynergists" 
+                className="h-12 w-auto transition-transform group-hover:scale-105" 
+              />
             </Link>
 
             {/* Desktop Navigation - Right aligned */}
-            <div className="hidden lg:flex items-center gap-4">
+            <div className="hidden lg:flex items-center gap-2">
               {/* Agent Marketplace button - only show when NOT on marketplace */}
               {!isMarketplace && (
                 <Link href="/marketplace" onClick={scrollToTop}>
-                  <Button className="btn-primary">Agent Marketplace</Button>
-                </Link>
-              )}
-              {isAdmin && (
-                <Link href="/admin" onClick={scrollToTop}>
-                  <Button variant="outline">Admin</Button>
+                  <Button className="btn-primary gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Agent Marketplace
+                  </Button>
                 </Link>
               )}
 
-              {/* Theme toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Toggle theme"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5 text-foreground" />
-                ) : (
-                  <Moon className="h-5 w-5 text-foreground" />
+              {/* Portal/Admin buttons with divider if authenticated */}
+              {(isAdmin || isClient) && (
+                <>
+                  <div className="h-6 w-px bg-border/60 mx-1" />
+                  {isClient && (
+                    <Link href="/portal" onClick={scrollToTop}>
+                      <Button variant="ghost" size="sm" className="gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/80">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Portal
+                      </Button>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <a href="/filament">
+                      <Button variant="ghost" size="sm" className="gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/80">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Button>
+                    </a>
+                  )}
+                </>
+              )}
+
+              <div className="h-6 w-px bg-border/60 mx-1" />
+
+              {/* Icon buttons group */}
+              <div className="flex items-center gap-1">
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2.5 rounded-full hover:bg-muted/80 transition-all duration-200 text-foreground/70 hover:text-foreground"
+                  aria-label="Toggle theme"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-[18px] w-[18px]" />
+                  ) : (
+                    <Moon className="h-[18px] w-[18px]" />
+                  )}
+                </button>
+
+                {/* Search icon - only on marketplace */}
+                {isMarketplace && (
+                  <button
+                    onClick={() => setSearchOpen(!searchOpen)}
+                    className="p-2.5 rounded-full hover:bg-muted/80 transition-all duration-200 text-foreground/70 hover:text-foreground"
+                    aria-label="Search"
+                  >
+                    <Search className="h-[18px] w-[18px]" />
+                  </button>
                 )}
-              </button>
 
-              {/* Search icon - only on marketplace */}
-              {isMarketplace && (
-                <button
-                  onClick={() => setSearchOpen(!searchOpen)}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  aria-label="Search"
-                >
-                  <Search className="h-5 w-5 text-foreground" />
-                </button>
-              )}
+                {/* Cart */}
+                <CartButton alwaysShow={isMarketplace} />
+              </div>
 
-              {/* Cart - always show on marketplace, conditional elsewhere */}
-              <CartButton alwaysShow={isMarketplace} />
+              <div className="h-6 w-px bg-border/60 mx-1" />
 
-              {/* Sign In / Sign Out - rightmost */}
+              {/* Sign In / Sign Out */}
               {isAuthenticated ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleSignOut}
-                  className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+                  className="gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/80"
                 >
+                  <LogOut className="h-4 w-4" />
                   Sign Out
-                </button>
+                </Button>
               ) : (
-                <Link
-                  href="/signin"
-                  onClick={scrollToTop}
-                  className="text-foreground/80 hover:text-foreground transition-colors font-medium"
-                >
-                  Sign In
+                <Link href="/signin" onClick={scrollToTop}>
+                  <Button variant="ghost" size="sm" className="gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/80">
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </Button>
                 </Link>
               )}
             </div>
 
             {/* Mobile Menu Toggle & Icons */}
-            <div className="lg:hidden flex items-center gap-2">
+            <div className="lg:hidden flex items-center gap-1">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2.5 rounded-full hover:bg-muted/80 transition-all duration-200 text-foreground/70 hover:text-foreground"
                 aria-label="Toggle theme"
               >
                 {theme === "dark" ? (
-                  <Sun className="h-5 w-5 text-foreground" />
+                  <Sun className="h-[18px] w-[18px]" />
                 ) : (
-                  <Moon className="h-5 w-5 text-foreground" />
+                  <Moon className="h-[18px] w-[18px]" />
                 )}
               </button>
 
@@ -188,63 +221,93 @@ const Header = ({
               {isMarketplace && (
                 <button
                   onClick={() => setSearchOpen(!searchOpen)}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  className="p-2.5 rounded-full hover:bg-muted/80 transition-all duration-200 text-foreground/70 hover:text-foreground"
                   aria-label="Search"
                 >
-                  <Search className="h-5 w-5 text-foreground" />
+                  <Search className="h-[18px] w-[18px]" />
                 </button>
               )}
 
               <CartButton alwaysShow={isMarketplace} />
+              
               <button
-                className="text-foreground"
+                className="p-2.5 rounded-full hover:bg-muted/80 transition-all duration-200 text-foreground/70 hover:text-foreground ml-1"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
               >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
           {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden py-4 border-t border-border">
-              <nav className="flex flex-col gap-4">
-                {!isMarketplace && (
-                  <Link href="/marketplace" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
-                    <Button className="btn-primary w-full">Agent Marketplace</Button>
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link href="/admin" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
-                    <Button variant="outline" className="w-full">Admin</Button>
-                  </Link>
-                )}
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    className="text-center text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
-                  >
-                    Sign Out
-                  </button>
-                ) : (
-                  <Link
-                    href="/signin"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    className="text-center text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </nav>
-            </div>
-          )}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="lg:hidden overflow-hidden"
+              >
+                <nav className="flex flex-col gap-2 py-4 border-t border-border/40">
+                  {!isMarketplace && (
+                    <Link href="/marketplace" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
+                      <Button className="btn-primary w-full gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Agent Marketplace
+                      </Button>
+                    </Link>
+                  )}
+                  {isClient && (
+                    <Link href="/portal" onClick={() => { setMobileMenuOpen(false); scrollToTop(); }}>
+                      <Button variant="outline" className="w-full gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Portal
+                      </Button>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <a href="/filament" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full gap-2">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Button>
+                    </a>
+                  )}
+                  
+                  <div className="h-px bg-border/40 my-2" />
+                  
+                  {isAuthenticated ? (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="w-full gap-2 justify-center text-foreground/70"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <Link
+                      href="/signin"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        scrollToTop();
+                      }}
+                    >
+                      <Button variant="ghost" className="w-full gap-2 justify-center text-foreground/70">
+                        <LogIn className="h-4 w-4" />
+                        Sign In
+                      </Button>
+                    </Link>
+                  )}
+                </nav>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Search Drawer - Apple Store style */}
