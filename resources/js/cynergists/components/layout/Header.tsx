@@ -101,15 +101,15 @@ const Header = ({
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/40">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/40 px-4 sm:px-6 lg:px-12 py-3 sm:py-5">
+        <div className="max-w-screen-2xl mx-auto">
+          <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center group" onClick={scrollToTop}>
               <img 
                 src={cynergistsLogo} 
                 alt="Cynergists" 
-                className="h-12 w-auto transition-transform group-hover:scale-105" 
+                className="h-10 sm:h-12 w-auto transition-transform group-hover:scale-105" 
               />
             </Link>
 
