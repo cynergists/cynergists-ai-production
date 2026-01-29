@@ -13,16 +13,35 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        // Set sidebar collapsed by default on first visit
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_START,
+            fn (): HtmlString => new HtmlString(<<<'HTML'
+                <script>
+                    // Only set default if no preference exists yet
+                    if (localStorage.getItem('_x_isOpen') === null) {
+                        localStorage.setItem('_x_isOpen', 'false');
+                    }
+                </script>
+            HTML),
+        );
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
