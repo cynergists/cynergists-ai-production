@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class PortalAvailableAgent extends Model
 {
@@ -59,5 +60,55 @@ class PortalAvailableAgent extends Model
             'product_media' => 'array',
             'tiers' => 'array',
         ];
+    }
+
+    /**
+     * The API keys associated with this agent.
+     *
+     * @return BelongsToMany<AgentApiKey, $this>
+     */
+    public function apiKeys(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AgentApiKey::class,
+            'agent_api_key_pivot',
+            'agent_id',
+            'api_key_id'
+        )->withPivot('priority')->withTimestamps();
+    }
+
+    /**
+     * Get an API key for a specific provider.
+     * Returns the highest priority active key for the provider.
+     */
+    public function getApiKey(string $provider): ?string
+    {
+        $apiKey = $this->apiKeys()
+            ->where('provider', $provider)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->orderByPivot('priority', 'desc')
+            ->first();
+
+        return $apiKey?->key;
+    }
+
+    /**
+     * Get an API key with its metadata for a specific provider.
+     */
+    public function getApiKeyWithMetadata(string $provider): ?AgentApiKey
+    {
+        return $this->apiKeys()
+            ->where('provider', $provider)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->orderByPivot('priority', 'desc')
+            ->first();
     }
 }
