@@ -1,0 +1,1 @@
+import{aQ as s}from"./app-DEGgoab9.js";import{c as e,d as n}from"./calendar-CtSkIfb9.js";function d(a){const t=s(a),r=t.getFullYear();return t.setFullYear(r+1,0,0),t.setHours(23,59,59,999),t}function c(a,t){return e(a,-1)}function f(a,t){return n(a,-1)}export{c as a,d as e,f as s};
