@@ -19,6 +19,7 @@ import {
   CircleCheck,
   Calendar,
   Sparkles,
+  Search,
 } from "lucide-react";
 import { usePortalContext } from "@/contexts/PortalContext";
 import { apiClient } from "@/lib/api-client";
@@ -80,6 +81,7 @@ export default function PortalWorkspace() {
   const [supportCategory, setSupportCategory] = useState("general");
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
+  const [agentSearchQuery, setAgentSearchQuery] = useState("");
 
   useEffect(() => {
     setSelectedAgentId(props.agentId ?? null);
@@ -95,8 +97,16 @@ export default function PortalWorkspace() {
   });
 
   const filteredAgents = useMemo(() => {
-    return agents ?? [];
-  }, [agents]);
+    if (!agents) return [];
+    if (!agentSearchQuery.trim()) return agents;
+
+    const query = agentSearchQuery.toLowerCase();
+    return agents.filter(
+      (agent) =>
+        agent.agent_name.toLowerCase().includes(query) ||
+        agent.agent_type.toLowerCase().includes(query)
+    );
+  }, [agents, agentSearchQuery]);
 
   const totalPages = Math.ceil(filteredAgents.length / AGENTS_PER_PAGE);
 
@@ -104,6 +114,11 @@ export default function PortalWorkspace() {
     const startIndex = (currentPage - 1) * AGENTS_PER_PAGE;
     return filteredAgents.slice(startIndex, startIndex + AGENTS_PER_PAGE);
   }, [filteredAgents, currentPage]);
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [agentSearchQuery]);
 
   const { data: agentDetails, isLoading: agentLoading } = useQuery({
     queryKey: ["agent-details", selectedAgentId],
@@ -251,6 +266,19 @@ export default function PortalWorkspace() {
           <div className="bg-card border border-primary/20 rounded-2xl p-4 flex-1 flex flex-col overflow-hidden">
             <h2 className="text-base font-semibold text-foreground mb-1">Your AI Agents</h2>
             <p className="text-xs text-muted-foreground mb-3">Select an agent to interact with</p>
+
+            {/* Search Input */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search agents..."
+                value={agentSearchQuery}
+                onChange={(e) => setAgentSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm bg-background border-primary/15 focus:border-primary/40"
+              />
+            </div>
+
             <div className="flex-1 overflow-y-auto">
             {agentsLoading ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground">
