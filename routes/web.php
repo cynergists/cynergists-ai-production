@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Portal\PortalProfileController;
 use App\Http\Controllers\Api\Portal\PortalStatsController;
 use App\Http\Controllers\Api\Portal\PortalSubdomainController;
 use App\Http\Controllers\Api\Portal\PortalSuggestionsController;
+use App\Http\Controllers\Api\Portal\PortalSupportController;
 use App\Http\Controllers\Api\Portal\PortalTenantController;
 use App\Http\Controllers\Api\PublicDataController;
 use App\Http\Controllers\Api\SystemConfigController;
@@ -187,6 +188,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/profile', [PortalProfileController::class, 'show']);
         Route::put('/profile', [PortalProfileController::class, 'update']);
         Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
+        Route::post('/support', [PortalSupportController::class, 'store']);
     });
 });
 

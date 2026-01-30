@@ -37,9 +37,16 @@
     --color-lime-glow: hsl(var(--lime-glow));
     --color-teal: hsl(var(--teal));
     --color-cyan: hsl(var(--cyan));
+    --color-accent-purple: hsl(var(--accent-purple));
+    --color-surface-2: hsl(var(--surface-2));
+    --color-border-strong: hsl(var(--border-strong));
+    --color-primary-hover: hsl(var(--primary-hover));
+    --color-success: hsl(var(--success));
+    --color-success-foreground: hsl(var(--success-foreground));
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
+    --radius-button: 0.5rem;
 }
 
 /* Cynergists Design System - Dark futuristic theme with lime accents */
@@ -92,6 +99,12 @@
     --lime-glow: 84 81% 55%;
     --teal: 180 60% 35%;
     --cyan: 185 70% 50%;
+    --accent-purple: 258 90% 66%;
+    --surface-2: 220 35% 22%;
+    --border-strong: 220 30% 30%;
+    --primary-hover: 84 81% 50%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
 
     /* Sidebar */
     --sidebar-background: 220 45% 10%;
@@ -124,6 +137,12 @@
     --border: 220 30% 25%;
     --input: 220 30% 22%;
     --ring: 84 81% 44%;
+    --accent-purple: 258 90% 66%;
+    --surface-2: 220 35% 22%;
+    --border-strong: 220 30% 30%;
+    --primary-hover: 84 81% 50%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
     --sidebar-background: 220 45% 10%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 84 81% 44%;
@@ -177,6 +196,12 @@
     --lime-glow: 84 81% 45%;
     --teal: 180 60% 30%;
     --cyan: 185 70% 40%;
+    --accent-purple: 258 90% 56%;
+    --surface-2: 220 20% 95%;
+    --border-strong: 220 20% 75%;
+    --primary-hover: 84 81% 42%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
     /* Sidebar */
     --sidebar-background: 210 20% 96%;
@@ -265,6 +290,10 @@
     box-shadow: 0 0 30px hsl(84 81% 44% / 0.3);
   }
 
+  .shadow-glow-primary {
+    box-shadow: 0 0 20px hsl(84 81% 44% / 0.15);
+  }
+
   .glow-text {
     text-shadow: 0 0 20px hsl(84 81% 44% / 0.5);
   }
@@ -314,6 +343,10 @@
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
+  }
+
+  .border-l-3 {
+    border-left-width: 3px;
   }
 }
 
