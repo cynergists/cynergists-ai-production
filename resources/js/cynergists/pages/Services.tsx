@@ -257,7 +257,7 @@ const Services = () => {
                   </Link>
                 </OrbitingButton>
                 <OrbitingButton asChild variant="outline" className="btn-outline">
-                  <Link href="/pricing">
+                  <Link href="/marketplace">
                     View Pricing
                   </Link>
                 </OrbitingButton>

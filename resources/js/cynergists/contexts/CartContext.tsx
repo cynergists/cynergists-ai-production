@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 export type CartItemType = "role" | "plan" | "ai-agent" | "software" | "product";
 
@@ -58,7 +59,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       return [...current, { ...newItem, quantity: 1 }];
     });
-    setIsOpen(true);
   };
 
   const removeItem = (id: string) => {

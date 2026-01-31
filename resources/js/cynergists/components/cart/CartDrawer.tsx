@@ -1,9 +1,9 @@
-import { ShoppingCart, X, Trash2, Plus, Minus, ArrowRight, Sparkles } from "lucide-react";
 import { Link, router } from "@inertiajs/react";
+import { ShoppingCart, X, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OrbitingButton } from "@/components/ui/orbiting-button";
-import { useCart, CartItem } from "@/contexts/CartContext";
-import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/contexts/CartContext";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -48,30 +48,9 @@ const getTypeBadgeVariant = (type: string) => {
   }
 };
 
-// Recommended products data
-const RECOMMENDED_PRODUCTS: Omit<CartItem, "quantity">[] = [
-  {
-    id: "product-crm",
-    type: "software",
-    name: "CRM",
-    description: "Go High Level CRM system",
-    price: 97,
-    billingPeriod: "monthly",
-  },
-  {
-    id: "product-linkedin-outreach",
-    type: "ai-agent",
-    name: "LinkedIn Outreach",
-    description: "Automated LinkedIn outreach system",
-    price: 397,
-    billingPeriod: "monthly",
-  },
-];
-
 const CartDrawer = () => {
   const {
     items,
-    addItem,
     removeItem,
     updateQuantity,
     clearCart,
@@ -85,11 +64,6 @@ const CartDrawer = () => {
     closeCart();
     router.visit(`/admin/plans?search=${encodeURIComponent(getTypeLabel(type))}`);
   };
-
-  // Filter out products that are already in the cart
-  const recommendedProducts = RECOMMENDED_PRODUCTS.filter(
-    (product) => !items.some((item) => item.id === product.id)
-  );
 
   if (!isOpen) return null;
 
@@ -147,7 +121,7 @@ const CartDrawer = () => {
                 Add specialists, plans, or AI agents to get started
               </p>
               <Button asChild variant="outline" onClick={closeCart}>
-                <Link href="/pricing">Browse Services</Link>
+                <Link href="/marketplace">Browse Services</Link>
               </Button>
             </div>
           ) : (
@@ -215,50 +189,6 @@ const CartDrawer = () => {
                   </div>
                 </div>
               ))}
-
-              {/* Recommended Products Section */}
-              {recommendedProducts.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">Recommended for You</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {recommendedProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="p-3 rounded-lg bg-primary/5 border border-primary/20 hover:border-primary/40 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                                AI Agent
-                              </Badge>
-                            </div>
-                            <h4 className="font-medium text-foreground text-sm">{product.name}</h4>
-                            <p className="text-xs text-muted-foreground">{product.description}</p>
-                          </div>
-                          <div className="text-right ml-3">
-                            <p className="text-sm font-bold text-primary">
-                              {formatCurrency(product.price)}/mo
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full mt-2 text-xs h-8 border-primary/30 hover:bg-primary hover:text-primary-foreground"
-                          onClick={() => addItem(product)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add to Cart
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

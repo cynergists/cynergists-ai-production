@@ -44,6 +44,7 @@ class AgentApiKeyForm
                                                         'apify' => 'Apify (Lead Generation)',
                                                         'elevenlabs' => 'ElevenLabs (Voice)',
                                                         'resend' => 'Resend (Email)',
+                                                        'mailtrap' => 'Mailtrap (Email)',
                                                     ])
                                                     ->searchable()
                                                     ->helperText('The service provider this key is for'),
@@ -80,7 +81,7 @@ class AgentApiKeyForm
                                             ->keyLabel('Setting')
                                             ->valueLabel('Value')
                                             ->addActionLabel('Add Setting')
-                                            ->helperText('Common settings: domain (for Unipile), model (for OpenAI), voice_id (for ElevenLabs)')
+                                            ->helperText('Common settings: domain (for Unipile), model (for OpenAI), voice_id (for ElevenLabs), from_email (for Mailtrap/Resend)')
                                             ->columnSpanFull(),
                                     ]),
                             ]),

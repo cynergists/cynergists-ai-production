@@ -1,6 +1,6 @@
+import { RotateCcw, ArrowRight, Check, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { RotateCcw, ArrowRight, Check, ShoppingCart } from "lucide-react";
 import { 
   essentialsAgents, 
   BASE_PLAN_PRICE,
@@ -10,8 +10,7 @@ import {
   getEssentialsTierIndex,
   formatCurrency 
 } from "@/data/essentialsAgents";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
 
 interface EssentialsPlanSummaryProps {
   selections: Record<string, number>;
@@ -19,8 +18,7 @@ interface EssentialsPlanSummaryProps {
 }
 
 export function EssentialsPlanSummary({ selections, onReset }: EssentialsPlanSummaryProps) {
-  const { addItem, openCart } = useCart();
-  const { toast } = useToast();
+  const { addToCart } = useAddToCartWithToast();
   
   const basePlanPrice = BASE_PLAN_PRICE;
   const includedValue = calcIncludedValue();
@@ -54,25 +52,24 @@ export function EssentialsPlanSummary({ selections, onReset }: EssentialsPlanSum
         return `${agent.name}: ${tierKey.charAt(0).toUpperCase() + tierKey.slice(1)}`;
       });
 
+    const planName = isAtEssentials ? "Essentials Plan" : "Custom Essentials Plan";
     const description = customizations.length > 0 
       ? `Includes: ${essentialsAgents.map(a => a.name).join(", ")}. Upgrades: ${customizations.join(", ")}`
       : `Includes: ${essentialsAgents.map(a => a.name).join(", ")}`;
 
-    addItem({
-      id: `essentials-plan-${Date.now()}`,
-      name: isAtEssentials ? "Essentials Plan" : "Custom Essentials Plan",
-      description,
-      price: totalMonthly,
-      type: "ai-agent",
-      billingPeriod: "monthly"
-    });
-
-    toast({
-      title: "Added to cart!",
-      description: `${isAtEssentials ? "Essentials Plan" : "Custom Essentials Plan"} - ${formatCurrency(totalMonthly)}/mo`,
-    });
-
-    openCart();
+    addToCart(
+      {
+        id: `essentials-plan-${Date.now()}`,
+        name: planName,
+        description,
+        price: totalMonthly,
+        type: "ai-agent",
+        billingPeriod: "monthly"
+      },
+      {
+        description: `${planName} - ${formatCurrency(totalMonthly)}/mo`,
+      }
+    );
   };
 
   return (

@@ -1,10 +1,10 @@
-import { ReactNode } from "react";
 import { Link } from "@inertiajs/react";
 import { ShoppingCart, ArrowRight, Check } from "lucide-react";
+import type { ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OrbitingButton } from "@/components/ui/orbiting-button";
-import { Badge } from "@/components/ui/badge";
-import { useCart } from "@/contexts/CartContext";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
 
 interface ProductDetailLayoutProps {
   // Product Info
@@ -57,10 +57,10 @@ export const ProductDetailLayout = ({
   secondaryCtaLink = "/schedule",
   children,
 }: ProductDetailLayoutProps) => {
-  const { addItem, openCart } = useCart();
+  const { addToCart } = useAddToCartWithToast();
 
   const handleAddToCart = () => {
-    addItem({
+    addToCart({
       id,
       type: "plan",
       name,
@@ -68,7 +68,6 @@ export const ProductDetailLayout = ({
       price,
       billingPeriod: billingPeriod === "one_time" ? undefined : billingPeriod,
     });
-    openCart();
   };
 
   return (

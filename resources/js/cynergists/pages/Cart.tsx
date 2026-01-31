@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet";
 import { Link, router } from "@inertiajs/react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Users } from "lucide-react";
+import { useState } from "react";
+import { Helmet } from "react-helmet";
 import Layout from "@/components/layout/Layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OrbitingButton } from "@/components/ui/orbiting-button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -13,10 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCart } from "@/contexts/CartContext";
-import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Users, Loader2 } from "lucide-react";
-import CheckoutBump from "@/components/checkout/CheckoutBump";
-import CheckoutBumpCRM from "@/components/checkout/CheckoutBumpCRM";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -168,26 +165,8 @@ const Cart = () => {
     router.visit(`/admin/plans?search=${encodeURIComponent(getTypeLabel(type))}`);
   };
   
-  const [checkingAuth, setCheckingAuth] = useState(false);
-
-  const handleCheckout = async () => {
-    setCheckingAuth(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // Store intended destination
-        sessionStorage.setItem("checkout_redirect", "/checkout");
-        router.visit("/signin");
-      } else {
-        router.visit("/checkout");
-      }
-    } catch (error) {
-      console.error("Error checking auth:", error);
-      router.visit("/signin");
-    } finally {
-      setCheckingAuth(false);
-    }
+  const handleCheckout = () => {
+    router.visit("/checkout");
   };
 
   // Filter out specialists that are already in cart and limit to 4
@@ -260,7 +239,7 @@ const Cart = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <OrbitingButton asChild className="btn-primary">
-                    <Link href="/pricing">
+                    <Link href="/marketplace">
                       View Plans
                     </Link>
                   </OrbitingButton>
@@ -377,24 +356,11 @@ const Cart = () => {
                       </p>
                     </div>
 
-                    {/* Order Bumps - Hide for partner packages */}
-                    {!items.some(item => item.metadata?.isPartnerPackage) && (
-                      <div className="mb-4">
-                        <CheckoutBump />
-                        <CheckoutBumpCRM />
-                      </div>
-                    )}
-
                     <OrbitingButton 
                       className="btn-primary w-full mb-3"
                       onClick={handleCheckout}
-                      disabled={checkingAuth}
                     >
-                      {checkingAuth ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                      )}
+                      <ShoppingCart className="mr-2 h-4 w-4" />
                       Check Out
                     </OrbitingButton>
                     
