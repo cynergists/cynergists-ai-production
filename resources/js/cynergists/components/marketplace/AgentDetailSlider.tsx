@@ -12,18 +12,27 @@ import {
 import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
 import { cn } from "@/lib/utils";
 
+interface DatabaseTier {
+  price: number;
+  description: string;
+}
+
 interface AgentDetailSliderProps {
   agentId: string;
   agentName: string;
   agentDescription: string | null;
   agentJobTitle: string | null;
+  agentPrice: number;
+  agentTiers?: DatabaseTier[] | null;
 }
 
 export function AgentDetailSlider({ 
   agentId, 
   agentName, 
   agentDescription,
-  agentJobTitle 
+  agentJobTitle,
+  agentPrice,
+  agentTiers 
 }: AgentDetailSliderProps) {
   const { addToCart } = useAddToCartWithToast();
   
@@ -34,19 +43,72 @@ export function AgentDetailSlider({
     );
   }, [agentName]);
 
+  // Use database tiers if available, otherwise use essentialsAgent tiers
+  const hasDatabaseTiers = agentTiers && agentTiers.length > 0;
+  const useDatabaseData = hasDatabaseTiers && !essentialsAgent;
+
   const [selectedTierIndex, setSelectedTierIndex] = useState(() => {
-    if (!essentialsAgent) return 0;
-    return getEssentialsTierIndex(essentialsAgent);
+    if (essentialsAgent) {
+      return getEssentialsTierIndex(essentialsAgent);
+    }
+    return 0;
   });
 
-  // If no matching essentials agent, don't show slider
-  if (!essentialsAgent) {
-    return null;
+  // If no essentials agent and no database tiers, show simple add to cart
+  if (!essentialsAgent && !hasDatabaseTiers) {
+    return (
+      <div className="space-y-4">
+        {/* Simple pricing display */}
+        <div className="bg-muted/30 rounded-lg p-4">
+          <p className="text-base text-accent dark:text-lime-400">
+            <span className="font-medium">Price:</span> {formatCurrency(agentPrice)}/mo
+          </p>
+        </div>
+
+        {/* Add to Cart Button */}
+        <Button 
+          size="lg" 
+          onClick={() => {
+            addToCart(
+              {
+                id: `agent-${agentId}`,
+                type: "ai-agent",
+                name: agentName,
+                description: agentJobTitle || agentDescription || "",
+                price: agentPrice,
+                billingPeriod: "monthly",
+              },
+              {
+                description: `${agentName} has been added to your cart.`,
+              }
+            );
+          }}
+          className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium"
+        >
+          <ShoppingCart className="mr-2 h-4 w-4" />
+          Add to Cart - {formatCurrency(agentPrice)}/mo
+        </Button>
+      </div>
+    );
   }
 
-  const selectedTier = essentialsAgent.tiers[selectedTierIndex];
-  const isUniformPricing = hasUniformPricing(essentialsAgent);
-  const tierCount = essentialsAgent.tiers.length;
+  // Get tier data from database or essentials
+  const tiers = useDatabaseData ? agentTiers! : essentialsAgent!.tiers;
+  const selectedTier = useDatabaseData 
+    ? {
+        key: `tier-${selectedTierIndex}`,
+        price: agentTiers![selectedTierIndex].price,
+        monthly_output: null,
+        details: agentTiers![selectedTierIndex].description,
+        display_name: `Tier ${selectedTierIndex + 1}`,
+        one_liner: agentTiers![selectedTierIndex].description
+      }
+    : essentialsAgent!.tiers[selectedTierIndex];
+  
+  const isUniformPricing = useDatabaseData 
+    ? agentTiers!.length === 1
+    : hasUniformPricing(essentialsAgent!);
+  const tierCount = tiers.length;
   const maxValue = tierCount - 1;
 
   const handleAddToCart = () => {
@@ -97,27 +159,31 @@ export function AgentDetailSlider({
             
             {/* Tier Step Icons */}
             <div className="flex justify-between mt-2 px-1">
-              {essentialsAgent.tiers.map((tier, index) => (
-                <button
-                  key={tier.key}
-                  onClick={() => setSelectedTierIndex(index)}
-                  className={cn(
-                    "transition-all focus:outline-none focus:ring-2 focus:ring-lime-500/50 rounded-full p-0.5",
-                    index === selectedTierIndex 
-                      ? "text-accent dark:text-lime-400" 
-                      : "text-muted-foreground/50 hover:text-muted-foreground"
-                  )}
-                  aria-label={`Select ${tier.display_name}`}
-                  title={tier.display_name}
-                >
-                  <Circle 
+              {tiers.map((tier, index) => {
+                const tierKey = useDatabaseData ? `tier-${index}` : (tier as any).key;
+                const tierName = useDatabaseData ? `Tier ${index + 1}` : (tier as any).display_name;
+                return (
+                  <button
+                    key={tierKey}
+                    onClick={() => setSelectedTierIndex(index)}
                     className={cn(
-                      "h-3 w-3 transition-all",
-                      index === selectedTierIndex && "fill-accent dark:fill-lime-400"
-                    )} 
-                  />
-                </button>
-              ))}
+                      "transition-all focus:outline-none focus:ring-2 focus:ring-lime-500/50 rounded-full p-0.5",
+                      index === selectedTierIndex 
+                        ? "text-accent dark:text-lime-400" 
+                        : "text-muted-foreground/50 hover:text-muted-foreground"
+                    )}
+                    aria-label={`Select ${tierName}`}
+                    title={tierName}
+                  >
+                    <Circle 
+                      className={cn(
+                        "h-3 w-3 transition-all",
+                        index === selectedTierIndex && "fill-accent dark:fill-lime-400"
+                      )} 
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>

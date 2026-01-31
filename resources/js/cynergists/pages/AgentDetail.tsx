@@ -25,6 +25,11 @@ interface MediaItem {
   type: "image" | "video";
 }
 
+interface AgentTier {
+  price: number;
+  description: string;
+}
+
 interface Agent {
   id: string;
   name: string;
@@ -41,6 +46,7 @@ interface Agent {
   is_active: boolean;
   image_url: string | null;
   product_media: MediaItem[] | null;
+  tiers?: AgentTier[] | null;
 }
 
 const getAgentIcon = (category?: string | null) => {
@@ -244,6 +250,8 @@ export default function AgentDetail({ slug }: { slug: string }) {
                 agentName={agent.name}
                 agentDescription={agent.description}
                 agentJobTitle={agent.job_title}
+                agentPrice={agent.price}
+                agentTiers={agent.tiers}
               />
             </div>
           </div>
