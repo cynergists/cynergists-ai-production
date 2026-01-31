@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Link } from "@inertiajs/react";
 import { Calculator, RotateCcw, ArrowRight, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
-import { PlanTier, getPlanUrl } from "./roleData";
-import { useCart } from "@/contexts/CartContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
+import type { PlanTier} from "./roleData";
+import { getPlanUrl } from "./roleData";
 
 interface RoleSelection {
   roleId: string;
@@ -28,7 +29,7 @@ const PlanCalculatorSummary = ({
 }: PlanCalculatorSummaryProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const activeSelections = selections.filter(s => s.hours > 0);
-  const { addItem, openCart } = useCart();
+  const { addToCart } = useAddToCartWithToast();
   const isMobile = useIsMobile();
   
   // Build URL params for booking form
@@ -70,7 +71,7 @@ const PlanCalculatorSummary = ({
   const handleAddToCart = () => {
     if (!recommendedPlan) return;
     
-    addItem({
+    addToCart({
       type: 'plan',
       id: `${recommendedPlan.name.toLowerCase()}-monthly`,
       name: `${recommendedPlan.name} Plan`,
@@ -78,7 +79,6 @@ const PlanCalculatorSummary = ({
       price: recommendedPlan.price,
       billingPeriod: 'monthly',
     });
-    openCart();
   };
 
   // Mobile compact view

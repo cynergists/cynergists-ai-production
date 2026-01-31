@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
 import { Circle, ShoppingCart, ArrowUp, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { 
   essentialsAgents, 
   EssentialsAgent,
@@ -9,9 +9,8 @@ import {
   hasUniformPricing,
   formatCurrency 
 } from "@/data/essentialsAgents";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
 import { cn } from "@/lib/utils";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
 
 interface AgentDetailSliderProps {
   agentId: string;
@@ -26,8 +25,7 @@ export function AgentDetailSlider({
   agentDescription,
   agentJobTitle 
 }: AgentDetailSliderProps) {
-  const { addItem, openCart } = useCart();
-  const { toast } = useToast();
+  const { addToCart } = useAddToCartWithToast();
   
   // Find matching essentials agent by name
   const essentialsAgent = useMemo(() => {
@@ -56,19 +54,19 @@ export function AgentDetailSlider({
       ? `${selectedTier.display_name}: ${selectedTier.details}`
       : selectedTier.display_name;
     
-    addItem({
-      id: `agent-${agentId}-${selectedTier.key}`,
-      type: "ai-agent",
-      name: agentName,
-      description: tierDescription,
-      price: selectedTier.price,
-      billingPeriod: "monthly",
-    });
-    toast({
-      title: "Added to Cart",
-      description: `${agentName} (${selectedTier.display_name}) has been added to your cart.`,
-    });
-    openCart();
+    addToCart(
+      {
+        id: `agent-${agentId}-${selectedTier.key}`,
+        type: "ai-agent",
+        name: agentName,
+        description: tierDescription,
+        price: selectedTier.price,
+        billingPeriod: "monthly",
+      },
+      {
+        description: `${agentName} (${selectedTier.display_name}) has been added to your cart.`,
+      }
+    );
   };
 
   return (

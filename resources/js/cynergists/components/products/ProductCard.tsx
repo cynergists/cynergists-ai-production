@@ -1,9 +1,8 @@
 import { Link } from "@inertiajs/react";
 import { ShoppingCart, ArrowRight, Check } from "lucide-react";
-import { OrbitingButton } from "@/components/ui/orbiting-button";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { useCart } from "@/contexts/CartContext";
-import type { Product } from "@/hooks/useProductsQueries";
+import { OrbitingButton } from "@/components/ui/orbiting-button";
 import {
   Select,
   SelectContent,
@@ -11,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
+import type { Product } from "@/hooks/useProductsQueries";
 
 interface ProductCardProps {
   product: Product & { categories?: { name: string } | null };
@@ -35,7 +35,7 @@ export const ProductCard = ({
   showFeatures = true,
   maxFeatures = 4,
 }: ProductCardProps) => {
-  const { addItem, openCart } = useCart();
+  const { addToCart } = useAddToCartWithToast();
   const [commitment, setCommitment] = useState<"part-time" | "full-time">("full-time");
 
   const isSpecialist = variant === "specialist" || product.categories?.name === "Team";
@@ -55,7 +55,7 @@ export const ProductCard = ({
     const price = getPrice();
 
     if (isSpecialist) {
-      addItem({
+      addToCart({
         id: `${product.product_sku || product.id}-${commitment}`,
         type: "role",
         name: product.product_name,
@@ -69,7 +69,7 @@ export const ProductCard = ({
         },
       });
     } else {
-      addItem({
+      addToCart({
         id: product.product_sku || product.id,
         type: "plan",
         name: product.product_name,
@@ -78,7 +78,6 @@ export const ProductCard = ({
         billingPeriod: product.billing_type === "one_time" ? undefined : "monthly",
       });
     }
-    openCart();
   };
 
   const categoryName = product.categories?.name || "Product";

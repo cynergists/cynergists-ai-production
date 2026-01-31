@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\Apex\CampaignController;
 use App\Http\Controllers\Api\Apex\LinkedInController;
 use App\Http\Controllers\Api\Apex\PendingActionController;
 use App\Http\Controllers\Api\Apex\ProspectController;
+use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,26 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/user-cynergist-status', UserCynergistStatusController::class);
+
+/*
+|--------------------------------------------------------------------------
+| Checkout API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('checkout')->group(function () {
+    Route::post('/check-email', [CheckoutController::class, 'checkEmail']);
+    Route::post('/register', [CheckoutController::class, 'register']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Payment API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('payment')->group(function () {
+    Route::get('/config', [PaymentController::class, 'getConfig']);
+    Route::post('/process', [PaymentController::class, 'processPayment']);
+});
 
 /*
 |--------------------------------------------------------------------------

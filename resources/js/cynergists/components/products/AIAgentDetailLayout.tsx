@@ -1,9 +1,9 @@
-import { ReactNode } from "react";
 import { Link } from "@inertiajs/react";
 import { ShoppingCart, ArrowRight, Check, Bot, Plug } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { OrbitingButton } from "@/components/ui/orbiting-button";
-import { useCart } from "@/contexts/CartContext";
+import { useAddToCartWithToast } from "@/hooks/useAddToCartWithToast";
 
 interface AIAgentDetailLayoutProps {
   // Agent Info
@@ -56,10 +56,10 @@ export const AIAgentDetailLayout = ({
   secondaryCtaLink = "/schedule",
   children,
 }: AIAgentDetailLayoutProps) => {
-  const { addItem, openCart } = useCart();
+  const { addToCart } = useAddToCartWithToast();
 
   const handleAddToCart = () => {
-    addItem({
+    addToCart({
       id,
       type: "ai-agent",
       name,
@@ -67,7 +67,6 @@ export const AIAgentDetailLayout = ({
       price,
       billingPeriod: billingPeriod === "one_time" ? "monthly" : billingPeriod,
     });
-    openCart();
   };
 
   return (
