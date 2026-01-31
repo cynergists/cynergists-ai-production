@@ -206,9 +206,10 @@ export default function AgentDetail({ slug }: { slug: string }) {
               </div>
 
               {/* Description - white text */}
-              <p className="text-foreground text-lg leading-relaxed">
-                {agent.long_description || agent.description}
-              </p>
+              <div 
+                className="text-foreground text-lg leading-relaxed [&>p]:mb-4 [&>p:last-child]:mb-0 [&>strong]:font-bold"
+                dangerouslySetInnerHTML={{ __html: agent.long_description || agent.description || '' }}
+              />
 
               {/* What's Included Section - Inline under description */}
               {agent.features && agent.features.length > 0 && (

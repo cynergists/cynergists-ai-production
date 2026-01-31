@@ -17,6 +17,11 @@ import {
   ChevronRight
 } from "lucide-react";
 
+const stripHtmlTags = (html: string | null): string => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '');
+};
+
 interface MediaItem {
   url: string;
   type: "image" | "video";
@@ -136,7 +141,7 @@ export function AIAgentCard({ agent, showDiscount = false, discountPercent = 0 }
           {/* Description and Features */}
           <div className="px-8 flex-1">
             <p className="text-slate-300 text-sm leading-relaxed line-clamp-2 mb-5">
-              {agent.description}
+              {stripHtmlTags(agent.description)}
             </p>
             
             {/* Features in horizontal layout */}
@@ -290,7 +295,7 @@ export function AIAgentCard({ agent, showDiscount = false, discountPercent = 0 }
 
           {/* Description */}
           <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 min-h-[60px] mb-4">
-            {agent.description}
+            {stripHtmlTags(agent.description)}
           </p>
 
           {/* Features Section */}
