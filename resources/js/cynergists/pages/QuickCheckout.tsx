@@ -35,7 +35,7 @@ export default function QuickCheckout() {
     const productKey = searchParams.get("product");
     
     if (!productKey || !QUICK_PRODUCTS[productKey]) {
-      router.visit("/pricing");
+      router.visit("/marketplace");
       return;
     }
 

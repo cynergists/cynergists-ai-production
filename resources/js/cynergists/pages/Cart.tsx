@@ -239,7 +239,7 @@ const Cart = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <OrbitingButton asChild className="btn-primary">
-                    <Link href="/pricing">
+                    <Link href="/marketplace">
                       View Plans
                     </Link>
                   </OrbitingButton>

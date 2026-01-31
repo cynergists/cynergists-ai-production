@@ -121,7 +121,7 @@ const CartDrawer = () => {
                 Add specialists, plans, or AI agents to get started
               </p>
               <Button asChild variant="outline" onClick={closeCart}>
-                <Link href="/pricing">Browse Services</Link>
+                <Link href="/marketplace">Browse Services</Link>
               </Button>
             </div>
           ) : (

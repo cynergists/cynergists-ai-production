@@ -14,7 +14,7 @@ const NotFound = () => {
   }, [pathname]);
 
   const popularLinks = [
-    { label: "View Pricing Plans", href: "/pricing" },
+    { label: "View Pricing Plans", href: "/marketplace" },
     { label: "Explore Services", href: "/services" },
     { label: "Read Case Studies", href: "/case-studies" },
     { label: "Contact Us", href: "/contact" },
