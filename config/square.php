@@ -30,7 +30,9 @@ return [
     | Your Square application ID. This is used to initialize the Web SDK.
     |
     */
-    'application_id' => env('SQUARE_APPLICATION_ID'),
+    'application_id' => env('SQUARE_ENVIRONMENT') === 'production'
+        ? env('SQUARE_PRODUCTION_APPLICATION_ID')
+        : env('SQUARE_SANDBOX_APPLICATION_ID'),
 
     /*
     |--------------------------------------------------------------------------
@@ -40,5 +42,17 @@ return [
     | Your Square location ID. Get this from Square Dashboard -> Locations.
     |
     */
-    'location_id' => env('SQUARE_LOCATION_ID'),
+    'location_id' => env('SQUARE_ENVIRONMENT') === 'production'
+        ? env('SQUARE_PRODUCTION_LOCATION_ID')
+        : env('SQUARE_SANDBOX_LOCATION_ID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Square Webhook Signature Key
+    |--------------------------------------------------------------------------
+    |
+    | Used to verify Square webhook signatures for security.
+    |
+    */
+    'webhook_signature_key' => env('SQUARE_WEBHOOK_SIGNATURE_KEY'),
 ];

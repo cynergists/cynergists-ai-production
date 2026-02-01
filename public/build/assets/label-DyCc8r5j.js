@@ -1,1 +1,0 @@
-import{r,j as t,b as i,as as l}from"./app-DEGgoab9.js";import{R as a}from"./index-Dn_VlTCY.js";const m=l("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"),d=r.forwardRef(({className:s,...e},o)=>t.jsx(a,{ref:o,className:i(m(),s),...e}));d.displayName=a.displayName;export{d as L};

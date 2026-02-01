@@ -1,1 +1,0 @@
-import{j as s,n as e}from"./app-DEGgoab9.js";import{c as i}from"./index-DV3M_3Bq.js";function t({className:a,...r}){return s.jsx(e,{role:"status","aria-label":"Loading",className:i("size-4 animate-spin",a),...r})}export{t as S};

@@ -1,1 +1,0 @@
-import{r as e,j as l,b as m}from"./app-DEGgoab9.js";import{R as a}from"./index-D-qTxAoe.js";const x=e.forwardRef(({className:o,orientation:r="horizontal",decorative:s=!0,...t},p)=>l.jsx(a,{ref:p,decorative:s,orientation:r,className:m("shrink-0 bg-border",r==="horizontal"?"h-[1px] w-full":"h-full w-[1px]",o),...t}));x.displayName=a.displayName;export{x as S};
