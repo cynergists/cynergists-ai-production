@@ -17,11 +17,13 @@ class AttachPortalAgentsToUser implements ShouldQueue
 
     /**
      * @param  non-empty-string  $email
+     * @param  array<string>|null  $agentNames  Optional list of specific agent names to attach. If null, attaches all active agents.
      */
     public function __construct(
         public string $email,
         public ?string $companyName = null,
         public ?string $subdomain = null,
+        public ?array $agentNames = null,
     ) {}
 
     /**
@@ -52,10 +54,15 @@ class AttachPortalAgentsToUser implements ShouldQueue
 
         $subscription = $this->getOrCreateSubscription($tenant);
 
-        $agents = PortalAvailableAgent::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+        // Build query for available agents
+        $agentsQuery = PortalAvailableAgent::query()->where('is_active', true);
+
+        // If specific agent names are provided, filter to only those agents
+        if ($this->agentNames !== null && ! empty($this->agentNames)) {
+            $agentsQuery->whereIn('name', $this->agentNames);
+        }
+
+        $agents = $agentsQuery->orderBy('sort_order')->get();
 
         foreach ($agents as $available) {
             $access = AgentAccess::query()
