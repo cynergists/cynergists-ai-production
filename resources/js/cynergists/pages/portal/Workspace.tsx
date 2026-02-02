@@ -94,6 +94,9 @@ export default function PortalWorkspace() {
       return response.agents;
     },
     enabled: Boolean(user?.id),
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const filteredAgents = useMemo(() => {

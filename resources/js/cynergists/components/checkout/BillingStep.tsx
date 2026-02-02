@@ -18,6 +18,7 @@ interface SquareCardLocal {
 interface BillingStepProps {
   onNext: () => void;
   onTransactionComplete: (transaction: TransactionData) => void;
+  user?: { id: string; name: string; email: string } | null;
 }
 
 type AccountState = "checking" | "enter_email" | "logged_in" | "existing_user" | "new_user" | "registering";
@@ -54,7 +55,7 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
+const BillingStep = ({ onNext, onTransactionComplete, user }: BillingStepProps) => {
   const { items, clearCart } = useCart();
   const { settings: paymentSettings } = usePaymentSettings();
   const squareCardRef = useRef<SquareCardLocal | null>(null);
@@ -105,35 +106,19 @@ const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
     `${item.name}${item.quantity > 1 ? ` x${item.quantity}` : ''}`
   ).join(", ");
 
-  // Check if user is logged in on mount via Laravel session
+  // Check if user is logged in via Inertia props
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/user", {
-          credentials: "include",
-          headers: {
-            "Accept": "application/json",
-          },
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData) {
-            setLoggedInUser({ name: userData.name, email: userData.email });
-            setEmail(userData.email);
-            setAccountState("logged_in");
-            setCardName(userData.name || "");
-          } else {
-            setAccountState("enter_email");
-          }
-        } else {
-          setAccountState("enter_email");
-        }
-      } catch {
-        setAccountState("enter_email");
-      }
-    };
-    checkAuth();
-  }, []);
+    if (user) {
+      // User is logged in
+      setLoggedInUser({ name: user.name, email: user.email });
+      setEmail(user.email);
+      setAccountState("logged_in");
+      setCardName(user.name || "");
+    } else {
+      // User is not logged in
+      setAccountState("enter_email");
+    }
+  }, [user]);
 
   // Load Square SDK
   useEffect(() => {
@@ -515,12 +500,23 @@ const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
               Account
             </h2>
             <p className="text-sm text-muted-foreground">
-              {accountState === "logged_in" 
-                ? "You're signed in" 
+              {accountState === "checking"
+                ? "Checking your login status..."
+                : accountState === "logged_in" 
+                ? "You're signed in and ready to checkout" 
+                : accountState === "existing_user"
+                ? "Welcome back!"
                 : "Enter your email to continue"}
             </p>
           </div>
         </div>
+
+        {accountState === "checking" && (
+          <div className="flex items-center gap-3 p-4 bg-muted/30 border border-border rounded-lg">
+            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+            <p className="text-sm text-muted-foreground">Verifying your account...</p>
+          </div>
+        )}
 
         {accountState === "logged_in" && loggedInUser && (
           <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
@@ -551,7 +547,7 @@ const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
           </div>
         )}
 
-        {(accountState === "enter_email" || accountState === "checking") && (
+        {accountState === "enter_email" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">

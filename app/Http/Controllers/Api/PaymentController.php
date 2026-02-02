@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\AgentAttachmentService;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -86,7 +87,45 @@ class PaymentController extends Controller
                     'customer_email' => $validated['customer_email'],
                     'amount' => $validated['amount'],
                     'user_id' => $user?->id,
+                    'cart_items' => $validated['cart_items'] ?? [],
                 ]);
+
+                // Attach purchased agents to the user's portal tenant
+                if ($user && ! empty($validated['cart_items'])) {
+                    $purchasedAgentNames = array_map(
+                        fn ($item) => $item['name'],
+                        $validated['cart_items']
+                    );
+
+                    // Attach the purchased agents to the user's portal account
+                    $attachmentService = app(AgentAttachmentService::class);
+                    $result = $attachmentService->attachAgentsToUser(
+                        $user->email,
+                        $purchasedAgentNames,
+                        companyName: null,
+                        subdomain: null
+                    );
+
+                    if ($result['success']) {
+                        Log::info('Successfully attached agents to user', [
+                            'user_email' => $user->email,
+                            'agent_names' => $purchasedAgentNames,
+                            'agents_attached' => $result['agents_attached'],
+                            'tenant_id' => $result['tenant_id'],
+                        ]);
+                    } else {
+                        Log::error('Failed to attach agents after payment', [
+                            'user_email' => $user->email,
+                            'agent_names' => $purchasedAgentNames,
+                            'error' => $result['message'],
+                        ]);
+                    }
+                } elseif (! $user) {
+                    Log::warning('Payment successful but user not found for agent attachment', [
+                        'customer_email' => $validated['customer_email'],
+                        'payment_id' => $payment->getId(),
+                    ]);
+                }
 
                 return response()->json([
                     'success' => true,
