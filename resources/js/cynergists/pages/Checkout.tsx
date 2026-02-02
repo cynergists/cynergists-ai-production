@@ -1,7 +1,8 @@
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
+import { useQueryClient } from "@tanstack/react-query";
 import BillingStep from "@/components/checkout/BillingStep";
 import ConfirmationStep from "@/components/checkout/ConfirmationStep";
 import Layout from "@/components/layout/Layout";
@@ -76,6 +77,8 @@ const formatCurrency = (amount: number) => {
 
 const Checkout = () => {
   const { items, totalPrice, totalItems } = useCart();
+  const { props } = usePage<{ auth: { user: { id: string; name: string; email: string } | null } }>();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<"billing" | "confirmation">("billing");
   const [transactionData, setTransactionData] = useState<TransactionData | undefined>();
 
@@ -88,6 +91,8 @@ const Checkout = () => {
 
   const handleTransactionComplete = (transaction: TransactionData) => {
     setTransactionData(transaction);
+    // Remove portal agents cache so newly purchased agents appear immediately on next visit
+    queryClient.removeQueries({ queryKey: ["portal-agents"] });
   };
 
   const goToConfirmation = () => {
@@ -185,6 +190,7 @@ const Checkout = () => {
                 <BillingStep
                   onNext={goToConfirmation}
                   onTransactionComplete={handleTransactionComplete}
+                  user={props.auth?.user}
                 />
               </>
             )}
