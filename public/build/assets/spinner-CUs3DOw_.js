@@ -1,1 +1,0 @@
-import{j as s,m as e}from"./app-DpPlT-lI.js";import{c as i}from"./index-DqwR48vv.js";function t({className:a,...r}){return s.jsx(e,{role:"status","aria-label":"Loading",className:i("size-4 animate-spin",a),...r})}export{t as S};
