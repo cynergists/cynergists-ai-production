@@ -1,1 +1,0 @@
-import{l as c,r as i,h as d,i as n}from"./app-Lw9toWEL.js";function C(){const{addItem:t}=c();return{addToCart:i.useCallback((a,s)=>{const{title:o="Added to cart",description:r,showToast:e=!0}=s||{};t(a),e&&d.success(o,{description:r||a.name,action:{label:"View Cart",onClick:()=>n.visit("/cart")}})},[t])}}export{C as u};
