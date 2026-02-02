@@ -6,7 +6,8 @@ import { defineConfig } from 'vite';
 import path from 'node:path';
 import fs from 'node:fs';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+    base: mode === 'production' ? '/' : '/',
     plugins: [
         {
             name: 'resolve-at-fallback',
@@ -95,4 +96,4 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
-});
+}));

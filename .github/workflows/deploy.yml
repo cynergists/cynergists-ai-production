@@ -53,6 +53,8 @@ jobs:
         run: npm ci
 
       - name: Build assets
+        env:
+          APP_URL: https://cynergists.ai
         run: npm run build
 
       - name: Commit built assets
