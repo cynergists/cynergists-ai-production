@@ -8,6 +8,10 @@ import fs from 'node:fs';
 
 export default defineConfig(({ mode }) => ({
     base: mode === 'production' ? '/' : '/',
+    build: {
+        reportCompressedSize: false, // Disable gzip size reporting to save memory
+        chunkSizeWarningLimit: 1000,
+    },
     plugins: [
         {
             name: 'resolve-at-fallback',
