@@ -7,7 +7,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 export default defineConfig(({ mode }) => ({
-    base: mode === 'production' ? '/' : '/',
+    base: mode === 'production' ? '/build/' : '/',
     build: {
         reportCompressedSize: false, // Disable gzip size reporting to save memory
         chunkSizeWarningLimit: 1000,
