@@ -516,7 +516,9 @@ const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
             </h2>
             <p className="text-sm text-muted-foreground">
               {accountState === "logged_in" 
-                ? "You're signed in" 
+                ? "You're signed in and ready to checkout" 
+                : accountState === "existing_user"
+                ? "Welcome back!"
                 : "Enter your email to continue"}
             </p>
           </div>
@@ -551,7 +553,7 @@ const BillingStep = ({ onNext, onTransactionComplete }: BillingStepProps) => {
           </div>
         )}
 
-        {(accountState === "enter_email" || accountState === "checking") && (
+        {accountState === "enter_email" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
