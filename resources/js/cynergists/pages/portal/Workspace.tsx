@@ -165,6 +165,23 @@ export default function PortalWorkspace() {
     }
   }, [conversation]);
 
+  // Auto-start conversation with Cynessa
+  useEffect(() => {
+    if (
+      selectedAgentId &&
+      agentDetails?.agent_name?.toLowerCase() === "cynessa" &&
+      messages.length === 0 &&
+      !isStreaming &&
+      !sendMessage.isPending
+    ) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        sendMessage.mutate("Hi");
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedAgentId, agentDetails?.agent_name, messages.length, isStreaming]);
+
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -454,7 +471,7 @@ export default function PortalWorkspace() {
             )}
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-4 py-3" ref={scrollRef}>
+            <ScrollArea className="flex-1 max-h-[600px] px-4 py-3" ref={scrollRef}>
               {selectedAgentId ? (
                 <div className="space-y-3">
                 {messages.length === 0 ? (

@@ -9,6 +9,7 @@ use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Cynessa\CynessaAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -16,7 +17,8 @@ use Illuminate\Support\Str;
 class PortalChatController extends Controller
 {
     public function __construct(
-        private ApexAgentHandler $apexAgentHandler
+        private ApexAgentHandler $apexAgentHandler,
+        private CynessaAgentHandler $cynessaAgentHandler
     ) {}
 
     public function conversation(Request $request, string $agent): JsonResponse
@@ -129,6 +131,8 @@ class PortalChatController extends Controller
      */
     private function generateResponse(AgentAccess $agentAccess, string $message, $user): string
     {
+        $tenant = PortalTenant::forUser($user);
+
         // Check if this is the Apex agent
         if (strtolower($agentAccess->agent_name) === 'apex') {
             $availableAgent = PortalAvailableAgent::query()
@@ -137,6 +141,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent) {
                 return $this->apexAgentHandler->handle($message, $user, $availableAgent);
+            }
+        }
+
+        // Check if this is the Cynessa agent
+        if (strtolower($agentAccess->agent_name) === 'cynessa') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant);
             }
         }
 
