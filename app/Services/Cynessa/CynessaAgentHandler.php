@@ -17,7 +17,7 @@ class CynessaAgentHandler
     /**
      * Handle an incoming chat message and generate a response.
      */
-    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant): string
+    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = []): string
     {
         // Build context about the user and their current onboarding state
         $settings = $tenant->settings ?? [];
@@ -25,11 +25,25 @@ class CynessaAgentHandler
         $systemPrompt = $this->buildSystemPrompt($user, $tenant, $settings);
         $userContext = $this->buildUserContext($tenant, $settings);
         
-        // Call Claude with conversation context
-        $fullMessage = $userContext . "\n\nUser message: " . $message;
+        // Build messages array for Claude API
+        $messages = [];
+        
+        // Add conversation history (excluding the current message which is already passed in)
+        foreach ($conversationHistory as $msg) {
+            $messages[] = [
+                'role' => $msg['role'],
+                'content' => $msg['content'],
+            ];
+        }
+        
+        // Add the current user message with context
+        $messages[] = [
+            'role' => 'user',
+            'content' => $userContext . "\n\nUser message: " . $message,
+        ];
         
         try {
-            $response = $this->claudeService->ask($fullMessage, $systemPrompt, 1024);
+            $response = $this->claudeService->chat($messages, $systemPrompt, 1024);
             
             // Extract any structured data from the response
             $this->extractAndSaveData($response, $tenant);
@@ -67,8 +81,7 @@ IMPORTANT INSTRUCTIONS:
 - Be conversational and natural - don't use rigid scripts
 - If information is missing or unclear, politely ask again
 - After collecting basic info, encourage them to upload brand assets (logos, images, documents)
-- When users upload files, you will see \"[File uploaded: filename]\" messages - acknowledge these!
-- If user says \"that's all\", \"done\", \"no more\", or similar, they're finished uploading - move forward
+- When users upload files, you will see \"[File uploaded: filename]\" messages - acknowledge these!- ALWAYS ask what type of file it is when a file is uploaded (options: logo, color_palette, brand_guide, font, image, document, video)- If user says \"that's all\", \"done\", \"no more\", or similar, they're finished uploading - move forward
 - When user indicates they're done uploading, thank them and explain next steps
 - DO NOT keep asking for uploads after user says they're done
 - Check the CURRENT USER DATA below to see what files have already been uploaded
@@ -80,7 +93,16 @@ RESPONSE FORMAT:
 When you receive information, respond naturally and include a special marker line at the end:
 [DATA: company_name=\"Their Company\" industry=\"their industry\" services=\"what they said\"]
 
+When user specifies a file type for an uploaded file, use:
+[DATA: file_type=\"filename.ext:logo\" or file_type=\"filename.ext:color_palette\"]
+
+File type options: logo, color_palette, brand_guide, font, image, document, video
+
 Only include fields that were just provided or updated in the user's message.
+
+IMPORTANT: Do NOT create summaries or lists that rely on the [DATA: ...] marker to display information.
+The user cannot see [DATA: ...] markers - they are only for the system.
+When summarizing, write out the actual information in plain text, not in DATA format.
 
 COMPLETING ONBOARDING:
 When all required info is collected (company name, industry, services, and at least one brand asset file), 
@@ -177,7 +199,14 @@ and the user indicates they're done, thank them and let them know:
                 $updates['services_needed'] = trim($match[1]);
             }
             
-            // Save if we have updates
+            // Check for file type updates
+            if (preg_match('/file_type="([^"]+):([^"]+)"/', $dataString, $match)) {
+                $filename = trim($match[1]);
+                $fileType = trim($match[2]);
+                $this->onboardingService->updateBrandAssetType($tenant, $filename, $fileType);
+            }
+            
+            // Save company info if we have updates
             if (!empty($updates)) {
                 $this->onboardingService->updateCompanyInfo($tenant, $updates);
             }
@@ -192,7 +221,10 @@ and the user indicates they're done, thank them and let them know:
         // Remove all [DATA: ...] markers from the response
         $cleaned = preg_replace('/\[DATA:.*?\]/s', '', $response);
         
-        // Trim any extra whitespace
+        // Clean up multiple blank lines (more than 2 consecutive newlines)
+        $cleaned = preg_replace('/\n{3,}/', "\n\n", $cleaned);
+        
+        // Trim any extra whitespace from start and end
         return trim($cleaned);
     }
 }

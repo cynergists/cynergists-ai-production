@@ -115,6 +115,29 @@ class OnboardingService
     }
 
     /**
+     * Update the type of a specific brand asset file.
+     */
+    public function updateBrandAssetType(PortalTenant $tenant, string $filename, string $type): void
+    {
+        $settings = $tenant->settings ?? [];
+        $brandAssets = $settings['brand_assets'] ?? [];
+        
+        // Find and update the matching file
+        foreach ($brandAssets as $index => $asset) {
+            if ($asset['filename'] === $filename) {
+                $brandAssets[$index]['type'] = $type;
+                break;
+            }
+        }
+        
+        $tenant->update([
+            'settings' => array_merge($settings, [
+                'brand_assets' => $brandAssets,
+            ]),
+        ]);
+    }
+
+    /**
      * Check if tenant has uploaded brand assets.
      */
     public function hasBrandAssets(PortalTenant $tenant): bool

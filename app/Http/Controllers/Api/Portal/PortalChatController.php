@@ -99,13 +99,14 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        
+        // Generate the assistant response with conversation history (before adding current message)
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        
         $messages[] = [
             'role' => 'user',
             'content' => $userMessage,
         ];
-
-        // Generate the assistant response based on agent type
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user);
 
         $messages[] = [
             'role' => 'assistant',
@@ -133,7 +134,7 @@ class PortalChatController extends Controller
     /**
      * Generate a response based on the agent type.
      */
-    private function generateResponse(AgentAccess $agentAccess, string $message, $user): string
+    private function generateResponse(AgentAccess $agentAccess, string $message, $user, array $conversationHistory = []): string
     {
         $tenant = PortalTenant::forUser($user);
 
@@ -155,7 +156,7 @@ class PortalChatController extends Controller
                 ->first();
 
             if ($availableAgent && $tenant) {
-                return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant);
+                return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -225,17 +226,21 @@ class PortalChatController extends Controller
                 'content' => $userMessage,
             ];
             
-            // Let Cynessa respond to the file upload
+            // Let Cynessa respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
                 ->first();
                 
             if ($availableAgent) {
+                // Pass the conversation history (before adding the new upload message)
+                $historyBeforeUpload = array_slice($messages, 0, -1);
+                
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,
                     $user,
                     $availableAgent,
-                    $tenant
+                    $tenant,
+                    $historyBeforeUpload
                 );
                 
                 $messages[] = [

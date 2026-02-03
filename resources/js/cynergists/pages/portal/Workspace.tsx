@@ -587,7 +587,7 @@ export default function PortalWorkspace() {
               {selectedAgentId ? (
                 <div className="space-y-3">
                 {messages.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
+                  <div className="py-8 text-center text-sm text-muted-foreground animate-in fade-in duration-300">
                     Start the conversation with {agentDetails?.agent_name ?? "your agent"}.
                   </div>
                 ) : (
@@ -595,9 +595,10 @@ export default function PortalWorkspace() {
                     <div
                       key={`${message.role}-${index}`}
                       className={cn(
-                        "flex gap-3",
+                        "flex gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300",
                         message.role === "user" ? "justify-end" : "justify-start"
                       )}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {message.role === "assistant" && agentDetails?.avatar_url && (
                         <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-purple/40">
@@ -611,7 +612,7 @@ export default function PortalWorkspace() {
                       <div className="flex flex-col gap-0.5">
                         <Card
                           className={cn(
-                            "max-w-[380px] rounded-xl px-3 py-2 text-foreground",
+                            "max-w-[380px] rounded-xl px-3 py-2 text-foreground transition-all duration-200 hover:shadow-md",
                             message.role === "user"
                               ? "bg-primary text-primary-foreground rounded-br-sm"
                               : "bg-surface-2 border border-primary/10 rounded-bl-sm"
@@ -630,14 +631,14 @@ export default function PortalWorkspace() {
                   ))
                 )}
                 {isStreaming && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in duration-300">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Thinking...
                   </div>
                 )}
               </div>
             ) : (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+              <div className="py-12 text-center text-sm text-muted-foreground animate-in fade-in duration-500">
                 Pick an agent on the left to begin.
               </div>
             )}
