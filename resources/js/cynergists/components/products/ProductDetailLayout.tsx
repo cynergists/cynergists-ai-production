@@ -14,6 +14,8 @@ interface ProductDetailLayoutProps {
   categoryIcon?: ReactNode;
   shortDescription: string;
   price: number;
+  priceLabel?: string;
+  priceNote?: string;
   billingPeriod?: "monthly" | "annual" | "one_time";
   imageUrl?: string;
   
@@ -24,6 +26,7 @@ interface ProductDetailLayoutProps {
   
   // CTAs
   primaryCtaText?: string;
+  primaryCtaLink?: string;
   secondaryCtaText?: string;
   secondaryCtaLink?: string;
   
@@ -47,12 +50,15 @@ export const ProductDetailLayout = ({
   categoryIcon,
   shortDescription,
   price,
+  priceLabel,
+  priceNote,
   billingPeriod = "monthly",
   imageUrl,
   features = [],
   whosItFor,
   integrations = [],
   primaryCtaText = "Add to Cart",
+  primaryCtaLink,
   secondaryCtaText = "Schedule a Call",
   secondaryCtaLink = "/schedule",
   children,
@@ -69,6 +75,20 @@ export const ProductDetailLayout = ({
       billingPeriod: billingPeriod === "one_time" ? undefined : billingPeriod,
     });
   };
+
+  const displayPrice = priceLabel ?? (price > 0 ? formatPrice(price) : "Free");
+
+  const renderPrimaryCta = () =>
+    primaryCtaLink ? (
+      <OrbitingButton asChild className="btn-primary">
+        <Link href={primaryCtaLink}>{primaryCtaText}</Link>
+      </OrbitingButton>
+    ) : (
+      <OrbitingButton className="btn-primary" onClick={handleAddToCart}>
+        <ShoppingCart className="mr-2 h-4 w-4" />
+        {primaryCtaText}
+      </OrbitingButton>
+    );
 
   return (
     <>
@@ -122,22 +142,26 @@ export const ProductDetailLayout = ({
 
               {/* Price */}
               <div className="mb-8">
-                <span className="text-4xl font-bold text-primary">
-                  {price > 0 ? formatPrice(price) : "Free"}
-                </span>
-                {billingPeriod !== "one_time" && price > 0 && (
-                  <span className="text-lg text-muted-foreground">
-                    /{billingPeriod === "monthly" ? "month" : "year"}
-                  </span>
+                <span className="text-4xl font-bold text-primary">{displayPrice}</span>
+                {priceLabel ? (
+                  priceNote && (
+                    <span className="text-sm text-muted-foreground block mt-2">
+                      {priceNote}
+                    </span>
+                  )
+                ) : (
+                  billingPeriod !== "one_time" &&
+                  price > 0 && (
+                    <span className="text-lg text-muted-foreground">
+                      /{billingPeriod === "monthly" ? "month" : "year"}
+                    </span>
+                  )
                 )}
               </div>
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <OrbitingButton className="btn-primary" onClick={handleAddToCart}>
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  {primaryCtaText}
-                </OrbitingButton>
+                {renderPrimaryCta()}
                 <Button asChild variant="outline">
                   <Link href={secondaryCtaLink}>
                     {secondaryCtaText}
@@ -228,11 +252,8 @@ export const ProductDetailLayout = ({
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
             {shortDescription}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <OrbitingButton className="btn-primary" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              {primaryCtaText}
-            </OrbitingButton>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {renderPrimaryCta()}
             <Button asChild variant="outline">
               <Link href={secondaryCtaLink}>
                 {secondaryCtaText}

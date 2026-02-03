@@ -54,6 +54,7 @@ Route::get('/plans/enterprise', [CynergistsPageController::class, 'page'])->defa
 Route::get('/plans/test-plan', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/TestPlan');
 Route::get('/products/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'products/LinkedInOutreach');
 Route::get('/products/crm', [CynergistsPageController::class, 'page'])->defaults('component', 'products/CRM');
+Route::get('/products/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'products/SEOEngine');
 Route::get('/partner/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'partners/LinkedInOutreachPartner');
 Route::get('/partner/linkedin-outreach/checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLinkedInCheckout');
 Route::get('/quick-checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'QuickCheckout');
