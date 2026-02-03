@@ -73,3 +73,12 @@ Route::prefix('apex')->middleware('auth:sanctum')->group(function () {
     Route::post('/pending-actions/approve-all', [PendingActionController::class, 'approveAll']);
     Route::post('/pending-actions/deny-all', [PendingActionController::class, 'denyAll']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Voice API Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
+    Route::post('/voice/{agentId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'processVoiceMessage']);
+});

@@ -1,10 +1,11 @@
 import React from "react";
-import { Bot, Loader2, Paperclip, Send, Mic, Trash2 } from "lucide-react";
+import { Bot, Loader2, Paperclip, Send, Mic, Trash2, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useVoiceMode } from "@/hooks/useVoiceMode";
 
 interface Message {
   role: "user" | "assistant";
@@ -21,6 +22,7 @@ interface ApexChatProps {
   onSend: (e: React.FormEvent) => void;
   onClearChat?: () => void;
   selectedAgentId?: string | null;
+  onMessageReceived?: (message: { role: "user" | "assistant"; content: string }) => void;
 }
 
 export function ApexChat({
@@ -33,7 +35,24 @@ export function ApexChat({
   onSend,
   onClearChat,
   selectedAgentId,
+  onMessageReceived,
 }: ApexChatProps) {
+  // Voice mode hook
+  const {
+    isRecording,
+    isProcessing,
+    isPlaying,
+    toggleVoiceMode,
+    isVoiceActive,
+  } = useVoiceMode({
+    agentId: selectedAgentId,
+    onTranscriptReceived: (text) => {
+      onMessageReceived?.({ role: "user", content: text });
+    },
+    onResponseReceived: (response) => {
+      onMessageReceived?.({ role: "assistant", content: response.text });
+    },
+  });
   return (
     <>
       {/* Messages */}
@@ -127,11 +146,36 @@ export function ApexChat({
           <Button
             variant="outline"
             size="sm"
-            className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
+            className={cn(
+              "h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong",
+              isVoiceActive
+                ? "bg-primary/20 border-primary hover:bg-primary/30"
+                : "hover:bg-primary/10 hover:border-primary/40"
+            )}
+            onClick={toggleVoiceMode}
             disabled={!selectedAgentId}
           >
-            <Mic className="w-3 h-3" />
-            Voice Mode
+            {isRecording ? (
+              <>
+                <Square className="w-3 h-3 animate-pulse" />
+                Recording...
+              </>
+            ) : isProcessing ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Processing...
+              </>
+            ) : isPlaying ? (
+              <>
+                <Square className="w-3 h-3 animate-pulse" />
+                Playing...
+              </>
+            ) : (
+              <>
+                <Mic className="w-3 h-3" />
+                Voice Mode
+              </>
+            )}
           </Button>
           <Button
             variant="outline"

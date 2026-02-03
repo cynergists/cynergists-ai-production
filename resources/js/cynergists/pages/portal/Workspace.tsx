@@ -580,6 +580,12 @@ export default function PortalWorkspace() {
                 onFileClick={() => fileInputRef.current?.click()}
                 onClearChat={handleClearChat}
                 selectedAgentId={selectedAgentId}
+                onMessageReceived={(message) => {
+                  setMessages((prev) => [...prev, message]);
+                  setTimeout(() => {
+                    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                  }, 100);
+                }}
               />
             ) : (
               <>

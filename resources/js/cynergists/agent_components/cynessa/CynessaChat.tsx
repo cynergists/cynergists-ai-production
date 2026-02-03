@@ -1,10 +1,13 @@
-import { Bot, Loader2, Paperclip, Send, Mic, Trash2 } from "lucide-react";
-import React from "react";
+import { Bot, Loader2, Paperclip, Send, Mic, Trash2, Square } from "lucide-react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useVoiceMode } from "@/hooks/useVoiceMode";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 interface Message {
   role: "user" | "assistant";
@@ -25,6 +28,7 @@ interface CynessaChatProps {
   onFileClick: () => void;
   onClearChat?: () => void;
   selectedAgentId?: string | null;
+  onMessageReceived?: (message: { role: "user" | "assistant"; content: string }) => void;
 }
 
 export function CynessaChat({
@@ -41,7 +45,114 @@ export function CynessaChat({
   onFileClick,
   onClearChat,
   selectedAgentId,
+  onMessageReceived,
 }: CynessaChatProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const processedMessagesRef = useRef(new Set<number>());
+
+  // Voice mode hook
+  const {
+    isRecording,
+    isProcessing,
+    isPlaying,
+    toggleVoiceMode,
+    isVoiceActive,
+  } = useVoiceMode({
+    agentId: selectedAgentId,
+    onTranscriptReceived: (text) => {
+      onMessageReceived?.({ role: "user", content: text });
+    },
+    onResponseReceived: (response) => {
+      onMessageReceived?.({ role: "assistant", content: response.text });
+    },
+  });
+
+  // Automatically speak all of Cynessa's responses
+  useEffect(() => {
+    const speakLatestMessage = async () => {
+      if (!selectedAgentId || messages.length === 0) return;
+
+      // Get the last message
+      const lastMessage = messages[messages.length - 1];
+      const lastIndex = messages.length - 1;
+
+      // Only speak assistant messages that haven't been processed yet
+      if (lastMessage.role === "assistant" && !processedMessagesRef.current.has(lastIndex)) {
+        processedMessagesRef.current.add(lastIndex);
+
+        try {
+          console.log('[Auto-Voice] Converting Cynessa response to speech:', lastMessage.content.substring(0, 50));
+          
+          const response = await apiClient.post<{
+            success: boolean;
+            audio: string | null;
+            error?: string;
+          }>(`/api/portal/voice/${selectedAgentId}`, {
+            message: lastMessage.content,
+            textOnly: true, // Flag to indicate we're just converting text to speech
+          });
+
+          if (response.success && response.audio) {
+            console.log('[Auto-Voice] Playing audio response');
+            await playAudio(response.audio);
+          } else if (response.error) {
+            console.warn('[Auto-Voice] No audio:', response.error);
+          }
+        } catch (error) {
+          console.error('[Auto-Voice] Failed to convert text to speech:', error);
+        }
+      }
+    };
+
+    speakLatestMessage();
+  }, [messages, selectedAgentId]);
+
+  // Play audio from base64
+  const playAudio = async (base64Audio: string): Promise<void> => {
+    try {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      // Convert base64 to blob
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(blob);
+
+      // Create and play audio element
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+      audioRef.current.onerror = (e) => {
+        console.error('[Auto-Voice] Audio playback error:', e);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      await audioRef.current.play();
+    } catch (error) {
+      console.error('[Auto-Voice] Failed to play audio:', error);
+    }
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <>
       {/* Messages */}
@@ -157,11 +268,36 @@ export function CynessaChat({
           <Button
             variant="outline"
             size="sm"
-            className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
+            className={cn(
+              "h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong",
+              isVoiceActive
+                ? "bg-primary/20 border-primary hover:bg-primary/30"
+                : "hover:bg-primary/10 hover:border-primary/40"
+            )}
+            onClick={toggleVoiceMode}
             disabled={!selectedAgentId}
           >
-            <Mic className="w-3 h-3" />
-            Voice Mode
+            {isRecording ? (
+              <>
+                <Square className="w-3 h-3 animate-pulse" />
+                Recording...
+              </>
+            ) : isProcessing ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Processing...
+              </>
+            ) : isPlaying ? (
+              <>
+                <Square className="w-3 h-3 animate-pulse" />
+                Playing...
+              </>
+            ) : (
+              <>
+                <Mic className="w-3 h-3" />
+                Voice Mode
+              </>
+            )}
           </Button>
           <Button
             variant="outline"

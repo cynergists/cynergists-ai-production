@@ -16,6 +16,7 @@ const getCsrfToken = (): string | null => {
 const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
   const headers: Record<string, string> = {
     "X-Requested-With": "XMLHttpRequest",
+    "Accept": "application/json",
   };
 
   const csrfToken = getCsrfToken();
