@@ -29,7 +29,7 @@ class OnboardingService
         $steps = [
             'company_info' => [
                 'name' => 'Company Information',
-                'completed' => !empty($tenant->company_name),
+                'completed' => ! empty($tenant->company_name),
             ],
             'brand_assets' => [
                 'name' => 'Brand Assets',
@@ -54,7 +54,7 @@ class OnboardingService
     public function updateCompanyInfo(PortalTenant $tenant, array $data): void
     {
         $settings = $tenant->settings ?? [];
-        
+
         $tenant->update([
             'company_name' => $data['company_name'] ?? $tenant->company_name,
             'settings' => array_merge($settings, [
@@ -62,6 +62,7 @@ class OnboardingService
                 'company_size' => $data['company_size'] ?? ($settings['company_size'] ?? null),
                 'goals' => $data['goals'] ?? ($settings['goals'] ?? null),
                 'services_needed' => $data['services_needed'] ?? ($settings['services_needed'] ?? null),
+                'brand_tone' => $data['brand_tone'] ?? ($settings['brand_tone'] ?? null),
             ]),
         ]);
     }
@@ -73,10 +74,10 @@ class OnboardingService
     public function canComplete(PortalTenant $tenant): bool
     {
         $settings = $tenant->settings ?? [];
-        
-        return !empty($tenant->company_name) 
-            && !empty($settings['industry']) 
-            && !empty($settings['services_needed'])
+
+        return ! empty($tenant->company_name)
+            && ! empty($settings['industry'])
+            && ! empty($settings['services_needed'])
             && $this->hasBrandAssets($tenant);
     }
 
@@ -85,7 +86,7 @@ class OnboardingService
      */
     public function markComplete(PortalTenant $tenant): void
     {
-        if (!$this->isComplete($tenant)) {
+        if (! $this->isComplete($tenant)) {
             $tenant->update([
                 'onboarding_completed_at' => now(),
             ]);
@@ -99,14 +100,14 @@ class OnboardingService
     {
         $settings = $tenant->settings ?? [];
         $brandAssets = $settings['brand_assets'] ?? [];
-        
+
         $brandAssets[] = [
             'filename' => $filename,
             'path' => $path,
             'type' => $type,
             'uploaded_at' => now()->toIso8601String(),
         ];
-        
+
         $tenant->update([
             'settings' => array_merge($settings, [
                 'brand_assets' => $brandAssets,
@@ -121,7 +122,7 @@ class OnboardingService
     {
         $settings = $tenant->settings ?? [];
         $brandAssets = $settings['brand_assets'] ?? [];
-        
+
         // Find and update the matching file
         foreach ($brandAssets as $index => $asset) {
             if ($asset['filename'] === $filename) {
@@ -129,7 +130,7 @@ class OnboardingService
                 break;
             }
         }
-        
+
         $tenant->update([
             'settings' => array_merge($settings, [
                 'brand_assets' => $brandAssets,
@@ -144,7 +145,7 @@ class OnboardingService
     {
         $settings = $tenant->settings ?? [];
         $brandAssets = $settings['brand_assets'] ?? [];
-        
+
         return count($brandAssets) > 0;
     }
 

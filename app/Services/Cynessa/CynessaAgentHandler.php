@@ -21,16 +21,16 @@ class CynessaAgentHandler
     {
         // Build context about the user and their current onboarding state
         $settings = $tenant->settings ?? [];
-        
+
         // Check if this is a question about Cynergists - if so, include knowledge base
         $includeKnowledgeBase = $this->isQuestionAboutCynergists($message);
-        
+
         $systemPrompt = $this->buildSystemPrompt($user, $tenant, $settings, $includeKnowledgeBase);
         $userContext = $this->buildUserContext($tenant, $settings);
-        
+
         // Build messages array for Claude API
         $messages = [];
-        
+
         // Add conversation history (excluding the current message which is already passed in)
         foreach ($conversationHistory as $msg) {
             $messages[] = [
@@ -38,25 +38,41 @@ class CynessaAgentHandler
                 'content' => $msg['content'],
             ];
         }
-        
+
         // Add the current user message with context
         $messages[] = [
             'role' => 'user',
-            'content' => $userContext . "\n\nUser message: " . $message,
+            'content' => $userContext."\n\nUser message: ".$message,
         ];
-        
+
         try {
             $response = $this->claudeService->chat($messages, $systemPrompt, 1024);
-            
+
             // Extract any structured data from the response
             $this->extractAndSaveData($response, $tenant);
-            
+
+            // Check if onboarding should be marked complete
+            $tenant->refresh(); // Reload to get updated data
+            if (! $this->onboardingService->isComplete($tenant)) {
+                // Check if all requirements are now met
+                $settings = $tenant->settings ?? [];
+                $hasAllData = ! empty($tenant->company_name)
+                    && ! empty($settings['industry'])
+                    && ! empty($settings['services_needed'])
+                    && $this->onboardingService->hasBrandAssets($tenant);
+
+                if ($hasAllData) {
+                    $this->onboardingService->markComplete($tenant);
+                }
+            }
+
             // Strip the DATA marker from the response before showing to user
             $cleanResponse = $this->stripDataMarkers($response);
-            
+
             return $cleanResponse;
         } catch (\Exception $e) {
-            \Log::error('Claude API error in Cynessa: ' . $e->getMessage());
+            \Log::error('Claude API error in Cynessa: '.$e->getMessage());
+
             return "I'm having trouble connecting right now. Please try again in a moment or contact support if this continues.";
         }
     }
@@ -67,19 +83,19 @@ class CynessaAgentHandler
     private function loadKnowledgeBase(string $agentName = 'cynessa'): string
     {
         $content = \App\Models\AgentKnowledgeBase::getForAgent($agentName);
-        
+
         if ($content) {
             return $content;
         }
-        
+
         // Fallback to file if database entry doesn't exist
         $path = storage_path('app/cynessa-knowledge-base.md');
-        
+
         if (file_exists($path)) {
             return file_get_contents($path);
         }
-        
-        return "Knowledge base not available.";
+
+        return 'Knowledge base not available.';
     }
 
     /**
@@ -108,15 +124,15 @@ class CynessaAgentHandler
             'custom',
             'integration',
         ];
-        
+
         $lowerMessage = strtolower($message);
-        
+
         foreach ($keywords as $keyword) {
             if (strpos($lowerMessage, $keyword) !== false) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -126,13 +142,43 @@ class CynessaAgentHandler
     private function buildSystemPrompt(User $user, PortalTenant $tenant, array $settings, bool $includeKnowledgeBase = false): string
     {
         $firstName = explode(' ', $user->name)[0] ?? $user->name;
-        
-        $knowledgeBaseSection = "";
+        $isOnboardingComplete = $this->onboardingService->isComplete($tenant);
+
+        $knowledgeBaseSection = '';
         if ($includeKnowledgeBase) {
             $knowledgeBase = $this->loadKnowledgeBase('cynessa');
-            $knowledgeBaseSection = "\n\n--- CYNERGISTS KNOWLEDGE BASE ---\n\nWhen the user asks questions about Cynergists, services, pricing, agents, or policies, answer ONLY from this knowledge base.\nIf the answer is not in the knowledge base, say: \"I don't have that information available. I'll have a human review this.\"\nNever guess or extrapolate beyond what's written here.\n\n" . $knowledgeBase . "\n\n--- END KNOWLEDGE BASE ---\n";
+            $knowledgeBaseSection = "\n\n--- CYNERGISTS KNOWLEDGE BASE ---\n\nWhen the user asks questions about Cynergists, services, pricing, agents, or policies, answer ONLY from this knowledge base.\nIf the answer is not in the knowledge base, say: \"I don't have that information available. I'll have a human review this.\"\nNever guess or extrapolate beyond what's written here.\n\n".$knowledgeBase."\n\n--- END KNOWLEDGE BASE ---\n";
         }
-        
+
+        // Different behavior for completed vs incomplete onboarding
+        if ($isOnboardingComplete) {
+            return "You are Cynessa, an AI assistant for Cynergists. You help customers who have already completed their onboarding.
+
+Your personality: Friendly, professional, helpful, concise. Use emojis sparingly but appropriately.
+
+IMPORTANT: The user {$firstName} has already completed onboarding and provided all required information (company details, services needed, and brand assets).
+
+Your role now is to:
+- Answer questions about Cynergists, their services, and the platform
+- Help them understand how to use their AI agents
+- Provide guidance on next steps and best practices
+- Direct them to support if needed
+
+DO NOT:
+- Ask for company name, industry, or services again
+- Request brand assets again
+- Act like they're a new user
+
+RESPONSE FORMAT:
+If the user provides or updates information (like brand colors, brand tone, additional services, etc.), 
+include a special marker line at the end of your response:
+[DATA: company_name=\"...\" industry=\"...\" services=\"...\" brand_tone=\"...\"]
+
+Only include fields that were just provided or updated in the user's message.
+
+You can see their current information in the CURRENT USER DATA section below.".$knowledgeBaseSection;
+        }
+
         return "You are Cynessa, an AI onboarding assistant for Cynergists. You help new customers get set up by collecting key information.
 
 Your personality: Friendly, professional, helpful, concise. Use emojis sparingly but appropriately.
@@ -159,7 +205,7 @@ IMPORTANT INSTRUCTIONS:
 
 RESPONSE FORMAT:
 When you receive information, respond naturally and include a special marker line at the end:
-[DATA: company_name=\"Their Company\" industry=\"their industry\" services=\"what they said\"]
+[DATA: company_name=\"Their Company\" industry=\"their industry\" services=\"what they said\" brand_tone=\"their brand tone or color\"]
 
 When user specifies a file type for an uploaded file, use:
 [DATA: file_type=\"filename.ext:logo\" or file_type=\"filename.ext:color_palette\"]
@@ -177,7 +223,7 @@ When all required info is collected (company name, industry, services, and at le
 and the user indicates they're done, thank them and let them know:
 1. Their onboarding is complete
 2. They can now explore their AI agents
-3. Each agent should be configured individually for best results" . $knowledgeBaseSection;
+3. Each agent should be configured individually for best results".$knowledgeBaseSection;
     }
 
     /**
@@ -185,15 +231,21 @@ and the user indicates they're done, thank them and let them know:
      */
     private function buildUserContext(PortalTenant $tenant, array $settings): string
     {
-        $context = "CURRENT USER DATA:\n";
-        
+        $isComplete = $this->onboardingService->isComplete($tenant);
+
+        if ($isComplete) {
+            $context = "CURRENT USER DATA (ONBOARDING COMPLETED ✅):\n";
+        } else {
+            $context = "CURRENT USER DATA:\n";
+        }
+
         if ($tenant->company_name) {
             $context .= "✅ Company Name: {$tenant->company_name}\n";
         } else {
             $context .= "❌ Company Name: NOT SET - This should be your next question\n";
         }
-        
-        if (!empty($settings['industry'])) {
+
+        if (! empty($settings['industry'])) {
             $context .= "✅ Industry: {$settings['industry']}\n";
         } else {
             if ($tenant->company_name) {
@@ -202,24 +254,28 @@ and the user indicates they're done, thank them and let them know:
                 $context .= "❌ Industry: NOT SET - Ask after company name\n";
             }
         }
-        
-        if (!empty($settings['services_needed'])) {
+
+        if (! empty($settings['services_needed'])) {
             $context .= "✅ Services Needed: {$settings['services_needed']}\n";
         } else {
-            if ($tenant->company_name && !empty($settings['industry'])) {
+            if ($tenant->company_name && ! empty($settings['industry'])) {
                 $context .= "❌ Services Needed: NOT SET - This should be your next question\n";
             } else {
                 $context .= "❌ Services Needed: NOT SET - Ask after industry\n";
             }
         }
-        
+
+        if (! empty($settings['brand_tone'])) {
+            $context .= "✅ Brand Tone: {$settings['brand_tone']}\n";
+        }
+
         // Check for brand assets
         $hasBrandAssets = $this->onboardingService->hasBrandAssets($tenant);
         if ($hasBrandAssets) {
             $brandAssets = $settings['brand_assets'] ?? [];
             $fileCount = count($brandAssets);
             $context .= "✅ Brand Assets: {$fileCount} file(s) uploaded\n";
-            
+
             // List each uploaded file
             foreach ($brandAssets as $asset) {
                 $filename = $asset['filename'] ?? 'unknown';
@@ -227,19 +283,19 @@ and the user indicates they're done, thank them and let them know:
                 $uploadedAt = isset($asset['uploaded_at']) ? date('M j, Y', strtotime($asset['uploaded_at'])) : 'recently';
                 $context .= "  - {$filename} ({$type}) uploaded {$uploadedAt}\n";
             }
-            
+
             // If they have files, they can finish onboarding
-            if ($tenant->company_name && !empty($settings['industry']) && !empty($settings['services_needed'])) {
+            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed'])) {
                 $context .= "\n💡 User has completed all required information. If they say they're done, wrap up onboarding.\n";
             }
         } else {
-            if ($tenant->company_name && !empty($settings['industry']) && !empty($settings['services_needed'])) {
+            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed'])) {
                 $context .= "❌ Brand Assets: NOT UPLOADED - Encourage them to upload brand assets (logos, images, etc.)\n";
             } else {
                 $context .= "❌ Brand Assets: NOT UPLOADED - Mention this after collecting basic info\n";
             }
         }
-        
+
         return $context;
     }
 
@@ -251,31 +307,35 @@ and the user indicates they're done, thank them and let them know:
         // Look for [DATA: ...] marker
         if (preg_match('/\[DATA: (.*?)\]/', $response, $matches)) {
             $dataString = $matches[1];
-            
+
             // Parse the data string
             $updates = [];
-            
+
             if (preg_match('/company_name="([^"]+)"/', $dataString, $match)) {
                 $updates['company_name'] = trim($match[1]);
             }
-            
+
             if (preg_match('/industry="([^"]+)"/', $dataString, $match)) {
                 $updates['industry'] = trim($match[1]);
             }
-            
+
             if (preg_match('/services="([^"]+)"/', $dataString, $match)) {
                 $updates['services_needed'] = trim($match[1]);
             }
-            
+
+            if (preg_match('/brand_tone="([^"]+)"/', $dataString, $match)) {
+                $updates['brand_tone'] = trim($match[1]);
+            }
+
             // Check for file type updates
             if (preg_match('/file_type="([^"]+):([^"]+)"/', $dataString, $match)) {
                 $filename = trim($match[1]);
                 $fileType = trim($match[2]);
                 $this->onboardingService->updateBrandAssetType($tenant, $filename, $fileType);
             }
-            
+
             // Save company info if we have updates
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $this->onboardingService->updateCompanyInfo($tenant, $updates);
             }
         }
@@ -288,13 +348,11 @@ and the user indicates they're done, thank them and let them know:
     {
         // Remove all [DATA: ...] markers from the response
         $cleaned = preg_replace('/\[DATA:.*?\]/s', '', $response);
-        
+
         // Clean up multiple blank lines (more than 2 consecutive newlines)
         $cleaned = preg_replace('/\n{3,}/', "\n\n", $cleaned);
-        
+
         // Trim any extra whitespace from start and end
         return trim($cleaned);
     }
 }
-
-

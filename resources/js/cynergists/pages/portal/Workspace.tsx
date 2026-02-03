@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getAgentComponents } from "@/agent_components";
 
 interface AgentAccess {
   id: string;
@@ -149,6 +150,17 @@ export default function PortalWorkspace() {
     },
     enabled: Boolean(selectedAgentId),
   });
+
+  // Get agent-specific components dynamically
+  const agentComponents = useMemo(() => {
+    if (!agentDetails?.agent_name) {
+      console.log('[Workspace] No agent name, agentComponents = null');
+      return null;
+    }
+    const components = getAgentComponents(agentDetails.agent_name.toLowerCase());
+    console.log('[Workspace] Agent:', agentDetails.agent_name, 'Components:', components);
+    return components;
+  }, [agentDetails?.agent_name]);
 
   useEffect(() => {
     if (!conversation?.messages) {
@@ -260,7 +272,7 @@ export default function PortalWorkspace() {
         setMessages(response.messages);
       } else if (response.message) {
         // Fallback: just add assistant message
-        setMessages((prev) => [...prev, { role: "assistant", content: response.message }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: response.message || "" }]);
       }
       
       queryClient.invalidateQueries({ queryKey: ["agent-details", selectedAgentId] });
@@ -542,325 +554,326 @@ export default function PortalWorkspace() {
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Setup Progress */}
-            {selectedAgentId && (
-              <div className="space-y-1.5 mx-4 mt-3 mb-2 p-3 bg-muted/30 border border-primary/10 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Setup Progress</span>
-                  <span className="text-xs text-muted-foreground">
-                    {setupProgress.completed}/{setupProgress.total}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${(setupProgress.completed / setupProgress.total) * 100}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {setupProgress.steps.map((step) => (
-                    <div
-                      key={step.id}
-                      className={cn(
-                        "flex items-center gap-1 text-xs py-0.5 px-1.5 rounded-md",
-                        step.completed
-                          ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                          : "bg-muted/50 text-muted-foreground"
-                      )}
-                    >
-                      {step.completed ? (
-                        <CircleCheck className="h-3 w-3 text-green-500" />
-                      ) : step.id === "team_intro" ? (
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                      ) : (
-                        <Target className="h-3 w-3 text-muted-foreground" />
-                      )}
-                      <span className="truncate text-[11px]">{step.label}</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
+            {selectedAgentId && agentComponents?.ConfigComponent && (
+              <div className="mx-4 mt-3 mb-2">
+                <agentComponents.ConfigComponent 
+                  setupProgress={setupProgress}
+                  agentDetails={agentDetails}
+                />
               </div>
             )}
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 max-h-[600px] px-4 py-3" ref={scrollRef}>
-              {selectedAgentId ? (
-                <div className="space-y-3">
-                {messages.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground animate-in fade-in duration-300">
-                    Start the conversation with {agentDetails?.agent_name ?? "your agent"}.
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={`${message.role}-${index}`}
-                      className={cn(
-                        "flex gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300",
-                        message.role === "user" ? "justify-end" : "justify-start"
+            {/* Agent-Specific Chat Component */}
+            {agentComponents?.ChatComponent ? (
+              <agentComponents.ChatComponent
+                messages={messages}
+                input={input}
+                setInput={setInput}
+                isStreaming={isStreaming}
+                isUploading={isUploading}
+                agentDetails={agentDetails}
+                fileInputRef={fileInputRef}
+                scrollRef={scrollRef}
+                onSend={handleSend}
+                onFileSelect={handleFileSelect}
+                onFileClick={() => fileInputRef.current?.click()}
+                onClearChat={handleClearChat}
+                selectedAgentId={selectedAgentId}
+              />
+            ) : (
+              <>
+                {/* Fallback Generic Chat UI */}
+                <ScrollArea className="flex-1 max-h-[600px] px-4 py-3" ref={scrollRef}>
+                  {selectedAgentId ? (
+                    <div className="space-y-3">
+                      {messages.length === 0 ? (
+                        <div className="py-8 text-center text-sm text-muted-foreground animate-in fade-in duration-300">
+                          Start the conversation with {agentDetails?.agent_name ?? "your agent"}.
+                        </div>
+                      ) : (
+                        messages.map((message, index) => (
+                          <div
+                            key={`${message.role}-${index}`}
+                            className={cn(
+                              "flex gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300",
+                              message.role === "user" ? "justify-end" : "justify-start"
+                            )}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            {message.role === "assistant" && agentDetails?.avatar_url && (
+                              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-purple/40">
+                                <img
+                                  src={agentDetails.avatar_url}
+                                  alt={agentDetails.agent_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-0.5">
+                              <Card
+                                className={cn(
+                                  "max-w-[380px] rounded-xl px-3 py-2 text-foreground transition-all duration-200 hover:shadow-md",
+                                  message.role === "user"
+                                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                                    : "bg-surface-2 border border-primary/10 rounded-bl-sm"
+                                )}
+                              >
+                                <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
+                              </Card>
+                              <span className="text-[10px] text-muted-foreground/60 px-1 text-left">
+                                {new Date().toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
                       )}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      {message.role === "assistant" && agentDetails?.avatar_url && (
-                        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-purple/40">
-                          <img
-                            src={agentDetails.avatar_url}
-                            alt={agentDetails.agent_name}
-                            className="w-full h-full object-cover"
-                          />
+                      {isStreaming && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in duration-300">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Thinking...
                         </div>
                       )}
-                      <div className="flex flex-col gap-0.5">
-                        <Card
-                          className={cn(
-                            "max-w-[380px] rounded-xl px-3 py-2 text-foreground transition-all duration-200 hover:shadow-md",
-                            message.role === "user"
-                              ? "bg-primary text-primary-foreground rounded-br-sm"
-                              : "bg-surface-2 border border-primary/10 rounded-bl-sm"
-                          )}
-                        >
-                          <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
-                        </Card>
-                        <span className="text-[10px] text-muted-foreground/60 px-1 text-left">
-                          {new Date().toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
                     </div>
-                  ))
-                )}
-                {isStreaming && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in fade-in duration-300">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Thinking...
+                  ) : (
+                    <div className="py-12 text-center text-sm text-muted-foreground animate-in fade-in duration-500">
+                      Pick an agent on the left to begin.
+                    </div>
+                  )}
+                </ScrollArea>
+
+                <div className="px-4 pt-3 pb-3 bg-card rounded-xl">
+                  <form onSubmit={handleSend}>
+                    <div className="flex gap-2 items-end">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.svg,.webp,.mp4,.mov,.avi"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={!selectedAgentId || isUploading}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-10 w-10 rounded-lg shrink-0"
+                        title="Upload file"
+                      >
+                        {isUploading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Textarea
+                        value={input}
+                        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}
+                        placeholder={
+                          selectedAgentId
+                            ? "Type your message..."
+                            : "Select an agent to chat"
+                        }
+                        disabled={!selectedAgentId || isStreaming}
+                        className="flex-1 min-h-[40px] max-h-[100px] bg-background border-primary/15 text-sm px-3 py-2 rounded-lg focus:border-primary/40 focus:ring-primary/20 resize-none"
+                        rows={1}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend(e as unknown as React.FormEvent);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={!selectedAgentId || !input.trim() || isStreaming}
+                        className="h-10 w-10 rounded-lg shrink-0 bg-primary hover:bg-primary-hover shadow-glow-primary"
+                      >
+                        {isStreaming ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
+                      disabled={!selectedAgentId}
+                    >
+                      <Mic className="w-3 h-3" />
+                      Voice Mode
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
+                      onClick={handleClearChat}
+                      disabled={!selectedAgentId || messages.length === 0}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Clear Chat
+                    </Button>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="py-12 text-center text-sm text-muted-foreground animate-in fade-in duration-500">
-                Pick an agent on the left to begin.
-              </div>
+                </div>
+              </>
             )}
-            </ScrollArea>
           </div>
+        </div>
 
-          <div className="px-4 pt-3 pb-3 bg-card rounded-xl">
-            <form onSubmit={handleSend}>
-              <div className="flex gap-2 items-end">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleFileSelect}
-                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.svg,.webp,.mp4,.mov,.avi"
-                  className="hidden"
-                />
+        {/* Agent-Specific Sidebar (Quick Links & Activity or Custom Content) */}
+        {agentComponents?.SidebarComponent ? (
+          <agentComponents.SidebarComponent
+            activeView={activeView}
+            setActiveView={setActiveView}
+            todayActivity={todayActivity}
+            agentDetails={agentDetails}
+            setupProgress={setupProgress}
+          />
+        ) : (
+          <div className="hidden lg:flex w-[300px] shrink-0 flex-col gap-6 min-h-0 transition-all duration-300">
+            {/* Quick Links */}
+            <div className="bg-card border border-primary/20 rounded-2xl p-5 flex flex-col">
+              <h2 className="text-lg font-semibold text-foreground mb-4 shrink-0">Quick Links</h2>
+              <nav className="flex flex-col space-y-2">
+                <button
+                  onClick={() => setActiveView("chat")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "chat"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <MessageSquare className="w-5 h-5 shrink-0" />
+                  Chat
+                </button>
+                <button
+                  onClick={() => setActiveView("dashboard")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "dashboard"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <LayoutDashboard className="w-5 h-5 shrink-0" />
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => setActiveView("campaigns")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "campaigns"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <Target className="w-5 h-5 shrink-0" />
+                  Campaigns
+                </button>
+                <button
+                  onClick={() => setActiveView("connections")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "connections"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <Users className="w-5 h-5 shrink-0" />
+                  Connections
+                </button>
+                <button
+                  onClick={() => setActiveView("messages")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "messages"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <MessageSquare className="w-5 h-5 shrink-0" />
+                  Messages
+                </button>
+                <button
+                  onClick={() => setActiveView("activity")}
+                  className={cn(
+                    "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
+                    activeView === "activity"
+                      ? "text-primary border-l-primary bg-primary/10"
+                      : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+                  )}
+                >
+                  <Activity className="w-5 h-5 shrink-0" />
+                  Activity Log
+                </button>
+              </nav>
+            </div>
+
+            {/* Today's Activity */}
+            <div className="bg-card border border-primary/20 rounded-2xl p-5 flex-1 flex flex-col overflow-hidden min-h-0">
+              <h2 className="text-lg font-semibold text-foreground mb-4 shrink-0">Today&apos;s Activity</h2>
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Users className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground">Connections Requested</span>
+                    </div>
+                    <span className="text-lg font-semibold text-foreground">{todayActivity.connectionsRequested}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <CircleCheck className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground">Connections Made</span>
+                    </div>
+                    <span className="text-lg font-semibold text-foreground">{todayActivity.connectionsMade}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground">Messages Sent</span>
+                    </div>
+                    <span className="text-lg font-semibold text-foreground">{todayActivity.messagesSent}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Calendar className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground">Meetings Scheduled</span>
+                    </div>
+                    <span className="text-lg font-semibold text-foreground">{todayActivity.meetingsScheduled}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-primary/20 shrink-0">
                 <Button
-                  type="button"
                   variant="outline"
-                  size="icon"
-                  disabled={!selectedAgentId || isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-10 w-10 rounded-lg shrink-0"
-                  title="Upload file"
+                  className="w-full justify-start gap-2 text-sm"
+                  onClick={() => setSupportDialogOpen(true)}
                 >
-                  {isUploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Paperclip className="w-4 h-4" />
-                  )}
-                </Button>
-                <Textarea
-                  value={input}
-                  onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}
-                  placeholder={
-                    selectedAgentId
-                      ? "Type your message..."
-                      : "Select an agent to chat"
-                  }
-                  disabled={!selectedAgentId || isStreaming}
-                  className="flex-1 min-h-[40px] max-h-[100px] bg-background border-primary/15 text-sm px-3 py-2 rounded-lg focus:border-primary/40 focus:ring-primary/20 resize-none"
-                  rows={1}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend(e as unknown as React.FormEvent);
-                    }
-                  }}
-                />
-                <Button
-                  type="submit"
-                  disabled={!selectedAgentId || !input.trim() || isStreaming}
-                  className="h-10 w-10 rounded-lg shrink-0 bg-primary hover:bg-primary-hover shadow-glow-primary"
-                >
-                  {isStreaming ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                  <Headphones className="w-4 h-4" />
+                  Get Support
                 </Button>
               </div>
-            </form>
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
-                disabled={!selectedAgentId}
-              >
-                <Mic className="w-3 h-3" />
-                Voice Mode
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs gap-1.5 rounded-button border-border-strong hover:bg-primary/10 hover:border-primary/40"
-                onClick={handleClearChat}
-                disabled={!selectedAgentId || messages.length === 0}
-              >
-                <Trash2 className="w-3 h-3" />
-                Clear Chat
-              </Button>
             </div>
           </div>
-        </div>
-
-        {/* Quick Links & Activity */}
-        <div className="hidden lg:flex w-[300px] shrink-0 flex-col gap-6 min-h-0 transition-all duration-300">
-          {/* Quick Links */}
-          <div className="bg-card border border-primary/20 rounded-2xl p-5 flex flex-col">
-            <h2 className="text-lg font-semibold text-foreground mb-4 shrink-0">Quick Links</h2>
-            <nav className="flex flex-col space-y-2">
-              <button
-                onClick={() => setActiveView("chat")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "chat"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <MessageSquare className="w-5 h-5 shrink-0" />
-                Chat
-              </button>
-              <button
-                onClick={() => setActiveView("dashboard")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "dashboard"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <LayoutDashboard className="w-5 h-5 shrink-0" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => setActiveView("campaigns")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "campaigns"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <Target className="w-5 h-5 shrink-0" />
-                Campaigns
-              </button>
-              <button
-                onClick={() => setActiveView("connections")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "connections"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <Users className="w-5 h-5 shrink-0" />
-                Connections
-              </button>
-              <button
-                onClick={() => setActiveView("messages")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "messages"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <MessageSquare className="w-5 h-5 shrink-0" />
-                Messages
-              </button>
-              <button
-                onClick={() => setActiveView("activity")}
-                className={cn(
-                  "flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3",
-                  activeView === "activity"
-                    ? "text-primary border-l-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
-                )}
-              >
-                <Activity className="w-5 h-5 shrink-0" />
-                Activity Log
-              </button>
-            </nav>
-          </div>
-
-          {/* Today's Activity */}
-          <div className="bg-card border border-primary/20 rounded-2xl p-5 flex-1 flex flex-col overflow-hidden min-h-0">
-            <h2 className="text-lg font-semibold text-foreground mb-4 shrink-0">Today&apos;s Activity</h2>
-            <div className="flex-1 overflow-y-auto">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Users className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground">Connections Requested</span>
-                  </div>
-                  <span className="text-lg font-semibold text-foreground">{todayActivity.connectionsRequested}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <CircleCheck className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground">Connections Made</span>
-                  </div>
-                  <span className="text-lg font-semibold text-foreground">{todayActivity.connectionsMade}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground">Messages Sent</span>
-                  </div>
-                  <span className="text-lg font-semibold text-foreground">{todayActivity.messagesSent}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Calendar className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground">Meetings Scheduled</span>
-                  </div>
-                  <span className="text-lg font-semibold text-foreground">{todayActivity.meetingsScheduled}</span>
-                </div>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-primary/20 shrink-0">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 text-sm"
-                onClick={() => setSupportDialogOpen(true)}
-              >
-                <Headphones className="w-4 h-4" />
-                Get Support
-              </Button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Support Dialog */}
