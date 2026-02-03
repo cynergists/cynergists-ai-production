@@ -33,11 +33,7 @@ class OnboardingService
             ],
             'brand_assets' => [
                 'name' => 'Brand Assets',
-                'completed' => false, // TODO: Check if files uploaded
-            ],
-            'team_intro' => [
-                'name' => 'Team Introductions',
-                'completed' => false, // TODO: Check if intro call scheduled
+                'completed' => $this->hasBrandAssets($tenant),
             ],
         ];
 
@@ -71,6 +67,20 @@ class OnboardingService
     }
 
     /**
+     * Check if onboarding can be marked complete.
+     * All required info must be collected.
+     */
+    public function canComplete(PortalTenant $tenant): bool
+    {
+        $settings = $tenant->settings ?? [];
+        
+        return !empty($tenant->company_name) 
+            && !empty($settings['industry']) 
+            && !empty($settings['services_needed'])
+            && $this->hasBrandAssets($tenant);
+    }
+
+    /**
      * Mark onboarding as complete.
      */
     public function markComplete(PortalTenant $tenant): void
@@ -80,6 +90,39 @@ class OnboardingService
                 'onboarding_completed_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Track uploaded brand asset files.
+     */
+    public function trackBrandAsset(PortalTenant $tenant, string $filename, string $path, string $type): void
+    {
+        $settings = $tenant->settings ?? [];
+        $brandAssets = $settings['brand_assets'] ?? [];
+        
+        $brandAssets[] = [
+            'filename' => $filename,
+            'path' => $path,
+            'type' => $type,
+            'uploaded_at' => now()->toIso8601String(),
+        ];
+        
+        $tenant->update([
+            'settings' => array_merge($settings, [
+                'brand_assets' => $brandAssets,
+            ]),
+        ]);
+    }
+
+    /**
+     * Check if tenant has uploaded brand assets.
+     */
+    public function hasBrandAssets(PortalTenant $tenant): bool
+    {
+        $settings = $tenant->settings ?? [];
+        $brandAssets = $settings['brand_assets'] ?? [];
+        
+        return count($brandAssets) > 0;
     }
 
     /**

@@ -34,7 +34,10 @@ class CynessaAgentHandler
             // Extract any structured data from the response
             $this->extractAndSaveData($response, $tenant);
             
-            return $response;
+            // Strip the DATA marker from the response before showing to user
+            $cleanResponse = $this->stripDataMarkers($response);
+            
+            return $cleanResponse;
         } catch (\Exception $e) {
             \Log::error('Claude API error in Cynessa: ' . $e->getMessage());
             return "I'm having trouble connecting right now. Please try again in a moment or contact support if this continues.";
@@ -56,13 +59,20 @@ Your primary job is to collect this information step-by-step:
 1. Company name
 2. Industry
 3. What services they need from Cynergists
+4. Brand assets (logos, colors, fonts, documents)
 
 IMPORTANT INSTRUCTIONS:
 - Ask for ONE piece of information at a time
 - When the user provides information, acknowledge it and ask for the next piece
 - Be conversational and natural - don't use rigid scripts
 - If information is missing or unclear, politely ask again
-- When all basic info is collected, offer to help with brand asset uploads
+- After collecting basic info, encourage them to upload brand assets (logos, images, documents)
+- When users upload files, you will see \"[File uploaded: filename]\" messages - acknowledge these!
+- If user says \"that's all\", \"done\", \"no more\", or similar, they're finished uploading - move forward
+- When user indicates they're done uploading, thank them and explain next steps
+- DO NOT keep asking for uploads after user says they're done
+- Check the CURRENT USER DATA below to see what files have already been uploaded
+- Accepted file types: images (jpg, png, svg), PDFs, documents, videos
 - The user's first name is: {$firstName}
 - You can check their current progress below
 
@@ -70,7 +80,14 @@ RESPONSE FORMAT:
 When you receive information, respond naturally and include a special marker line at the end:
 [DATA: company_name=\"Their Company\" industry=\"their industry\" services=\"what they said\"]
 
-Only include fields that were just provided or updated in the user's message.";
+Only include fields that were just provided or updated in the user's message.
+
+COMPLETING ONBOARDING:
+When all required info is collected (company name, industry, services, and at least one brand asset file), 
+and the user indicates they're done, thank them and let them know:
+1. Their onboarding is complete
+2. They can now explore their AI agents
+3. Each agent should be configured individually for best results";
     }
 
     /**
@@ -106,6 +123,33 @@ Only include fields that were just provided or updated in the user's message.";
             }
         }
         
+        // Check for brand assets
+        $hasBrandAssets = $this->onboardingService->hasBrandAssets($tenant);
+        if ($hasBrandAssets) {
+            $brandAssets = $settings['brand_assets'] ?? [];
+            $fileCount = count($brandAssets);
+            $context .= "✅ Brand Assets: {$fileCount} file(s) uploaded\n";
+            
+            // List each uploaded file
+            foreach ($brandAssets as $asset) {
+                $filename = $asset['filename'] ?? 'unknown';
+                $type = $asset['type'] ?? 'brand_asset';
+                $uploadedAt = isset($asset['uploaded_at']) ? date('M j, Y', strtotime($asset['uploaded_at'])) : 'recently';
+                $context .= "  - {$filename} ({$type}) uploaded {$uploadedAt}\n";
+            }
+            
+            // If they have files, they can finish onboarding
+            if ($tenant->company_name && !empty($settings['industry']) && !empty($settings['services_needed'])) {
+                $context .= "\n💡 User has completed all required information. If they say they're done, wrap up onboarding.\n";
+            }
+        } else {
+            if ($tenant->company_name && !empty($settings['industry']) && !empty($settings['services_needed'])) {
+                $context .= "❌ Brand Assets: NOT UPLOADED - Encourage them to upload brand assets (logos, images, etc.)\n";
+            } else {
+                $context .= "❌ Brand Assets: NOT UPLOADED - Mention this after collecting basic info\n";
+            }
+        }
+        
         return $context;
     }
 
@@ -138,6 +182,18 @@ Only include fields that were just provided or updated in the user's message.";
                 $this->onboardingService->updateCompanyInfo($tenant, $updates);
             }
         }
+    }
+
+    /**
+     * Remove [DATA: ...] markers from the response.
+     */
+    private function stripDataMarkers(string $response): string
+    {
+        // Remove all [DATA: ...] markers from the response
+        $cleaned = preg_replace('/\[DATA:.*?\]/s', '', $response);
+        
+        // Trim any extra whitespace
+        return trim($cleaned);
     }
 }
 

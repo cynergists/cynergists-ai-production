@@ -869,3 +869,11 @@ Protect Cynergists legally
 
 # Future Versions
 
+Priority Order:
+
+Fix DATA marker visibility
+File upload handling
+Progress tracking integration
+Clear chat functionality
+RAG knowledge base
+Google Drive + CRM integrations

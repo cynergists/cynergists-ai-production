@@ -20,6 +20,7 @@ import {
   Calendar,
   Sparkles,
   Search,
+  Paperclip,
 } from "lucide-react";
 import { usePortalContext } from "@/contexts/PortalContext";
 import { apiClient } from "@/lib/api-client";
@@ -75,7 +76,9 @@ export default function PortalWorkspace() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeView, setActiveView] = useState<"chat" | "dashboard" | "campaigns" | "connections" | "messages" | "activity">("chat");
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const [supportCategory, setSupportCategory] = useState("general");
@@ -185,7 +188,14 @@ export default function PortalWorkspace() {
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // For ScrollArea component, we need to access the viewport div
+      const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      } else {
+        // Fallback to direct scrolling if viewport not found
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
   }, [messages, isStreaming]);
 
@@ -207,6 +217,7 @@ export default function PortalWorkspace() {
       setIsStreaming(false);
       setMessages(response.messages);
       queryClient.invalidateQueries({ queryKey: ["agent-details", selectedAgentId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-stats", user?.id] });
     },
     onError: (error: Error) => {
       setIsStreaming(false);
@@ -223,10 +234,82 @@ export default function PortalWorkspace() {
     setInput("");
   };
 
-  const handleClearChat = () => {
-    if (window.confirm("Are you sure you want to clear this chat?")) {
+  const uploadFile = useMutation({
+    mutationFn: async (file: File) => {
+      if (!selectedAgentId) throw new Error("Select an agent first");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "brand_asset");
+
+      setIsUploading(true);
+
+      return apiClient.post<{
+        success: boolean;
+        file: { filename: string; path: string; url: string; type: string };
+        message: string | null;
+        messages?: Message[];
+      }>(`/api/portal/agents/${selectedAgentId}/files`, formData);
+    },
+    onSuccess: (response) => {
+      setIsUploading(false);
+      toast.success(`File uploaded: ${response.file.filename}`);
+      
+      // Update conversation with full message history if provided
+      if (response.messages) {
+        setMessages(response.messages);
+      } else if (response.message) {
+        // Fallback: just add assistant message
+        setMessages((prev) => [...prev, { role: "assistant", content: response.message }]);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["agent-details", selectedAgentId] });
+      queryClient.invalidateQueries({ queryKey: ["conversation", selectedAgentId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-stats", user?.id] });
+    },
+    onError: (error: Error) => {
+      setIsUploading(false);
+      toast.error(`Upload failed: ${error.message}`);
+    },
+  });
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("File size must not exceed 50MB");
+        return;
+      }
+      uploadFile.mutate(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const clearChat = useMutation({
+    mutationFn: async () => {
+      if (!selectedAgentId) throw new Error("No agent selected");
+      
+      return apiClient.delete<{ success: boolean; deleted: boolean }>(
+        `/api/portal/agents/${selectedAgentId}/conversation`
+      );
+    },
+    onSuccess: () => {
       setMessages([]);
       toast.success("Chat cleared");
+      queryClient.invalidateQueries({ queryKey: ["conversation", selectedAgentId] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to clear chat: ${error.message}`);
+    },
+  });
+
+  const handleClearChat = () => {
+    if (window.confirm("Are you sure you want to clear this chat?")) {
+      clearChat.mutate();
     }
   };
 
@@ -259,16 +342,45 @@ export default function PortalWorkspace() {
     submitSupportRequest.mutate();
   };
 
-  // Mock setup progress data - replace with real data from API
-  const setupProgress = {
-    completed: 1,
-    total: 3,
-    steps: [
-      { id: "linkedin", label: "Connect LinkedIn", completed: true },
-      { id: "booking", label: "Add Booking Link", completed: false },
-      { id: "campaign", label: "Create Campaign", completed: false },
-    ],
-  };
+  // Fetch portal stats including onboarding progress
+  const { data: portalStats } = useQuery({
+    queryKey: ["portal-stats", user?.id],
+    queryFn: async () => {
+      const response = await apiClient.get<{
+        agentCount: number;
+        conversationCount: number;
+        totalMessages: number;
+        recentAgents: any[];
+        onboardingProgress: {
+          completed: boolean;
+          percentComplete: number;
+          steps: Array<{ id: string; label: string; completed: boolean }>;
+        };
+      }>("/api/portal/stats");
+      return response;
+    },
+    enabled: Boolean(user?.id),
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+
+  // Use real onboarding progress or fallback to empty state
+  const setupProgress = portalStats?.onboardingProgress
+    ? {
+        completed: portalStats.onboardingProgress.steps.filter((s) => s.completed).length,
+        total: portalStats.onboardingProgress.steps.length,
+        steps: portalStats.onboardingProgress.steps,
+      }
+    : {
+        completed: 0,
+        total: 3,
+        steps: [
+          { id: "company_info", label: "Company Information", completed: false },
+          { id: "brand_assets", label: "Brand Assets", completed: false },
+          { id: "team_intro", label: "Team Introductions", completed: false },
+        ],
+      };
 
   // Mock activity data - replace with real data from API
   const todayActivity = {
@@ -458,7 +570,7 @@ export default function PortalWorkspace() {
                     >
                       {step.completed ? (
                         <CircleCheck className="h-3 w-3 text-green-500" />
-                      ) : step.id === "booking" ? (
+                      ) : step.id === "team_intro" ? (
                         <Calendar className="h-3 w-3 text-muted-foreground" />
                       ) : (
                         <Target className="h-3 w-3 text-muted-foreground" />
@@ -535,6 +647,28 @@ export default function PortalWorkspace() {
           <div className="px-4 pt-3 pb-3 bg-card rounded-xl">
             <form onSubmit={handleSend}>
               <div className="flex gap-2 items-end">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelect}
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.svg,.webp,.mp4,.mov,.avi"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!selectedAgentId || isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-10 w-10 rounded-lg shrink-0"
+                  title="Upload file"
+                >
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-4 h-4" />
+                  )}
+                </Button>
                 <Textarea
                   value={input}
                   onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}

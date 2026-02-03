@@ -13,7 +13,7 @@ const getCsrfToken = (): string | null => {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? null;
 };
 
-const buildHeaders = (hasBody: boolean): HeadersInit => {
+const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
   const headers: Record<string, string> = {
     "X-Requested-With": "XMLHttpRequest",
   };
@@ -23,7 +23,8 @@ const buildHeaders = (hasBody: boolean): HeadersInit => {
     headers["X-CSRF-TOKEN"] = csrfToken;
   }
 
-  if (hasBody) {
+  // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
+  if (body && !(body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -46,7 +47,7 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
 const request = async <T>(url: string, options: ApiOptions = {}): Promise<T> => {
   const response = await fetch(url, {
     method: options.method ?? "GET",
-    headers: buildHeaders(Boolean(options.body)),
+    headers: buildHeaders(options.body),
     body: options.body ?? null,
     credentials: "same-origin",
   });
@@ -63,7 +64,10 @@ const request = async <T>(url: string, options: ApiOptions = {}): Promise<T> => 
 export const apiClient = {
   get: <T>(url: string) => request<T>(url),
   post: <T>(url: string, body?: unknown) =>
-    request<T>(url, { method: "POST", body: body ? JSON.stringify(body) : null }),
+    request<T>(url, { 
+      method: "POST", 
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : null) 
+    }),
   put: <T>(url: string, body?: unknown) =>
     request<T>(url, { method: "PUT", body: body ? JSON.stringify(body) : null }),
   patch: <T>(url: string, body?: unknown) =>
