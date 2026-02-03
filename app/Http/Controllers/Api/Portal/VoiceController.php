@@ -71,7 +71,13 @@ class VoiceController extends Controller
                 $agentName = strtolower($agentAccess->agent_name);
 
                 $textResponse = match ($agentName) {
-                    'cynessa' => app(CynessaAgentHandler::class)->handleMessage($user, $message),
+                    'cynessa' => app(CynessaAgentHandler::class)->handle(
+                        message: $message,
+                        user: $user,
+                        agent: $agentAccess->availableAgent,
+                        tenant: $tenant,
+                        conversationHistory: []
+                    ),
                     default => "I'm sorry, voice mode is not yet available for this agent."
                 };
             }
