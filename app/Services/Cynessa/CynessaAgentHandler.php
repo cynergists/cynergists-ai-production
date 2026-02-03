@@ -22,7 +22,10 @@ class CynessaAgentHandler
         // Build context about the user and their current onboarding state
         $settings = $tenant->settings ?? [];
         
-        $systemPrompt = $this->buildSystemPrompt($user, $tenant, $settings);
+        // Check if this is a question about Cynergists - if so, include knowledge base
+        $includeKnowledgeBase = $this->isQuestionAboutCynergists($message);
+        
+        $systemPrompt = $this->buildSystemPrompt($user, $tenant, $settings, $includeKnowledgeBase);
         $userContext = $this->buildUserContext($tenant, $settings);
         
         // Build messages array for Claude API
@@ -59,11 +62,76 @@ class CynessaAgentHandler
     }
 
     /**
+     * Load the Cynergists knowledge base from database (cached).
+     */
+    private function loadKnowledgeBase(string $agentName = 'cynessa'): string
+    {
+        $content = \App\Models\AgentKnowledgeBase::getForAgent($agentName);
+        
+        if ($content) {
+            return $content;
+        }
+        
+        // Fallback to file if database entry doesn't exist
+        $path = storage_path('app/cynessa-knowledge-base.md');
+        
+        if (file_exists($path)) {
+            return file_get_contents($path);
+        }
+        
+        return "Knowledge base not available.";
+    }
+
+    /**
+     * Check if message is asking a question about Cynergists.
+     */
+    private function isQuestionAboutCynergists(string $message): bool
+    {
+        $keywords = [
+            'what is cynergists',
+            'cynergists',
+            'how does',
+            'how much',
+            'pricing',
+            'cost',
+            'billing',
+            'cancel',
+            'refund',
+            'agent',
+            'agents',
+            'marketplace',
+            'what do you',
+            'tell me about',
+            'explain',
+            'support',
+            'help',
+            'custom',
+            'integration',
+        ];
+        
+        $lowerMessage = strtolower($message);
+        
+        foreach ($keywords as $keyword) {
+            if (strpos($lowerMessage, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Build the system prompt for Claude.
      */
-    private function buildSystemPrompt(User $user, PortalTenant $tenant, array $settings): string
+    private function buildSystemPrompt(User $user, PortalTenant $tenant, array $settings, bool $includeKnowledgeBase = false): string
     {
         $firstName = explode(' ', $user->name)[0] ?? $user->name;
+        
+        $knowledgeBaseSection = "";
+        if ($includeKnowledgeBase) {
+            $knowledgeBase = $this->loadKnowledgeBase('cynessa');
+            $knowledgeBaseSection = "\n\n--- CYNERGISTS KNOWLEDGE BASE ---\n\nWhen the user asks questions about Cynergists, services, pricing, agents, or policies, answer ONLY from this knowledge base.\nIf the answer is not in the knowledge base, say: \"I don't have that information available. I'll have a human review this.\"\nNever guess or extrapolate beyond what's written here.\n\n" . $knowledgeBase . "\n\n--- END KNOWLEDGE BASE ---\n";
+        }
         
         return "You are Cynessa, an AI onboarding assistant for Cynergists. You help new customers get set up by collecting key information.
 
@@ -109,7 +177,7 @@ When all required info is collected (company name, industry, services, and at le
 and the user indicates they're done, thank them and let them know:
 1. Their onboarding is complete
 2. They can now explore their AI agents
-3. Each agent should be configured individually for best results";
+3. Each agent should be configured individually for best results" . $knowledgeBaseSection;
     }
 
     /**
