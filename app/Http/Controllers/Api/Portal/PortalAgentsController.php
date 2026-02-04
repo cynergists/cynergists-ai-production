@@ -10,6 +10,7 @@ use App\Models\PortalTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PortalAgentsController extends Controller
 {
@@ -43,6 +44,41 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
+        // Always ensure Cynessa is available to all users
+        $cynessaAvailable = PortalAvailableAgent::query()
+            ->where('name', 'Cynessa')
+            ->first(['name', 'avatar', 'redirect_url']);
+
+        if ($cynessaAvailable) {
+            // Check if user already has Cynessa access
+            $hasCynessa = $agents->contains('agent_name', 'Cynessa');
+
+            if (! $hasCynessa) {
+                // Create a virtual agent access for Cynessa
+                $cynessaAgent = new AgentAccess([
+                    'id' => (string) Str::uuid(),
+                    'agent_type' => 'assistant',
+                    'agent_name' => 'Cynessa',
+                    'configuration' => null,
+                    'is_active' => true,
+                    'usage_count' => 0,
+                    'usage_limit' => null,
+                    'last_used_at' => null,
+                    'created_at' => now(),
+                    'subscription_id' => null,
+                ]);
+                $cynessaAgent->subscription = null;
+
+                // Prepend Cynessa to the collection
+                $agents = collect([$cynessaAgent])->concat($agents);
+            } else {
+                // Move Cynessa to the front if she exists
+                $cynessa = $agents->where('agent_name', 'Cynessa')->first();
+                $agents = $agents->reject(fn ($agent) => $agent->agent_name === 'Cynessa');
+                $agents = collect([$cynessa])->concat($agents);
+            }
+        }
+
         // Get avatars and redirect URLs from portal_available_agents
         $agentNames = $agents->pluck('agent_name')->unique()->toArray();
         $availableAgents = PortalAvailableAgent::query()
@@ -61,7 +97,7 @@ class PortalAgentsController extends Controller
         });
 
         return response()->json([
-            'agents' => $agents,
+            'agents' => $agents->values(),
         ]);
     }
 
@@ -82,7 +118,38 @@ class PortalAgentsController extends Controller
             ->where('id', $agent)
             ->first();
 
+        // If agent not found, check if it's Cynessa (always available)
         if (! $agentAccess) {
+            // Check if the ID matches a virtual Cynessa agent pattern or if we can find Cynessa
+            $cynessaAvailable = PortalAvailableAgent::query()
+                ->where('name', 'Cynessa')
+                ->first(['name', 'avatar', 'redirect_url']);
+
+            if ($cynessaAvailable) {
+                // Create a virtual agent access for Cynessa
+                $agentAccess = new AgentAccess([
+                    'id' => $agent,
+                    'agent_type' => 'assistant',
+                    'agent_name' => 'Cynessa',
+                    'configuration' => null,
+                    'is_active' => true,
+                    'usage_count' => 0,
+                    'usage_limit' => null,
+                    'last_used_at' => null,
+                    'tenant_id' => $tenant->id,
+                ]);
+
+                $agentAccess->avatar_url = $cynessaAvailable->avatar
+                    ? Storage::disk('public')->url($cynessaAvailable->avatar)
+                    : null;
+                $agentAccess->redirect_url = $cynessaAvailable->redirect_url;
+                $agentAccess->tenant_data = $tenant;
+
+                return response()->json([
+                    'agent' => $agentAccess,
+                ]);
+            }
+
             return response()->json(['agent' => null], 404);
         }
 

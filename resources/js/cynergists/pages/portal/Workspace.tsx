@@ -113,6 +113,13 @@ export default function PortalWorkspace() {
         staleTime: 0,
     });
 
+    // Auto-select first agent (Cynessa) if no agent is selected
+    useEffect(() => {
+        if (!selectedAgentId && agents && agents.length > 0) {
+            setSelectedAgentId(agents[0].id);
+        }
+    }, [agents, selectedAgentId]);
+
     const filteredAgents = useMemo(() => {
         if (!agents) return [];
         if (!agentSearchQuery.trim()) return agents;
