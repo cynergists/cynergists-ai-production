@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessVoiceTextToSpeech;
 use App\Models\AgentAccess;
+use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
@@ -12,7 +12,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class VoiceController extends Controller
 {
@@ -32,20 +31,42 @@ class VoiceController extends Controller
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
-            // Get the agent access
-            $agentAccess = AgentAccess::with('availableAgent.apiKeys')
-                ->where('id', $agentId)
-                ->where('tenant_id', fn ($query) => $query->select('id')
-                    ->from('portal_tenants')
-                    ->where('user_id', $user->id)
-                    ->limit(1)
-                )
-                ->firstOrFail();
-
-            // Get tenant
+            // Get tenant first
             $tenant = PortalTenant::forUser($user);
             if (! $tenant) {
                 return response()->json(['error' => 'Tenant not found'], 404);
+            }
+
+            // Get the agent access
+            $agentAccess = AgentAccess::with('availableAgent.apiKeys')
+                ->where('id', $agentId)
+                ->where('tenant_id', $tenant->id)
+                ->first();
+
+            // If agent not found, check if it's Cynessa (always available)
+            if (! $agentAccess) {
+                $cynessaAvailable = PortalAvailableAgent::with('apiKeys')
+                    ->where('name', 'Cynessa')
+                    ->first();
+
+                if ($cynessaAvailable) {
+                    // Create a virtual agent access for Cynessa
+                    $agentAccess = new AgentAccess([
+                        'id' => $agentId,
+                        'agent_type' => 'assistant',
+                        'agent_name' => 'Cynessa',
+                        'configuration' => null,
+                        'is_active' => true,
+                        'usage_count' => 0,
+                        'usage_limit' => null,
+                        'last_used_at' => null,
+                        'tenant_id' => $tenant->id,
+                    ]);
+                    $agentAccess->exists = false;
+                    $agentAccess->setRelation('availableAgent', $cynessaAvailable);
+                } else {
+                    return response()->json(['error' => 'Agent not found'], 404);
+                }
             }
 
             $message = $request->input('message');
