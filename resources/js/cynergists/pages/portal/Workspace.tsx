@@ -57,6 +57,7 @@ interface AgentAccess {
     usage_limit: number | null;
     last_used_at: string | null;
     avatar_url: string | null;
+    redirect_url?: string | null;
 }
 
 interface Message {
@@ -523,16 +524,21 @@ export default function PortalWorkspace() {
                                                 key={agent.id}
                                                 type="button"
                                                 onClick={() => {
-                                                    setSelectedAgentId(
-                                                        agent.id,
-                                                    );
-                                                    router.visit(
-                                                        `/portal/agents/${agent.id}/chat`,
-                                                        {
-                                                            preserveState: true,
-                                                            preserveScroll: true,
-                                                        },
-                                                    );
+                                                    if (agent.redirect_url) {
+                                                        window.location.href =
+                                                            agent.redirect_url;
+                                                    } else {
+                                                        setSelectedAgentId(
+                                                            agent.id,
+                                                        );
+                                                        router.visit(
+                                                            `/portal/agents/${agent.id}/chat`,
+                                                            {
+                                                                preserveState: true,
+                                                                preserveScroll: true,
+                                                            },
+                                                        );
+                                                    }
                                                 }}
                                                 className={cn(
                                                     'flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all',

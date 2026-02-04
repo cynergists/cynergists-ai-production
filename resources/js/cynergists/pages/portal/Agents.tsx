@@ -32,6 +32,7 @@ export default function PortalAgents() {
                     usage_limit: number | null;
                     last_used_at: string | null;
                     created_at: string;
+                    redirect_url?: string | null;
                     subscription: {
                         status: string;
                         tier: string;
@@ -250,14 +251,27 @@ export default function PortalAgents() {
                                             </div>
                                         )}
 
-                                        <Button className="w-full" asChild>
-                                            <Link
-                                                href={`/portal/agents/${agent.id}/chat`}
+                                        {agent.redirect_url ? (
+                                            <Button
+                                                className="w-full"
+                                                onClick={() => {
+                                                    window.location.href =
+                                                        agent.redirect_url!;
+                                                }}
                                             >
                                                 Start Chat
                                                 <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
+                                            </Button>
+                                        ) : (
+                                            <Button className="w-full" asChild>
+                                                <Link
+                                                    href={`/portal/agents/${agent.id}/chat`}
+                                                >
+                                                    Start Chat
+                                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
                                     </CardContent>
                                 </Card>
                             );

@@ -43,18 +43,19 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
-        // Get avatars from portal_available_agents
+        // Get avatars and redirect URLs from portal_available_agents
         $agentNames = $agents->pluck('agent_name')->unique()->toArray();
-        $avatars = PortalAvailableAgent::query()
+        $availableAgents = PortalAvailableAgent::query()
             ->whereIn('name', $agentNames)
-            ->whereNotNull('avatar')
-            ->pluck('avatar', 'name')
-            ->toArray();
+            ->get(['name', 'avatar', 'redirect_url'])
+            ->keyBy('name');
 
-        // Add avatar_url to each agent
-        $agents = $agents->map(function ($agent) use ($avatars) {
-            $avatar = $avatars[$agent->agent_name] ?? null;
+        // Add avatar_url and redirect_url to each agent
+        $agents = $agents->map(function ($agent) use ($availableAgents) {
+            $availableAgent = $availableAgents->get($agent->agent_name);
+            $avatar = $availableAgent?->avatar;
             $agent->avatar_url = $avatar ? Storage::disk('public')->url($avatar) : null;
+            $agent->redirect_url = $availableAgent?->redirect_url;
 
             return $agent;
         });
@@ -85,14 +86,15 @@ class PortalAgentsController extends Controller
             return response()->json(['agent' => null], 404);
         }
 
-        // Get avatar from portal_available_agents
+        // Get avatar and redirect URL from portal_available_agents
         $availableAgent = PortalAvailableAgent::query()
             ->where('name', $agentAccess->agent_name)
-            ->first(['avatar']);
+            ->first(['avatar', 'redirect_url']);
 
         $agentAccess->avatar_url = $availableAgent?->avatar
             ? Storage::disk('public')->url($availableAgent->avatar)
             : null;
+        $agentAccess->redirect_url = $availableAgent?->redirect_url;
 
         // Include tenant data for sidebar display
         $agentAccess->tenant_data = $tenant;

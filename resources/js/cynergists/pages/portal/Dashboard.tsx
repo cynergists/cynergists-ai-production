@@ -27,6 +27,7 @@ export default function PortalDashboard() {
                     id: string;
                     agent_name: string;
                     usage_count: number | null;
+                    redirect_url?: string | null;
                 }>;
             }>('/api/portal/stats');
         },
@@ -170,27 +171,52 @@ export default function PortalDashboard() {
                                 </div>
                             ) : (
                                 <>
-                                    {recentAgents.map((agent: any) => (
-                                        <Link
-                                            key={agent.id}
-                                            href={`/portal/agents/${agent.id}/chat`}
-                                            className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-accent"
-                                        >
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                                <Bot className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div className="flex flex-1 flex-col">
-                                                <p className="text-sm font-semibold text-foreground">
-                                                    {agent.agent_name}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {agent.usage_count || 0}{' '}
-                                                    messages
-                                                </p>
-                                            </div>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                        </Link>
-                                    ))}
+                                    {recentAgents.map((agent: any) =>
+                                        agent.redirect_url ? (
+                                            <button
+                                                key={agent.id}
+                                                onClick={() => {
+                                                    window.location.href =
+                                                        agent.redirect_url!;
+                                                }}
+                                                className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-left transition-colors hover:bg-accent"
+                                            >
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                                    <Bot className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="flex flex-1 flex-col">
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {agent.agent_name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {agent.usage_count || 0}{' '}
+                                                        messages
+                                                    </p>
+                                                </div>
+                                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                key={agent.id}
+                                                href={`/portal/agents/${agent.id}/chat`}
+                                                className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-accent"
+                                            >
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                                    <Bot className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="flex flex-1 flex-col">
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {agent.agent_name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {agent.usage_count || 0}{' '}
+                                                        messages
+                                                    </p>
+                                                </div>
+                                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                            </Link>
+                                        ),
+                                    )}
                                     <Button
                                         variant="outline"
                                         className="w-full"
