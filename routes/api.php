@@ -81,4 +81,6 @@ Route::prefix('apex')->middleware('auth:sanctum')->group(function () {
 */
 Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
     Route::post('/voice/{agentId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'processVoiceMessage']);
+    Route::get('/voice/tts/{jobId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'checkTtsStatus'])
+        ->name('api.portal.voice.tts.status');
 });

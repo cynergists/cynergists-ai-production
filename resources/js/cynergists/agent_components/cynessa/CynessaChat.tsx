@@ -11,6 +11,7 @@ import React, { useEffect, useRef } from 'react';
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    isVoiceGenerated?: boolean;
 }
 
 interface CynessaChatProps {
@@ -30,6 +31,7 @@ interface CynessaChatProps {
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
         content: string;
+        isVoiceGenerated?: boolean;
     }) => void;
 }
 
@@ -58,18 +60,21 @@ export function CynessaChat({
         isProcessing,
         isPlaying,
         toggleVoiceMode,
+        pauseRecognition,
+        resumeRecognition,
         isVoiceActive,
     } = useVoiceMode({
-        agentId: selectedAgentId,
+        agentId: selectedAgentId ?? null,
         onTranscriptReceived: (text) => {
             onMessageReceived?.({ role: 'user', content: text });
         },
         onResponseReceived: (response) => {
-            onMessageReceived?.({ role: 'assistant', content: response.text });
+            onMessageReceived?.({ role: 'assistant', content: response.text, isVoiceGenerated: true });
         },
     });
 
-    // Automatically speak all of Cynessa's responses
+    // Automatically speak all of Cynessa's responses (except voice-generated ones)
+    // DISABLED when voice mode is active to prevent feedback loops
     useEffect(() => {
         const speakLatestMessage = async () => {
             if (!selectedAgentId || messages.length === 0) return;
@@ -79,8 +84,12 @@ export function CynessaChat({
             const lastIndex = messages.length - 1;
 
             // Only speak assistant messages that haven't been processed yet
+            // Skip voice-generated messages to prevent double-speak
+            // IMPORTANT: Skip ALL auto-speak when voice mode is active
             if (
                 lastMessage.role === 'assistant' &&
+                !lastMessage.isVoiceGenerated &&
+                !isVoiceActive &&
                 !processedMessagesRef.current.has(lastIndex)
             ) {
                 processedMessagesRef.current.add(lastIndex);
@@ -116,11 +125,18 @@ export function CynessaChat({
         };
 
         speakLatestMessage();
-    }, [messages, selectedAgentId]);
+    }, [messages, selectedAgentId, isVoiceActive]);
 
     // Play audio from base64
     const playAudio = async (base64Audio: string): Promise<void> => {
         try {
+            // Pause voice recognition to prevent feedback loop
+            pauseRecognition();
+
+            // Wait for voice recognition to fully stop (important!)
+            // The Web Speech API needs time to actually stop recording
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             // Stop any currently playing audio
             if (audioRef.current) {
                 audioRef.current.pause();
@@ -141,16 +157,22 @@ export function CynessaChat({
             audioRef.current.onended = () => {
                 URL.revokeObjectURL(audioUrl);
                 audioRef.current = null;
+                // Resume voice recognition after playback
+                resumeRecognition();
             };
             audioRef.current.onerror = (e) => {
                 console.error('[Auto-Voice] Audio playback error:', e);
                 URL.revokeObjectURL(audioUrl);
                 audioRef.current = null;
+                // Resume voice recognition even on error
+                resumeRecognition();
             };
 
             await audioRef.current.play();
         } catch (error) {
             console.error('[Auto-Voice] Failed to play audio:', error);
+            // Resume voice recognition even on exception
+            resumeRecognition();
         }
     };
 

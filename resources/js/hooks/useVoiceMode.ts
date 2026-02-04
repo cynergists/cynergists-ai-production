@@ -68,6 +68,8 @@ export function useVoiceMode({
     const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const interimTranscriptRef = useRef<string>('');
     const shouldRestartRef = useRef<boolean>(false);
+    const wasRecordingBeforePlaybackRef = useRef<boolean>(false);
+    const isPausedForPlaybackRef = useRef<boolean>(false);
 
     // Store callbacks in refs to avoid stale closures
     const onTranscriptReceivedRef = useRef(onTranscriptReceived);
@@ -142,6 +144,25 @@ export function useVoiceMode({
     const playAudioResponse = useCallback(async (base64Audio: string) => {
         try {
             console.log('[Voice] Playing audio, length:', base64Audio.length);
+
+            // Stop voice recognition while playing to prevent feedback loop
+            const wasRecording = isRecording;
+            wasRecordingBeforePlaybackRef.current = wasRecording;
+
+            if (wasRecording && recognitionRef.current) {
+                console.log('[Voice] Pausing voice recognition during playback');
+                isPausedForPlaybackRef.current = true;
+
+                try {
+                    recognitionRef.current.stop();
+                } catch (e) {
+                    console.warn('[Voice] Error stopping recognition:', e);
+                }
+
+                // Wait for recognition to fully stop before playing audio
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+
             setIsPlaying(true);
 
             // Convert base64 to blob
@@ -164,12 +185,38 @@ export function useVoiceMode({
                 console.log('[Voice] Audio playback ended');
                 setIsPlaying(false);
                 URL.revokeObjectURL(audioUrl);
+
+                // Clear playback pause flag and resume voice recognition
+                isPausedForPlaybackRef.current = false;
+
+                // Resume voice recognition if it was active before playback
+                if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
+                    console.log('[Voice] Resuming voice recognition after playback');
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        console.warn('[Voice] Error resuming recognition:', e);
+                    }
+                }
             };
             audioRef.current.onerror = (e) => {
                 console.error('[Voice] Audio playback error:', e);
                 setIsPlaying(false);
                 URL.revokeObjectURL(audioUrl);
                 toast.error('Failed to play audio response');
+
+                // Clear playback pause flag
+                isPausedForPlaybackRef.current = false;
+
+                // Resume voice recognition even on error
+                if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
+                    console.log('[Voice] Resuming voice recognition after error');
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        console.warn('[Voice] Error resuming recognition:', e);
+                    }
+                }
             };
 
             console.log('[Voice] Starting audio playback');
@@ -178,8 +225,21 @@ export function useVoiceMode({
             console.error('[Voice] Failed to play audio:', error);
             setIsPlaying(false);
             toast.error('Failed to play audio response');
+
+            // Clear playback pause flag
+            isPausedForPlaybackRef.current = false;
+
+            // Resume voice recognition even on exception
+            if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
+                console.log('[Voice] Resuming voice recognition after exception');
+                try {
+                    recognitionRef.current.start();
+                } catch (e) {
+                    console.warn('[Voice] Error resuming recognition:', e);
+                }
+            }
         }
-    }, []);
+    }, [isRecording]);
 
     // Initialize speech recognition
     useEffect(() => {
@@ -273,7 +333,16 @@ export function useVoiceMode({
                 console.log(
                     '[Voice] Recognition ended, shouldRestart:',
                     shouldRestartRef.current,
+                    'isPausedForPlayback:',
+                    isPausedForPlaybackRef.current,
                 );
+
+                // Don't restart if paused for playback
+                if (isPausedForPlaybackRef.current) {
+                    console.log('[Voice] Skipping restart - paused for playback');
+                    setIsRecording(false);
+                    return;
+                }
 
                 // If we should restart (continuous mode is active), restart recognition
                 if (shouldRestartRef.current && recognitionRef.current) {
@@ -430,6 +499,45 @@ export function useVoiceMode({
         }
     }, [isRecording, isPlaying, startRecording, stopRecording, stopPlaying]);
 
+    // Pause voice recognition (for external use, e.g., when auto-speak is playing)
+    const pauseRecognition = useCallback(() => {
+        console.log('[Voice] Pause requested, shouldRestart:', shouldRestartRef.current);
+
+        // Only pause if continuous mode is active (shouldRestartRef indicates recording is on)
+        if (shouldRestartRef.current && recognitionRef.current) {
+            console.log('[Voice] Pausing recognition (external)');
+            wasRecordingBeforePlaybackRef.current = true;
+            isPausedForPlaybackRef.current = true;
+
+            // Clear any pending silence timer
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+            }
+
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                console.warn('[Voice] Error pausing recognition:', e);
+            }
+        }
+    }, []); // No dependencies - use refs only
+
+    // Resume voice recognition (for external use)
+    const resumeRecognition = useCallback(() => {
+        if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
+            console.log('[Voice] Resuming recognition (external)');
+            isPausedForPlaybackRef.current = false;
+
+            try {
+                recognitionRef.current.start();
+                wasRecordingBeforePlaybackRef.current = false;
+            } catch (e) {
+                console.warn('[Voice] Error resuming recognition:', e);
+            }
+        }
+    }, []);
+
     return {
         isRecording,
         isProcessing,
@@ -439,6 +547,8 @@ export function useVoiceMode({
         stopRecording,
         toggleVoiceMode,
         stopPlaying,
+        pauseRecognition,
+        resumeRecognition,
         isVoiceActive: isRecording || isProcessing || isPlaying,
     };
 }

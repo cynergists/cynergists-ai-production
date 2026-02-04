@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessVoiceTextToSpeech;
 use App\Models\AgentAccess;
 use App\Models\PortalTenant;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class VoiceController extends Controller
 {
@@ -30,6 +33,7 @@ class VoiceController extends Controller
         $request->validate([
             'message' => 'required|string|max:10000',
             'textOnly' => 'boolean',
+            'queueTts' => 'boolean',  // If true, queue TTS generation instead of doing it synchronously
         ]);
 
         try {
@@ -42,6 +46,7 @@ class VoiceController extends Controller
             }
 
             $textOnly = $request->input('textOnly', false);
+            $queueTts = $request->input('queueTts', false);
 
             // Get the agent access
             $agentAccess = AgentAccess::with('availableAgent.apiKeys')
@@ -76,7 +81,8 @@ class VoiceController extends Controller
                         user: $user,
                         agent: $agentAccess->availableAgent,
                         tenant: $tenant,
-                        conversationHistory: []
+                        conversationHistory: [],
+                        maxTokens: 512  // Reduced from 1024 for faster voice responses
                     ),
                     default => "I'm sorry, voice mode is not yet available for this agent."
                 };
@@ -129,6 +135,33 @@ class VoiceController extends Controller
             }
 
             // Convert text response to speech
+            if ($queueTts) {
+                // Queue TTS generation for background processing
+                $jobId = Str::uuid()->toString();
+
+                ProcessVoiceTextToSpeech::dispatch(
+                    $jobId,
+                    $textResponse,
+                    $decryptedKey,
+                    $voiceId,
+                    [
+                        'stability' => $elevenLabsKey->metadata['stability'] ?? 0.5,
+                        'similarity_boost' => $elevenLabsKey->metadata['similarity_boost'] ?? 0.75,
+                        'model_id' => $elevenLabsKey->metadata['model_id'] ?? 'eleven_monolingual_v1',
+                    ]
+                );
+
+                // Return immediately with text and job ID
+                return response()->json([
+                    'success' => true,
+                    'text' => $textResponse,
+                    'audio' => null,
+                    'tts_job_id' => $jobId,
+                    'tts_status_url' => route('api.portal.voice.tts.status', ['jobId' => $jobId]),
+                ]);
+            }
+
+            // Synchronous TTS generation (default behavior)
             $elevenLabs = new ElevenLabsService($decryptedKey);
             $ttsResult = $elevenLabs->textToSpeech($textResponse, $voiceId, [
                 'stability' => $elevenLabsKey->metadata['stability'] ?? 0.5,
@@ -162,6 +195,59 @@ class VoiceController extends Controller
             return response()->json([
                 'error' => 'Failed to process voice message',
                 'message' => config('app.debug') ? $e->getMessage() : 'An error occurred',
+            ], 500);
+        }
+    }
+
+    /**
+     * Check TTS job status and retrieve audio if ready.
+     */
+    public function checkTtsStatus(Request $request, string $jobId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            if (! $user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            // Check cache for job status
+            $result = Cache::get("voice_tts:{$jobId}");
+
+            if (! $result) {
+                return response()->json([
+                    'status' => 'not_found',
+                    'error' => 'Job not found or expired',
+                ], 404);
+            }
+
+            if ($result['status'] === 'completed') {
+                return response()->json([
+                    'status' => 'completed',
+                    'audio' => $result['audio'],
+                    'text' => $result['text'],
+                ]);
+            }
+
+            if ($result['status'] === 'failed') {
+                return response()->json([
+                    'status' => 'failed',
+                    'error' => $result['error'] ?? 'Unknown error',
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'processing',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('TTS status check error', [
+                'error' => $e->getMessage(),
+                'job_id' => $jobId,
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to check TTS status',
             ], 500);
         }
     }

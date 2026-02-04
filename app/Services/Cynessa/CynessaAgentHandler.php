@@ -17,7 +17,7 @@ class CynessaAgentHandler
     /**
      * Handle an incoming chat message and generate a response.
      */
-    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = []): string
+    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = [], int $maxTokens = 1024): string
     {
         // Build context about the user and their current onboarding state
         $settings = $tenant->settings ?? [];
@@ -46,7 +46,7 @@ class CynessaAgentHandler
         ];
 
         try {
-            $response = $this->claudeService->chat($messages, $systemPrompt, 1024);
+            $response = $this->claudeService->chat($messages, $systemPrompt, $maxTokens);
 
             // Extract any structured data from the response
             $this->extractAndSaveData($response, $tenant);
