@@ -26,14 +26,22 @@ class OnboardingService
      */
     public function getProgress(PortalTenant $tenant): array
     {
+        $settings = $tenant->settings ?? [];
+
         $steps = [
             'company_info' => [
                 'name' => 'Company Information',
-                'completed' => ! empty($tenant->company_name),
+                'completed' => ! empty($tenant->company_name)
+                    && ! empty($settings['industry'])
+                    && ! empty($settings['services_needed']),
             ],
             'brand_assets' => [
                 'name' => 'Brand Assets',
                 'completed' => $this->hasBrandAssets($tenant),
+            ],
+            'team_intro' => [
+                'name' => 'Team Introductions',
+                'completed' => $this->isComplete($tenant), // Mark as complete when onboarding is done
             ],
         ];
 
