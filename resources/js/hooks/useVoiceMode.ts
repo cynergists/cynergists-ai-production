@@ -2,553 +2,253 @@ import { apiClient } from '@/lib/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-// Web Speech API type declarations
-interface SpeechRecognition extends EventTarget {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    start(): void;
-    stop(): void;
-    abort(): void;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-    onend: (() => void) | null;
-    onstart: (() => void) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-    readonly resultIndex: number;
-    readonly results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-    readonly length: number;
-    item(index: number): SpeechRecognitionResult;
-    [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-    readonly length: number;
-    readonly isFinal: boolean;
-    item(index: number): SpeechRecognitionAlternative;
-    [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-    readonly transcript: string;
-    readonly confidence: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-    readonly error: string;
-    readonly message: string;
-}
-
 interface UseVoiceModeOptions {
     agentId: string | null;
     onTranscriptReceived?: (transcript: string) => void;
-    onResponseReceived?: (response: {
-        text: string;
-        audio: string | null;
-    }) => void;
+    onResponseReceived?: (response: { text: string }) => void;
 }
+
+type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 export function useVoiceMode({
     agentId,
     onTranscriptReceived,
     onResponseReceived,
 }: UseVoiceModeOptions) {
-    const [isRecording, setIsRecording] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [transcript, setTranscript] = useState('');
+    const [state, setState] = useState<VoiceState>('idle');
 
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const recognitionRef = useRef<any>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const interimTranscriptRef = useRef<string>('');
-    const shouldRestartRef = useRef<boolean>(false);
-    const wasRecordingBeforePlaybackRef = useRef<boolean>(false);
-    const isPausedForPlaybackRef = useRef<boolean>(false);
+    const shouldContinueRef = useRef(false); // Track if we should continue listening after speaking
 
-    // Store callbacks in refs to avoid stale closures
+    const agentIdRef = useRef(agentId);
     const onTranscriptReceivedRef = useRef(onTranscriptReceived);
     const onResponseReceivedRef = useRef(onResponseReceived);
-    const agentIdRef = useRef(agentId);
 
+    // Keep refs in sync
     useEffect(() => {
+        agentIdRef.current = agentId;
         onTranscriptReceivedRef.current = onTranscriptReceived;
         onResponseReceivedRef.current = onResponseReceived;
-        agentIdRef.current = agentId;
-    }, [onTranscriptReceived, onResponseReceived, agentId]);
+    }, [agentId, onTranscriptReceived, onResponseReceived]);
 
-    // Send voice message to backend
-    const sendVoiceMessage = useCallback(async (text: string) => {
+    // Process voice message
+    const processVoiceMessage = useCallback(async (transcript: string) => {
         const currentAgentId = agentIdRef.current;
+        if (!currentAgentId || !transcript.trim()) return;
 
-        if (!currentAgentId || !text.trim()) {
-            console.log('[Voice] Skipping - no agentId or empty text');
-            return;
-        }
-
-        console.log(
-            '[Voice] Sending message:',
-            text,
-            'to agent:',
-            currentAgentId,
-        );
-        setIsProcessing(true);
+        console.log('[Voice] Processing:', transcript);
+        setState('processing');
 
         try {
-            console.log(
-                '[Voice] Calling API:',
-                `/api/portal/voice/${currentAgentId}`,
-            );
             const response = await apiClient.post<{
                 success: boolean;
                 text: string;
                 audio: string | null;
-                error?: string;
             }>(`/api/portal/voice/${currentAgentId}`, {
-                message: text,
+                message: transcript,
             });
 
-            console.log('[Voice] API response:', response);
-
             if (response.success) {
-                onResponseReceivedRef.current?.(response);
+                onResponseReceivedRef.current?.({ text: response.text });
 
-                // Play audio response if available
                 if (response.audio) {
-                    console.log('[Voice] Playing audio response');
-                    await playAudioResponse(response.audio);
-                } else if (response.error) {
-                    console.warn('[Voice] No audio:', response.error);
-                    toast.warning(response.error);
+                    // Play audio
+                    setState('speaking');
+
+                    const binaryString = atob(response.audio);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const blob = new Blob([bytes], { type: 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(blob);
+
+                    if (audioRef.current) {
+                        audioRef.current.pause();
+                    }
+
+                    const audio = new Audio(audioUrl);
+                    audioRef.current = audio;
+
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        audioRef.current = null;
+
+                        // If we should continue, restart listening
+                        if (shouldContinueRef.current) {
+                            startListening();
+                        } else {
+                            setState('idle');
+                        }
+                    };
+
+                    audio.onerror = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        audioRef.current = null;
+                        toast.error('Failed to play audio');
+
+                        // If we should continue, restart listening
+                        if (shouldContinueRef.current) {
+                            startListening();
+                        } else {
+                            setState('idle');
+                        }
+                    };
+
+                    await audio.play();
                 } else {
-                    console.warn('[Voice] Success but no audio in response');
+                    // No audio, continue if needed
+                    if (shouldContinueRef.current) {
+                        startListening();
+                    } else {
+                        setState('idle');
+                    }
                 }
-            } else {
-                console.error('[Voice] Request failed');
-                toast.error('Failed to process voice message');
             }
         } catch (error) {
             console.error('[Voice] Error:', error);
-            toast.error('Failed to send voice message');
-        } finally {
-            setIsProcessing(false);
+            toast.error('Failed to process voice message');
+
+            // On error, continue if needed
+            if (shouldContinueRef.current) {
+                startListening();
+            } else {
+                setState('idle');
+            }
         }
     }, []);
 
-    // Play audio response
-    const playAudioResponse = useCallback(async (base64Audio: string) => {
-        try {
-            console.log('[Voice] Playing audio, length:', base64Audio.length);
-
-            // Stop voice recognition while playing to prevent feedback loop
-            const wasRecording = isRecording;
-            wasRecordingBeforePlaybackRef.current = wasRecording;
-
-            if (wasRecording && recognitionRef.current) {
-                console.log('[Voice] Pausing voice recognition during playback');
-                isPausedForPlaybackRef.current = true;
-
-                try {
-                    recognitionRef.current.stop();
-                } catch (e) {
-                    console.warn('[Voice] Error stopping recognition:', e);
-                }
-
-                // Wait for recognition to fully stop before playing audio
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-
-            setIsPlaying(true);
-
-            // Convert base64 to blob
-            const binaryString = atob(base64Audio);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(blob);
-            console.log('[Voice] Audio URL created');
-
-            // Create and play audio element
-            if (audioRef.current) {
-                audioRef.current.pause();
-            }
-
-            audioRef.current = new Audio(audioUrl);
-            audioRef.current.onended = () => {
-                console.log('[Voice] Audio playback ended');
-                setIsPlaying(false);
-                URL.revokeObjectURL(audioUrl);
-
-                // Clear playback pause flag and resume voice recognition
-                isPausedForPlaybackRef.current = false;
-
-                // Resume voice recognition if it was active before playback
-                if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
-                    console.log('[Voice] Resuming voice recognition after playback');
-                    try {
-                        recognitionRef.current.start();
-                    } catch (e) {
-                        console.warn('[Voice] Error resuming recognition:', e);
-                    }
-                }
-            };
-            audioRef.current.onerror = (e) => {
-                console.error('[Voice] Audio playback error:', e);
-                setIsPlaying(false);
-                URL.revokeObjectURL(audioUrl);
-                toast.error('Failed to play audio response');
-
-                // Clear playback pause flag
-                isPausedForPlaybackRef.current = false;
-
-                // Resume voice recognition even on error
-                if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
-                    console.log('[Voice] Resuming voice recognition after error');
-                    try {
-                        recognitionRef.current.start();
-                    } catch (e) {
-                        console.warn('[Voice] Error resuming recognition:', e);
-                    }
-                }
-            };
-
-            console.log('[Voice] Starting audio playback');
-            await audioRef.current.play();
-        } catch (error) {
-            console.error('[Voice] Failed to play audio:', error);
-            setIsPlaying(false);
-            toast.error('Failed to play audio response');
-
-            // Clear playback pause flag
-            isPausedForPlaybackRef.current = false;
-
-            // Resume voice recognition even on exception
-            if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
-                console.log('[Voice] Resuming voice recognition after exception');
-                try {
-                    recognitionRef.current.start();
-                } catch (e) {
-                    console.warn('[Voice] Error resuming recognition:', e);
-                }
-            }
-        }
-    }, [isRecording]);
-
-    // Initialize speech recognition
-    useEffect(() => {
-        console.log('[Voice] Initializing speech recognition');
-
-        if (
-            'webkitSpeechRecognition' in window ||
-            'SpeechRecognition' in window
-        ) {
-            const SpeechRecognition =
-                (window as any).SpeechRecognition ||
-                (window as any).webkitSpeechRecognition;
-            const recognition = new SpeechRecognition() as SpeechRecognition;
-            recognitionRef.current = recognition;
-
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = (event: SpeechRecognitionEvent) => {
-                // Build the full transcript from NEW results only (starting from resultIndex)
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-
-                // Update accumulated transcript
-                if (finalTranscript) {
-                    interimTranscriptRef.current += finalTranscript;
-                    console.log(
-                        '[Voice] Final transcript accumulated:',
-                        interimTranscriptRef.current,
-                    );
-
-                    // Clear any existing silence timer since we got new final text
-                    if (silenceTimerRef.current) {
-                        clearTimeout(silenceTimerRef.current);
-                        silenceTimerRef.current = null;
-                    }
-
-                    // Set a new silence timer after receiving final text
-                    // If no more final text for 2 seconds, send the message
-                    silenceTimerRef.current = setTimeout(() => {
-                        const messageToSend =
-                            interimTranscriptRef.current.trim();
-                        if (messageToSend) {
-                            console.log(
-                                '[Voice] Silence detected, sending message:',
-                                messageToSend,
-                            );
-                            onTranscriptReceivedRef.current?.(messageToSend);
-                            sendVoiceMessage(messageToSend);
-                            interimTranscriptRef.current = '';
-                            setTranscript('');
-                        }
-                    }, 2000);
-                }
-
-                // Show current transcript (accumulated + interim)
-                const currentTranscript = (
-                    interimTranscriptRef.current + interimTranscript
-                ).trim();
-                setTranscript(currentTranscript);
-            };
-
-            recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-                console.error('[Voice] Recognition error:', event.error);
-
-                // Don't stop on "no-speech" error if we're in continuous mode
-                if (event.error === 'no-speech' && shouldRestartRef.current) {
-                    console.log(
-                        '[Voice] No speech detected, continuing to listen...',
-                    );
-                    return;
-                }
-
-                // For other errors, stop and notify
-                shouldRestartRef.current = false;
-                setIsRecording(false);
-                toast.error('Voice recognition failed: ' + event.error);
-            };
-
-            recognition.onend = () => {
-                console.log(
-                    '[Voice] Recognition ended, shouldRestart:',
-                    shouldRestartRef.current,
-                    'isPausedForPlayback:',
-                    isPausedForPlaybackRef.current,
-                );
-
-                // Don't restart if paused for playback
-                if (isPausedForPlaybackRef.current) {
-                    console.log('[Voice] Skipping restart - paused for playback');
-                    setIsRecording(false);
-                    return;
-                }
-
-                // If we should restart (continuous mode is active), restart recognition
-                if (shouldRestartRef.current && recognitionRef.current) {
-                    try {
-                        console.log(
-                            '[Voice] Restarting recognition for continuous mode',
-                        );
-                        recognitionRef.current.start();
-                    } catch (e) {
-                        console.error(
-                            '[Voice] Failed to restart recognition:',
-                            e,
-                        );
-                        shouldRestartRef.current = false;
-                        setIsRecording(false);
-                    }
-                } else {
-                    setIsRecording(false);
-                }
-            };
-
-            recognition.onstart = () => {
-                console.log('[Voice] Recognition started');
-            };
-
-            console.log('[Voice] Speech recognition initialized');
-        } else {
-            console.warn(
-                '[Voice] Speech recognition not supported in this browser',
-            );
-        }
-
-        return () => {
-            // Clear silence timer on unmount
-            if (silenceTimerRef.current) {
-                clearTimeout(silenceTimerRef.current);
-                silenceTimerRef.current = null;
-            }
-
-            // Stop recognition
-            shouldRestartRef.current = false;
-            if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.stop();
-                } catch (e) {
-                    // Ignore errors on cleanup
-                }
-            }
-
-            // Stop audio
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
-    }, [sendVoiceMessage]);
-
-    // Start recording
-    const startRecording = useCallback(() => {
-        console.log('[Voice] Start recording requested');
-
-        if (!recognitionRef.current) {
-            console.error('[Voice] Speech recognition not available');
-            toast.error('Speech recognition not supported in this browser');
-            return;
-        }
-
+    // Start listening
+    const startListening = useCallback(() => {
         if (!agentIdRef.current) {
-            console.error('[Voice] No agent selected');
             toast.error('Please select an agent first');
             return;
         }
 
-        try {
-            setTranscript('');
-            interimTranscriptRef.current = '';
-            shouldRestartRef.current = true;
-            setIsRecording(true);
-            recognitionRef.current.start();
-            console.log('[Voice] Continuous recording started');
-            toast.info('🎤 Listening continuously... Speak naturally.', {
-                duration: 2000,
-            });
-        } catch (error) {
-            console.error('[Voice] Failed to start recording:', error);
-            shouldRestartRef.current = false;
-            setIsRecording(false);
-            toast.error('Failed to start voice recording');
-        }
-    }, []);
-
-    // Stop recording
-    const stopRecording = useCallback(() => {
-        console.log('[Voice] Stop recording requested');
-
-        // Clear any pending silence timer
-        if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            toast.error('Speech recognition not supported');
+            return;
         }
 
-        // Send any remaining transcript before stopping
-        const remainingTranscript = interimTranscriptRef.current.trim();
-        if (remainingTranscript) {
-            console.log(
-                '[Voice] Sending remaining transcript before stop:',
-                remainingTranscript,
-            );
-            onTranscriptReceivedRef.current?.(remainingTranscript);
-            sendVoiceMessage(remainingTranscript);
-            interimTranscriptRef.current = '';
-        }
-
-        // Stop continuous mode
-        shouldRestartRef.current = false;
-
-        if (recognitionRef.current && isRecording) {
+        // Clean up existing recognition
+        if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
             } catch (e) {
-                console.error('[Voice] Error stopping recognition:', e);
+                // Ignore
             }
         }
 
-        setIsRecording(false);
-        setTranscript('');
-        console.log('[Voice] Continuous recording stopped');
-    }, [isRecording, sendVoiceMessage]);
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
 
-    // Stop playing audio
-    const stopPlaying = useCallback(() => {
-        console.log('[Voice] Stop playing requested');
+        recognition.continuous = false; // One utterance at a time
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            setState('listening');
+        };
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            console.log('[Voice] Transcript:', transcript);
+
+            onTranscriptReceivedRef.current?.(transcript);
+            processVoiceMessage(transcript);
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('[Voice] Recognition error:', event.error);
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                toast.error('Voice recognition failed');
+            }
+
+            // On error, retry if we should continue
+            if (shouldContinueRef.current) {
+                setTimeout(() => {
+                    if (shouldContinueRef.current) {
+                        startListening();
+                    }
+                }, 500);
+            } else {
+                setState('idle');
+            }
+        };
+
+        recognition.onend = () => {
+            // Recognition ended, but we're already transitioning to processing
+            // Don't do anything here - let the onresult handler manage the flow
+        };
+
+        recognitionRef.current = recognition;
+
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error('[Voice] Failed to start recognition:', error);
+            setState('idle');
+        }
+    }, [processVoiceMessage]);
+
+    // Stop all voice activity
+    const stopAll = useCallback(() => {
+        shouldContinueRef.current = false;
+
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                // Ignore
+            }
+            recognitionRef.current = null;
+        }
+
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
-            setIsPlaying(false);
         }
+
+        setState('idle');
     }, []);
 
     // Toggle voice mode
     const toggleVoiceMode = useCallback(() => {
-        console.log(
-            '[Voice] Toggle requested - recording:',
-            isRecording,
-            'playing:',
-            isPlaying,
-        );
-        if (isRecording) {
-            stopRecording();
-        } else if (isPlaying) {
-            stopPlaying();
+        if (state === 'idle') {
+            // Start continuous voice mode
+            shouldContinueRef.current = true;
+            startListening();
+            toast.info('🎤 Voice mode activated');
         } else {
-            startRecording();
+            // Stop voice mode
+            stopAll();
+            toast.info('Voice mode stopped');
         }
-    }, [isRecording, isPlaying, startRecording, stopRecording, stopPlaying]);
+    }, [state, startListening, stopAll]);
 
-    // Pause voice recognition (for external use, e.g., when auto-speak is playing)
-    const pauseRecognition = useCallback(() => {
-        console.log('[Voice] Pause requested, shouldRestart:', shouldRestartRef.current);
-
-        // Only pause if continuous mode is active (shouldRestartRef indicates recording is on)
-        if (shouldRestartRef.current && recognitionRef.current) {
-            console.log('[Voice] Pausing recognition (external)');
-            wasRecordingBeforePlaybackRef.current = true;
-            isPausedForPlaybackRef.current = true;
-
-            // Clear any pending silence timer
-            if (silenceTimerRef.current) {
-                clearTimeout(silenceTimerRef.current);
-                silenceTimerRef.current = null;
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.stop();
+                } catch (e) {
+                    // Ignore
+                }
             }
-
-            try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                console.warn('[Voice] Error pausing recognition:', e);
+            if (audioRef.current) {
+                audioRef.current.pause();
             }
-        }
-    }, []); // No dependencies - use refs only
-
-    // Resume voice recognition (for external use)
-    const resumeRecognition = useCallback(() => {
-        if (wasRecordingBeforePlaybackRef.current && recognitionRef.current && shouldRestartRef.current) {
-            console.log('[Voice] Resuming recognition (external)');
-            isPausedForPlaybackRef.current = false;
-
-            try {
-                recognitionRef.current.start();
-                wasRecordingBeforePlaybackRef.current = false;
-            } catch (e) {
-                console.warn('[Voice] Error resuming recognition:', e);
-            }
-        }
+        };
     }, []);
 
     return {
-        isRecording,
-        isProcessing,
-        isPlaying,
-        transcript,
-        startRecording,
-        stopRecording,
+        state,
+        isListening: state === 'listening',
+        isProcessing: state === 'processing',
+        isSpeaking: state === 'speaking',
+        isActive: state !== 'idle',
         toggleVoiceMode,
-        stopPlaying,
-        pauseRecognition,
-        resumeRecognition,
-        isVoiceActive: isRecording || isProcessing || isPlaying,
     };
 }

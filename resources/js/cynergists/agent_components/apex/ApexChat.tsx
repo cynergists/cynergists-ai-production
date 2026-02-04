@@ -40,15 +40,15 @@ export function ApexChat({
     selectedAgentId,
     onMessageReceived,
 }: ApexChatProps) {
-    // Voice mode hook
+    // Voice mode hook for continuous conversation
     const {
-        isRecording,
+        isListening,
         isProcessing,
-        isPlaying,
+        isSpeaking,
+        isActive,
         toggleVoiceMode,
-        isVoiceActive,
     } = useVoiceMode({
-        agentId: selectedAgentId,
+        agentId: selectedAgentId ?? null,
         onTranscriptReceived: (text) => {
             onMessageReceived?.({ role: 'user', content: text });
         },
@@ -56,6 +56,7 @@ export function ApexChat({
             onMessageReceived?.({ role: 'assistant', content: response.text });
         },
     });
+
     return (
         <>
             {/* Messages */}
@@ -166,27 +167,27 @@ export function ApexChat({
                         size="sm"
                         className={cn(
                             'h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs',
-                            isVoiceActive
+                            isActive
                                 ? 'border-primary bg-primary/20 hover:bg-primary/30'
                                 : 'hover:border-primary/40 hover:bg-primary/10',
                         )}
                         onClick={toggleVoiceMode}
                         disabled={!selectedAgentId}
                     >
-                        {isRecording ? (
+                        {isListening ? (
                             <>
-                                <Square className="h-3 w-3 animate-pulse" />
-                                Recording...
+                                <Mic className="h-3 w-3 animate-pulse" />
+                                Listening...
                             </>
                         ) : isProcessing ? (
                             <>
                                 <Loader2 className="h-3 w-3 animate-spin" />
                                 Processing...
                             </>
-                        ) : isPlaying ? (
+                        ) : isSpeaking ? (
                             <>
                                 <Square className="h-3 w-3 animate-pulse" />
-                                Playing...
+                                Speaking...
                             </>
                         ) : (
                             <>

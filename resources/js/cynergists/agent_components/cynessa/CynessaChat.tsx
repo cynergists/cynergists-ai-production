@@ -3,10 +3,9 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
-import { apiClient } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { Loader2, Mic, Paperclip, Send, Square, Trash2 } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -51,140 +50,22 @@ export function CynessaChat({
     selectedAgentId,
     onMessageReceived,
 }: CynessaChatProps) {
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const processedMessagesRef = useRef(new Set<number>());
-
-    // Voice mode hook
+    // Voice mode hook for continuous conversation
     const {
-        isRecording,
+        isListening,
         isProcessing,
-        isPlaying,
+        isSpeaking,
+        isActive,
         toggleVoiceMode,
-        pauseRecognition,
-        resumeRecognition,
-        isVoiceActive,
     } = useVoiceMode({
         agentId: selectedAgentId ?? null,
         onTranscriptReceived: (text) => {
-            onMessageReceived?.({ role: 'user', content: text });
+            onMessageReceived?.({ role: 'user', content: text, isVoiceGenerated: true });
         },
         onResponseReceived: (response) => {
             onMessageReceived?.({ role: 'assistant', content: response.text, isVoiceGenerated: true });
         },
     });
-
-    // Automatically speak all of Cynessa's responses (except voice-generated ones)
-    // DISABLED when voice mode is active to prevent feedback loops
-    useEffect(() => {
-        const speakLatestMessage = async () => {
-            if (!selectedAgentId || messages.length === 0) return;
-
-            // Get the last message
-            const lastMessage = messages[messages.length - 1];
-            const lastIndex = messages.length - 1;
-
-            // Only speak assistant messages that haven't been processed yet
-            // Skip voice-generated messages to prevent double-speak
-            // IMPORTANT: Skip ALL auto-speak when voice mode is active
-            if (
-                lastMessage.role === 'assistant' &&
-                !lastMessage.isVoiceGenerated &&
-                !isVoiceActive &&
-                !processedMessagesRef.current.has(lastIndex)
-            ) {
-                processedMessagesRef.current.add(lastIndex);
-
-                try {
-                    console.log(
-                        '[Auto-Voice] Converting Cynessa response to speech:',
-                        lastMessage.content.substring(0, 50),
-                    );
-
-                    const response = await apiClient.post<{
-                        success: boolean;
-                        audio: string | null;
-                        error?: string;
-                    }>(`/api/portal/voice/${selectedAgentId}`, {
-                        message: lastMessage.content,
-                        textOnly: true, // Flag to indicate we're just converting text to speech
-                    });
-
-                    if (response.success && response.audio) {
-                        console.log('[Auto-Voice] Playing audio response');
-                        await playAudio(response.audio);
-                    } else if (response.error) {
-                        console.warn('[Auto-Voice] No audio:', response.error);
-                    }
-                } catch (error) {
-                    console.error(
-                        '[Auto-Voice] Failed to convert text to speech:',
-                        error,
-                    );
-                }
-            }
-        };
-
-        speakLatestMessage();
-    }, [messages, selectedAgentId, isVoiceActive]);
-
-    // Play audio from base64
-    const playAudio = async (base64Audio: string): Promise<void> => {
-        try {
-            // Pause voice recognition to prevent feedback loop
-            pauseRecognition();
-
-            // Wait for voice recognition to fully stop (important!)
-            // The Web Speech API needs time to actually stop recording
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            // Stop any currently playing audio
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-
-            // Convert base64 to blob
-            const binaryString = atob(base64Audio);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(blob);
-
-            // Create and play audio element
-            audioRef.current = new Audio(audioUrl);
-            audioRef.current.onended = () => {
-                URL.revokeObjectURL(audioUrl);
-                audioRef.current = null;
-                // Resume voice recognition after playback
-                resumeRecognition();
-            };
-            audioRef.current.onerror = (e) => {
-                console.error('[Auto-Voice] Audio playback error:', e);
-                URL.revokeObjectURL(audioUrl);
-                audioRef.current = null;
-                // Resume voice recognition even on error
-                resumeRecognition();
-            };
-
-            await audioRef.current.play();
-        } catch (error) {
-            console.error('[Auto-Voice] Failed to play audio:', error);
-            // Resume voice recognition even on exception
-            resumeRecognition();
-        }
-    };
-
-    // Cleanup audio on unmount
-    useEffect(() => {
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
-    }, []);
 
     return (
         <>
@@ -319,27 +200,27 @@ export function CynessaChat({
                         size="sm"
                         className={cn(
                             'h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs',
-                            isVoiceActive
+                            isActive
                                 ? 'border-primary bg-primary/20 hover:bg-primary/30'
                                 : 'hover:border-primary/40 hover:bg-primary/10',
                         )}
                         onClick={toggleVoiceMode}
                         disabled={!selectedAgentId}
                     >
-                        {isRecording ? (
+                        {isListening ? (
                             <>
-                                <Square className="h-3 w-3 animate-pulse" />
-                                Recording...
+                                <Mic className="h-3 w-3 animate-pulse" />
+                                Listening...
                             </>
                         ) : isProcessing ? (
                             <>
                                 <Loader2 className="h-3 w-3 animate-spin" />
                                 Processing...
                             </>
-                        ) : isPlaying ? (
+                        ) : isSpeaking ? (
                             <>
                                 <Square className="h-3 w-3 animate-pulse" />
-                                Playing...
+                                Speaking...
                             </>
                         ) : (
                             <>
