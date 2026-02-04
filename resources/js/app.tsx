@@ -3,7 +3,6 @@ import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import AppShell from './cynergists/App';
-import { AdminLayout } from './cynergists/components/admin/AdminLayout';
 import { PartnerPortalLayout } from './cynergists/components/partner/PartnerPortalLayout';
 import { PortalLayout } from './cynergists/components/portal/PortalLayout';
 
@@ -30,13 +29,7 @@ createInertiaApp({
         return (cynergistsPage || corePage)().then((module) => {
             const component = module.default;
             if (!component.layout) {
-                if (name.startsWith('admin/') && name !== 'admin/ApproveUser') {
-                    component.layout = (page: JSX.Element) => (
-                        <AppShell>
-                            <AdminLayout>{page}</AdminLayout>
-                        </AppShell>
-                    );
-                } else if (
+                if (
                     name.startsWith('portal/') &&
                     name !== 'portal/Onboarding'
                 ) {

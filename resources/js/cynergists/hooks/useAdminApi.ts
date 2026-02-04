@@ -1,26 +1,32 @@
 import { callAdminApi } from '@/lib/admin-api';
 import { useCallback, useState } from 'react';
 
+/**
+ * Legacy admin API hook for partner-related functionality.
+ * Note: Admin dashboard now uses Filament. This hook only exists
+ * for partner portal features that still need backend API access.
+ */
 export function useAdminApi() {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<Error | null>(null);
 
     const callApi = useCallback(
         async <T>(
-            action: string,
-            params?: Record<string, string>,
+            operation: string,
+            params?: Record<string, unknown>,
             body?: unknown,
-        ): Promise<T | null> => {
+        ): Promise<T> => {
             setLoading(true);
             setError(null);
 
             try {
-                return await callAdminApi<T>(action, params, body);
+                const result = await callAdminApi<T>(operation, params, body);
+                return result;
             } catch (err) {
-                const message =
-                    err instanceof Error ? err.message : 'An error occurred';
-                setError(message);
-                return null;
+                const error =
+                    err instanceof Error ? err : new Error('Unknown error');
+                setError(error);
+                throw error;
             } finally {
                 setLoading(false);
             }
@@ -28,5 +34,9 @@ export function useAdminApi() {
         [],
     );
 
-    return { callApi, loading, error };
+    return {
+        callApi,
+        loading,
+        error,
+    };
 }
