@@ -1,219 +1,254 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { formatErrorMessage } from "@/utils/errorMessages";
-import { callAdminApi } from "@/lib/admin-api";
+import { callAdminApi } from '@/lib/admin-api';
+import { formatErrorMessage } from '@/utils/errorMessages';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // Partner from the dedicated partners table
 export interface Partner {
-  id: string;
-  
-  // Identity & Contact
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  company_name: string | null;
-  partner_type: "company" | "sole_proprietor";
-  
-  // Status
-  partner_status: "active" | "inactive" | "terminated";
-  
-  // Agreement & Legal
-  agreement_sent: boolean;
-  agreement_sent_date: string | null;
-  agreement_signed: boolean;
-  agreement_signed_date: string | null;
-  agreement_version: string | null;
-  commission_rate: number;
-  
-  // Financial Performance (calculated)
-  referrals_given: number;
-  qualified_referrals: number;
-  closed_won_deals: number;
-  revenue_generated: number;
-  total_commissions_earned: number;
-  outstanding_commission_balance: number;
-  last_commission_payout_date: string | null;
-  last_referral_date: string | null;
-  
-  // Relationship Management
-  internal_owner_id: string | null;
-  internal_owner?: {
     id: string;
-    first_name: string | null;
-    last_name: string | null;
+
+    // Identity & Contact
+    first_name: string;
+    last_name: string;
     email: string;
-  } | null;
-  partner_start_date: string | null;
-  last_activity_date: string | null;
-  next_follow_up_date: string | null;
-  partner_notes: string | null;
-  
-  // Portal Access
-  portal_access_enabled: boolean;
-  linked_user_id: string | null;
-  access_level: "standard" | "limited";
-  last_login_date: string | null;
-  
-  // System Metadata
-  created_at: string;
-  created_by: string | null;
-  updated_at: string;
+    phone: string | null;
+    company_name: string | null;
+    partner_type: 'company' | 'sole_proprietor';
+
+    // Status
+    partner_status: 'active' | 'inactive' | 'terminated';
+
+    // Agreement & Legal
+    agreement_sent: boolean;
+    agreement_sent_date: string | null;
+    agreement_signed: boolean;
+    agreement_signed_date: string | null;
+    agreement_version: string | null;
+    commission_rate: number;
+
+    // Financial Performance (calculated)
+    referrals_given: number;
+    qualified_referrals: number;
+    closed_won_deals: number;
+    revenue_generated: number;
+    total_commissions_earned: number;
+    outstanding_commission_balance: number;
+    last_commission_payout_date: string | null;
+    last_referral_date: string | null;
+
+    // Relationship Management
+    internal_owner_id: string | null;
+    internal_owner?: {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string;
+    } | null;
+    partner_start_date: string | null;
+    last_activity_date: string | null;
+    next_follow_up_date: string | null;
+    partner_notes: string | null;
+
+    // Portal Access
+    portal_access_enabled: boolean;
+    linked_user_id: string | null;
+    access_level: 'standard' | 'limited';
+    last_login_date: string | null;
+
+    // System Metadata
+    created_at: string;
+    created_by: string | null;
+    updated_at: string;
 }
 
 export interface PartnerFormData {
-  // Identity & Contact
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  company_name?: string;
-  partner_type?: "company" | "sole_proprietor";
-  
-  // Status
-  partner_status?: "active" | "inactive" | "terminated";
-  
-  // Agreement & Legal
-  agreement_sent?: boolean;
-  agreement_sent_date?: string;
-  agreement_signed?: boolean;
-  agreement_signed_date?: string;
-  agreement_version?: string;
-  commission_rate?: number;
-  
-  // Relationship Management
-  internal_owner_id?: string;
-  partner_start_date?: string;
-  next_follow_up_date?: string;
-  partner_notes?: string;
-  
-  // Portal Access
-  portal_access_enabled?: boolean;
-  linked_user_id?: string;
-  access_level?: "standard" | "limited";
+    // Identity & Contact
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    company_name?: string;
+    partner_type?: 'company' | 'sole_proprietor';
+
+    // Status
+    partner_status?: 'active' | 'inactive' | 'terminated';
+
+    // Agreement & Legal
+    agreement_sent?: boolean;
+    agreement_sent_date?: string;
+    agreement_signed?: boolean;
+    agreement_signed_date?: string;
+    agreement_version?: string;
+    commission_rate?: number;
+
+    // Relationship Management
+    internal_owner_id?: string;
+    partner_start_date?: string;
+    next_follow_up_date?: string;
+    partner_notes?: string;
+
+    // Portal Access
+    portal_access_enabled?: boolean;
+    linked_user_id?: string;
+    access_level?: 'standard' | 'limited';
 }
 
 export interface PartnersSummary {
-  total: number;
-  active: number;
-  inactive: number;
-  totalReferrals: number;
-  totalRevenue: number;
-  totalCommissions: number;
-  outstandingBalance: number;
+    total: number;
+    active: number;
+    inactive: number;
+    totalReferrals: number;
+    totalRevenue: number;
+    totalCommissions: number;
+    outstandingBalance: number;
 }
 
 interface UsePartnersListResult {
-  partners: Partner[];
-  loading: boolean;
-  error: string | null;
-  summary: PartnersSummary;
-  refetch: () => void;
-  createPartner: (data: PartnerFormData) => Promise<Partner | null>;
-  updatePartner: (id: string, data: Partial<PartnerFormData>) => Promise<Partner | null>;
-  deletePartner: (id: string) => Promise<boolean>;
-  mutating: boolean;
+    partners: Partner[];
+    loading: boolean;
+    error: string | null;
+    summary: PartnersSummary;
+    refetch: () => void;
+    createPartner: (data: PartnerFormData) => Promise<Partner | null>;
+    updatePartner: (
+        id: string,
+        data: Partial<PartnerFormData>,
+    ) => Promise<Partner | null>;
+    deletePartner: (id: string) => Promise<boolean>;
+    mutating: boolean;
 }
 
 const DEFAULT_SUMMARY: PartnersSummary = {
-  total: 0,
-  active: 0,
-  inactive: 0,
-  totalReferrals: 0,
-  totalRevenue: 0,
-  totalCommissions: 0,
-  outstandingBalance: 0,
+    total: 0,
+    active: 0,
+    inactive: 0,
+    totalReferrals: 0,
+    totalRevenue: 0,
+    totalCommissions: 0,
+    outstandingBalance: 0,
 };
 
 export function usePartnersList(): UsePartnersListResult {
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mutating, setMutating] = useState(false);
-  const [summary, setSummary] = useState<PartnersSummary>(DEFAULT_SUMMARY);
+    const [partners, setPartners] = useState<Partner[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [mutating, setMutating] = useState(false);
+    const [summary, setSummary] = useState<PartnersSummary>(DEFAULT_SUMMARY);
 
-  const fetchPartners = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await callAdminApi<{ partners: Partner[]; summary: PartnersSummary }>(
-        "get_partners",
-      );
-      setPartners(response.partners || []);
-      setSummary(response.summary || DEFAULT_SUMMARY);
-    } catch (err) {
-      console.error("Error in fetchPartners:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-      setPartners([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const fetchPartners = useCallback(async () => {
+        setLoading(true);
+        setError(null);
 
-  const createPartner = useCallback(async (data: PartnerFormData): Promise<Partner | null> => {
-    setMutating(true);
-    try {
-      const response = await callAdminApi<Partner>("create_partner", undefined, data);
-      toast.success("Partner created successfully");
-      await fetchPartners();
-      return response;
-    } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : "Failed to create partner";
-      const message = formatErrorMessage(rawMessage, "partner");
-      toast.error(message);
-      return null;
-    } finally {
-      setMutating(false);
-    }
-  }, [fetchPartners]);
+        try {
+            const response = await callAdminApi<{
+                partners: Partner[];
+                summary: PartnersSummary;
+            }>('get_partners');
+            setPartners(response.partners || []);
+            setSummary(response.summary || DEFAULT_SUMMARY);
+        } catch (err) {
+            console.error('Error in fetchPartners:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
+            setPartners([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-  const updatePartner = useCallback(async (id: string, data: Partial<PartnerFormData>): Promise<Partner | null> => {
-    setMutating(true);
-    try {
-      const response = await callAdminApi<Partner>("update_partner", { id }, data);
-      toast.success("Partner updated successfully");
-      await fetchPartners();
-      return response;
-    } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : "Failed to update partner";
-      const message = formatErrorMessage(rawMessage, "partner");
-      toast.error(message);
-      return null;
-    } finally {
-      setMutating(false);
-    }
-  }, [fetchPartners]);
+    const createPartner = useCallback(
+        async (data: PartnerFormData): Promise<Partner | null> => {
+            setMutating(true);
+            try {
+                const response = await callAdminApi<Partner>(
+                    'create_partner',
+                    undefined,
+                    data,
+                );
+                toast.success('Partner created successfully');
+                await fetchPartners();
+                return response;
+            } catch (err) {
+                const rawMessage =
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to create partner';
+                const message = formatErrorMessage(rawMessage, 'partner');
+                toast.error(message);
+                return null;
+            } finally {
+                setMutating(false);
+            }
+        },
+        [fetchPartners],
+    );
 
-  const deletePartner = useCallback(async (id: string): Promise<boolean> => {
-    setMutating(true);
-    try {
-      await callAdminApi<{ success: boolean }>("delete_partner", { id });
-      toast.success("Partner deleted successfully");
-      await fetchPartners();
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete partner";
-      toast.error(message);
-      return false;
-    } finally {
-      setMutating(false);
-    }
-  }, [fetchPartners]);
+    const updatePartner = useCallback(
+        async (
+            id: string,
+            data: Partial<PartnerFormData>,
+        ): Promise<Partner | null> => {
+            setMutating(true);
+            try {
+                const response = await callAdminApi<Partner>(
+                    'update_partner',
+                    { id },
+                    data,
+                );
+                toast.success('Partner updated successfully');
+                await fetchPartners();
+                return response;
+            } catch (err) {
+                const rawMessage =
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to update partner';
+                const message = formatErrorMessage(rawMessage, 'partner');
+                toast.error(message);
+                return null;
+            } finally {
+                setMutating(false);
+            }
+        },
+        [fetchPartners],
+    );
 
-  useEffect(() => {
-    fetchPartners();
-  }, [fetchPartners]);
+    const deletePartner = useCallback(
+        async (id: string): Promise<boolean> => {
+            setMutating(true);
+            try {
+                await callAdminApi<{ success: boolean }>('delete_partner', {
+                    id,
+                });
+                toast.success('Partner deleted successfully');
+                await fetchPartners();
+                return true;
+            } catch (err) {
+                const message =
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to delete partner';
+                toast.error(message);
+                return false;
+            } finally {
+                setMutating(false);
+            }
+        },
+        [fetchPartners],
+    );
 
-  return {
-    partners,
-    loading,
-    error,
-    summary,
-    refetch: fetchPartners,
-    createPartner,
-    updatePartner,
-    deletePartner,
-    mutating,
-  };
+    useEffect(() => {
+        fetchPartners();
+    }, [fetchPartners]);
+
+    return {
+        partners,
+        loading,
+        error,
+        summary,
+        refetch: fetchPartners,
+        createPartner,
+        updatePartner,
+        deletePartner,
+        mutating,
+    };
 }

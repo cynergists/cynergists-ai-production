@@ -4,19 +4,25 @@ namespace App\Http\Controllers\Api\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\SendMessageRequest;
+use App\Http\Requests\Portal\UploadFileRequest;
 use App\Models\AgentAccess;
 use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Cynessa\CynessaAgentHandler;
+use App\Services\Cynessa\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PortalChatController extends Controller
 {
     public function __construct(
-        private ApexAgentHandler $apexAgentHandler
+        private ApexAgentHandler $apexAgentHandler,
+        private CynessaAgentHandler $cynessaAgentHandler,
+        private OnboardingService $onboardingService
     ) {}
 
     public function conversation(Request $request, string $agent): JsonResponse
@@ -93,13 +99,14 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        
+        // Generate the assistant response with conversation history (before adding current message)
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        
         $messages[] = [
             'role' => 'user',
             'content' => $userMessage,
         ];
-
-        // Generate the assistant response based on agent type
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user);
 
         $messages[] = [
             'role' => 'assistant',
@@ -127,8 +134,10 @@ class PortalChatController extends Controller
     /**
      * Generate a response based on the agent type.
      */
-    private function generateResponse(AgentAccess $agentAccess, string $message, $user): string
+    private function generateResponse(AgentAccess $agentAccess, string $message, $user, array $conversationHistory = []): string
     {
+        $tenant = PortalTenant::forUser($user);
+
         // Check if this is the Apex agent
         if (strtolower($agentAccess->agent_name) === 'apex') {
             $availableAgent = PortalAvailableAgent::query()
@@ -140,10 +149,159 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Cynessa agent
+        if (strtolower($agentAccess->agent_name) === 'cynessa') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Default response for other agents
         return sprintf(
             "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
             $agentAccess->agent_name
         );
+    }
+
+    /**
+     * Upload a file for an agent (e.g., brand assets for Cynessa).
+     */
+    public function uploadFile(UploadFileRequest $request, string $agent): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
+        }
+
+        $agentAccess = AgentAccess::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $agent)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $agentAccess) {
+            return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
+        }
+
+        $file = $request->file('file');
+        $filename = $file->getClientOriginalName();
+        $type = $request->input('type', 'brand_asset');
+        
+        // Store file in tenant-specific directory
+        $path = $file->store(
+            "tenants/{$tenant->id}/brand_assets",
+            'public'
+        );
+
+        // Track the uploaded file
+        $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+
+        // Get conversation to add upload notification
+        $conversation = AgentConversation::query()
+            ->where('agent_access_id', $agentAccess->id)
+            ->where('status', 'active')
+            ->orderByDesc('created_at')
+            ->first();
+
+        $confirmationMessage = null;
+        if ($conversation && strtolower($agentAccess->agent_name) === 'cynessa') {
+            $messages = $conversation->messages ?? [];
+            
+            // Add user message about the file upload
+            $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
+            $fileSize = number_format($file->getSize() / 1024, 2); // KB
+            
+            $userMessage = "[File uploaded: {$filename} ({$fileSize} KB, .{$fileExtension})]";
+            $messages[] = [
+                'role' => 'user',
+                'content' => $userMessage,
+            ];
+            
+            // Let Cynessa respond to the file upload with full history
+            $availableAgent = \App\Models\PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+                
+            if ($availableAgent) {
+                // Pass the conversation history (before adding the new upload message)
+                $historyBeforeUpload = array_slice($messages, 0, -1);
+                
+                $confirmationMessage = $this->cynessaAgentHandler->handle(
+                    $userMessage,
+                    $user,
+                    $availableAgent,
+                    $tenant,
+                    $historyBeforeUpload
+                );
+                
+                $messages[] = [
+                    'role' => 'assistant',
+                    'content' => $confirmationMessage,
+                ];
+            }
+
+            $conversation->update([
+                'messages' => $messages,
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'file' => [
+                'filename' => $filename,
+                'path' => $path,
+                'url' => Storage::disk('public')->url($path),
+                'type' => $type,
+            ],
+            'message' => $confirmationMessage,
+            'messages' => $messages ?? null,
+        ]);
+    }
+
+    /**
+     * Clear/delete the active conversation for an agent.
+     */
+    public function clearConversation(Request $request, string $agent): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
+        }
+
+        $agentAccess = AgentAccess::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $agent)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $agentAccess) {
+            return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
+        }
+
+        // Find and delete the active conversation
+        $deleted = AgentConversation::query()
+            ->where('agent_access_id', $agentAccess->id)
+            ->where('status', 'active')
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'deleted' => $deleted > 0,
+        ]);
     }
 }

@@ -94,6 +94,9 @@ class PortalAgentsController extends Controller
             ? Storage::disk('public')->url($availableAgent->avatar)
             : null;
 
+        // Include tenant data for sidebar display
+        $agentAccess->tenant_data = $tenant;
+
         return response()->json([
             'agent' => $agentAccess,
         ]);

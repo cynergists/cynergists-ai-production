@@ -1,3 +1,3 @@
 export function useAdminPrefetch(): void {
-  return;
+    return;
 }

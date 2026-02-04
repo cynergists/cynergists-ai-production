@@ -4,8 +4,8 @@ import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import AppShell from './cynergists/App';
 import { AdminLayout } from './cynergists/components/admin/AdminLayout';
-import { PortalLayout } from './cynergists/components/portal/PortalLayout';
 import { PartnerPortalLayout } from './cynergists/components/partner/PartnerPortalLayout';
+import { PortalLayout } from './cynergists/components/portal/PortalLayout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Cynergists';
 type PageModule = {
@@ -36,7 +36,10 @@ createInertiaApp({
                             <AdminLayout>{page}</AdminLayout>
                         </AppShell>
                     );
-                } else if (name.startsWith('portal/') && name !== 'portal/Onboarding') {
+                } else if (
+                    name.startsWith('portal/') &&
+                    name !== 'portal/Onboarding'
+                ) {
                     component.layout = (page: JSX.Element) => (
                         <AppShell>
                             <PortalLayout>{page}</PortalLayout>
@@ -49,7 +52,9 @@ createInertiaApp({
                         </AppShell>
                     );
                 } else {
-                    component.layout = (page: JSX.Element) => <AppShell>{page}</AppShell>;
+                    component.layout = (page: JSX.Element) => (
+                        <AppShell>{page}</AppShell>
+                    );
                 }
             }
             return module;

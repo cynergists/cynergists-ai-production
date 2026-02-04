@@ -29,6 +29,8 @@ class CreatePortalClientUser implements ShouldQueue
     {
         $user = User::query()->where('email', $this->email)->first();
 
+        $isNewUser = !$user;
+
         if (! $user) {
             $user = User::query()->create([
                 'name' => $this->name ?: 'Portal Client',
@@ -51,5 +53,15 @@ class CreatePortalClientUser implements ShouldQueue
             'user_id' => $user->id,
             'role' => 'client',
         ]);
+
+        // Automatically attach free Cynessa agent to new users
+        if ($isNewUser) {
+            AttachPortalAgentsToUser::dispatch(
+                $this->email,
+                $this->name,
+                null,
+                ['Cynessa']
+            );
+        }
     }
 }

@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\AgentAccess;
 use App\Models\AgentConversation;
 use App\Models\PortalTenant;
+use App\Services\Cynessa\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PortalStatsController extends Controller
 {
+    public function __construct(
+        private OnboardingService $onboardingService
+    ) {}
+
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -49,11 +54,23 @@ class PortalStatsController extends Controller
             ->where('status', 'active')
             ->count();
 
+        // Get onboarding progress
+        $progress = $this->onboardingService->getProgress($tenant);
+
         return response()->json([
             'agentCount' => $agentCount,
             'conversationCount' => $conversationCount,
             'totalMessages' => $totalMessages,
             'recentAgents' => $recentAgents,
+            'onboardingProgress' => [
+                'completed' => $progress['completed'],
+                'percentComplete' => $progress['percentComplete'],
+                'steps' => collect($progress['steps'])->map(fn($step, $key) => [
+                    'id' => $key,
+                    'label' => $step['name'],
+                    'completed' => $step['completed'],
+                ])->values()->toArray(),
+            ],
         ]);
     }
 }
