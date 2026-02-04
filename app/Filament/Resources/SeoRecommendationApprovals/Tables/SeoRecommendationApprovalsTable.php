@@ -45,6 +45,11 @@ class SeoRecommendationApprovalsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('seo_recommendation_id')
+                    ->label('Recommendation')
+                    ->relationship('recommendation', 'title')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('decision')
                     ->options([
                         'approved' => 'Approved',

@@ -50,6 +50,16 @@ class SeoSitesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('tenant_id')
+                    ->label('Tenant')
+                    ->relationship('tenant', 'company_name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('user_id')
+                    ->label('Owner')
+                    ->relationship('owner', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options([
                         'active' => 'Active',

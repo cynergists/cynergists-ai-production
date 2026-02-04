@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Portal\PortalBillingController;
 use App\Http\Controllers\Api\Portal\PortalBrowseController;
 use App\Http\Controllers\Api\Portal\PortalChatController;
 use App\Http\Controllers\Api\Portal\PortalProfileController;
+use App\Http\Controllers\Api\Portal\PortalSeoController;
 use App\Http\Controllers\Api\Portal\PortalStatsController;
 use App\Http\Controllers\Api\Portal\PortalSubdomainController;
 use App\Http\Controllers\Api\Portal\PortalSuggestionsController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\UserPasswordController;
 use App\Http\Controllers\Api\ViewPreferencesController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CynergistsPageController;
+use App\Http\Controllers\SeoReportController;
 use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +101,7 @@ Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
@@ -143,6 +146,11 @@ Route::get('/admin/ai-agents/{id}', [CynergistsPageController::class, 'page'])->
 Route::get('/admin/partner-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/PartnerPortalManagement');
 Route::get('/admin/ai-agent-template', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentTemplate');
 
+Route::middleware(['auth', EnsureAdminUser::class])->group(function () {
+    Route::get('/reports/seo/{report}', [SeoReportController::class, 'show'])->name('reports.seo.show');
+    Route::get('/reports/seo/{report}/download', [SeoReportController::class, 'download'])->name('reports.seo.download');
+});
+
 Route::get('/api/portal/tenant/by-subdomain', [PortalTenantController::class, 'showBySubdomain']);
 
 Route::prefix('api')->group(function () {
@@ -181,6 +189,11 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
         Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
+        Route::get('/seo/overview', [PortalSeoController::class, 'overview']);
+        Route::post('/seo/sites', [PortalSeoController::class, 'storeSite']);
+        Route::post('/seo/recommendations/{recommendation}/decision', [PortalSeoController::class, 'decideRecommendation']);
+        Route::post('/seo/reports/generate', [PortalSeoController::class, 'generateReport']);
+        Route::get('/seo/reports/{report}/download', [PortalSeoController::class, 'downloadReport']);
         Route::get('/billing', [PortalBillingController::class, 'index']);
         Route::get('/activity', [PortalActivityController::class, 'index']);
         Route::get('/tenant', [PortalTenantController::class, 'show']);

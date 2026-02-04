@@ -47,7 +47,8 @@ class SeoAuditForm
                                 TextInput::make('issues_count')
                                     ->label('Issues Found')
                                     ->numeric()
-                                    ->default(0),
+                                    ->default(0)
+                                    ->minValue(0),
                             ]),
                         Section::make('Timing')
                             ->schema([

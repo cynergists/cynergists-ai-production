@@ -51,4 +51,20 @@ class SeoRecommendationResource extends Resource
             'edit' => EditSeoRecommendation::route('/{record}/edit'),
         ];
     }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::query()
+            ->where('status', 'pending')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::query()
+            ->where('status', 'pending')
+            ->exists() ? 'warning' : null;
+    }
 }

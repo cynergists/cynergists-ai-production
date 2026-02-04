@@ -43,6 +43,7 @@ class SeoChangeForm
                         Section::make('Summary')
                             ->schema([
                                 Textarea::make('summary')
+                                    ->required()
                                     ->rows(4)
                                     ->placeholder('Summary of the change...'),
                             ]),

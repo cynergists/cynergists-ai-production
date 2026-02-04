@@ -44,6 +44,16 @@ class SeoChangesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('seo_site_id')
+                    ->label('Site')
+                    ->relationship('site', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('seo_recommendation_id')
+                    ->label('Recommendation')
+                    ->relationship('recommendation', 'title')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options([
                         'applied' => 'Applied',

@@ -21,6 +21,7 @@ interface ProductDetailLayoutProps {
   
   // Content sections
   features?: string[];
+  featuresTitle?: string;
   whosItFor?: string;
   integrations?: string[];
   
@@ -55,6 +56,7 @@ export const ProductDetailLayout = ({
   billingPeriod = "monthly",
   imageUrl,
   features = [],
+  featuresTitle = "What's Included",
   whosItFor,
   integrations = [],
   primaryCtaText = "Add to Cart",
@@ -77,6 +79,13 @@ export const ProductDetailLayout = ({
   };
 
   const displayPrice = priceLabel ?? (price > 0 ? formatPrice(price) : "Free");
+  const featureTitleParts = featuresTitle.split(" ").filter(Boolean);
+  const featureTitleLead =
+    featureTitleParts.length > 1 ? featureTitleParts.slice(0, -1).join(" ") : "";
+  const featureTitleHighlight =
+    featureTitleParts.length > 1
+      ? featureTitleParts[featureTitleParts.length - 1]
+      : featuresTitle;
 
   const renderPrimaryCta = () =>
     primaryCtaLink ? (
@@ -180,7 +189,14 @@ export const ProductDetailLayout = ({
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-                What's <span className="text-gradient">Included</span>
+                {featureTitleParts.length > 1 ? (
+                  <>
+                    {featureTitleLead}{" "}
+                    <span className="text-gradient">{featureTitleHighlight}</span>
+                  </>
+                ) : (
+                  <span className="text-gradient">{featureTitleHighlight}</span>
+                )}
               </h2>
               <div className="grid md:grid-cols-2 gap-4">
                 {features.map((feature, idx) => (

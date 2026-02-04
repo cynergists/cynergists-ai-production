@@ -85,6 +85,11 @@ class SeoRecommendationsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('seo_site_id')
+                    ->label('Site')
+                    ->relationship('site', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
@@ -101,6 +106,12 @@ class SeoRecommendationsTable
                         'local' => 'Local',
                         'schema' => 'Schema',
                         'aeo' => 'AEO',
+                    ]),
+                SelectFilter::make('effort')
+                    ->options([
+                        'low' => 'Low',
+                        'medium' => 'Medium',
+                        'high' => 'High',
                     ]),
             ])
             ->defaultSort('created_at', 'desc')

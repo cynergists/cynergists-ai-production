@@ -51,12 +51,23 @@ class SeoAuditsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('seo_site_id')
+                    ->label('Site')
+                    ->relationship('site', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
                         'running' => 'Running',
                         'completed' => 'Completed',
                         'failed' => 'Failed',
+                    ]),
+                SelectFilter::make('trigger')
+                    ->options([
+                        'scheduled' => 'Scheduled',
+                        'manual' => 'Manual',
+                        'integration' => 'Integration',
                     ]),
             ])
             ->defaultSort('created_at', 'desc')

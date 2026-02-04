@@ -29,7 +29,8 @@ class SeoReportForm
                                 DatePicker::make('period_start')
                                     ->required(),
                                 DatePicker::make('period_end')
-                                    ->required(),
+                                    ->required()
+                                    ->rule('after_or_equal:period_start'),
                                 Select::make('status')
                                     ->required()
                                     ->options([

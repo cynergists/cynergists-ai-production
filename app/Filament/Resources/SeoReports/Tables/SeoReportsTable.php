@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\SeoReports\Tables;
 
+use App\Models\SeoReport;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -50,6 +52,11 @@ class SeoReportsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('seo_site_id')
+                    ->label('Site')
+                    ->relationship('site', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options([
                         'ready' => 'Ready',
@@ -59,6 +66,16 @@ class SeoReportsTable
             ])
             ->defaultSort('period_end', 'desc')
             ->recordActions([
+                Action::make('viewReport')
+                    ->label('View')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (SeoReport $record): string => route('reports.seo.show', $record))
+                    ->openUrlInNewTab(),
+                Action::make('downloadReport')
+                    ->label('Download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->url(fn (SeoReport $record): string => route('reports.seo.download', $record))
+                    ->openUrlInNewTab(),
                 EditAction::make(),
             ])
             ->toolbarActions([

@@ -80,8 +80,9 @@ const getAgentIcon = (category: string) => {
 
 export function AIAgentCard({ agent, showDiscount = false, discountPercent = 0 }: AIAgentCardProps) {
   const Icon = getAgentIcon(agent.category);
-  const discountedPrice = showDiscount && discountPercent > 0 
-    ? agent.price * (1 - discountPercent / 100) 
+  const isCustomPricing = agent.price <= 0;
+  const discountedPrice = showDiscount && discountPercent > 0 && !isCustomPricing
+    ? agent.price * (1 - discountPercent / 100)
     : agent.price;
   
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -159,7 +160,12 @@ export function AIAgentCard({ agent, showDiscount = false, discountPercent = 0 }
           <div className="p-6 border-t border-slate-700/50 bg-slate-800/50 mt-auto">
             <div className="flex items-center justify-between">
               <div>
-                {showDiscount && discountPercent > 0 ? (
+                {isCustomPricing ? (
+                  <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">Custom</span>
+                    <span className="text-xs text-slate-400">Pricing based on scope</span>
+                  </div>
+                ) : showDiscount && discountPercent > 0 ? (
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-white">
                       ${discountedPrice.toFixed(0)}
@@ -318,7 +324,12 @@ export function AIAgentCard({ agent, showDiscount = false, discountPercent = 0 }
         <div className="p-6 pt-4 border-t border-border/50 bg-muted/30 mt-auto">
           <div className="flex flex-col gap-3">
             <div className="text-center">
-              {showDiscount && discountPercent > 0 ? (
+              {isCustomPricing ? (
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl font-bold text-foreground">Custom</span>
+                  <span className="text-xs text-muted-foreground">Pricing based on scope</span>
+                </div>
+              ) : showDiscount && discountPercent > 0 ? (
                 <div className="flex items-baseline justify-center gap-2">
                   <span className="text-3xl font-bold text-foreground">
                     ${discountedPrice.toFixed(0)}

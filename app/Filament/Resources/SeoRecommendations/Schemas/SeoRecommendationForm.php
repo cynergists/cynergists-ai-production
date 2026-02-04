@@ -62,6 +62,8 @@ class SeoRecommendationForm
                                                 TextInput::make('impact_score')
                                                     ->numeric()
                                                     ->default(0)
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
                                                     ->helperText('0-100 estimated impact'),
                                                 Select::make('effort')
                                                     ->required()

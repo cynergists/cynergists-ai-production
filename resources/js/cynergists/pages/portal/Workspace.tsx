@@ -651,6 +651,13 @@ export default function PortalWorkspace() {
                 <Activity className="w-5 h-5 shrink-0" />
                 Activity Log
               </button>
+              <button
+                onClick={() => router.visit("/portal/seo-engine")}
+                className="flex items-center gap-3 text-left text-base font-medium py-3 px-4 rounded-xl transition-all duration-200 border-l-3 text-foreground/70 hover:text-foreground hover:bg-muted/50 border-l-transparent"
+              >
+                <Sparkles className="w-5 h-5 shrink-0" />
+                SEO Engine
+              </button>
             </nav>
           </div>
 
