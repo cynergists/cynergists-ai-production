@@ -11,6 +11,7 @@ use App\Models\SeoReport;
 use App\Models\SeoSite;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SeoEngineMockIngestor
 {
@@ -110,7 +111,7 @@ class SeoEngineMockIngestor
                     [
                         'audit' => 'completed',
                         'type' => 'performance',
-                        'title' => 'Improve LCP performance on the SEO Engine landing page',
+                        'title' => 'Improve LCP performance on the Carbon landing page',
                         'description' => 'Compress hero imagery and preload critical fonts to reduce LCP below 2.5s.',
                         'target_pages' => ['/products/seo-engine'],
                         'impact_score' => 74,
@@ -346,7 +347,11 @@ class SeoEngineMockIngestor
         $site = SeoSite::query()->create(array_merge([
             'tenant_id' => $tenant->id,
             'user_id' => (string) $user->id,
+            'tracking_id' => (string) Str::uuid(),
             'last_audit_at' => null,
+            'pixel_install_method' => 'manual',
+            'pixel_install_status' => 'pending',
+            'pixel_last_seen_at' => null,
         ], $sitePayload));
 
         $counts['sites']++;

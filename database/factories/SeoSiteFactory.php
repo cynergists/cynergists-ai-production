@@ -23,11 +23,15 @@ class SeoSiteFactory extends Factory
             'id' => (string) Str::uuid(),
             'tenant_id' => PortalTenant::factory(),
             'user_id' => User::factory(),
+            'tracking_id' => (string) Str::uuid(),
             'name' => $this->faker->company().' Site',
             'url' => 'https://'.$this->faker->domainName(),
             'status' => 'active',
             'settings' => [],
             'last_audit_at' => null,
+            'pixel_install_method' => null,
+            'pixel_install_status' => 'not_installed',
+            'pixel_last_seen_at' => null,
         ];
     }
 }

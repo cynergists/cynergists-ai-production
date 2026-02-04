@@ -12,9 +12,9 @@ class SeoEngineDashboard extends BaseDashboard
 {
     protected static string $routePath = '/seo-engine';
 
-    protected static ?string $navigationLabel = 'SEO Dashboard';
+    protected static ?string $navigationLabel = 'Carbon Dashboard';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SEO Engine';
+    protected static string|\UnitEnum|null $navigationGroup = 'Carbon';
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
@@ -22,7 +22,7 @@ class SeoEngineDashboard extends BaseDashboard
 
     public function getTitle(): string
     {
-        return 'SEO Engine';
+        return 'Carbon';
     }
 
     public function getWidgets(): array

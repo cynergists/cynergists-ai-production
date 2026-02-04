@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\ViewPreferencesController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CynergistsPageController;
 use App\Http\Controllers\SeoReportController;
+use App\Http\Controllers\SeoPixelController;
 use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
@@ -152,8 +153,10 @@ Route::middleware(['auth', EnsureAdminUser::class])->group(function () {
 });
 
 Route::get('/api/portal/tenant/by-subdomain', [PortalTenantController::class, 'showBySubdomain']);
+Route::get('/seo/pixel/{trackingId}.js', [SeoPixelController::class, 'script'])->name('seo.pixel.script');
 
 Route::prefix('api')->group(function () {
+    Route::match(['post', 'options'], '/seo/pixel/{trackingId}/collect', [SeoPixelController::class, 'collect']);
     Route::get('/public/plans', [PublicDataController::class, 'activePlans']);
     Route::get('/public/plans/{slug}', [PublicDataController::class, 'planBySlug']);
     Route::get('/public/products', [PublicDataController::class, 'activeProducts']);
@@ -191,6 +194,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [PortalSeoController::class, 'overview']);
         Route::post('/seo/sites', [PortalSeoController::class, 'storeSite']);
+        Route::post('/seo/sites/{site}/pixel-install', [PortalSeoController::class, 'updatePixelInstall']);
         Route::post('/seo/recommendations/{recommendation}/decision', [PortalSeoController::class, 'decideRecommendation']);
         Route::post('/seo/reports/generate', [PortalSeoController::class, 'generateReport']);
         Route::get('/seo/reports/{report}/download', [PortalSeoController::class, 'downloadReport']);

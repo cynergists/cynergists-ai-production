@@ -28,7 +28,7 @@ const SEOEngine = () => {
   return (
     <Layout>
       <Helmet>
-        <title>SEO, GEO & AEO Engine | Cynergists</title>
+        <title>Carbon SEO, GEO & AEO Engine | Cynergists</title>
         <meta
           name="description"
           content="A dedicated optimization system built to continuously improve how your website ranks in search engines, geographic results, and AI-powered answer engines."
@@ -43,7 +43,7 @@ const SEOEngine = () => {
       <main>
         <ProductDetailLayout
           id="seo-geo-aeo-engine"
-          name="Cynergists SEO, GEO & AEO Engine"
+          name="Carbon"
           category="SEO / GEO / AEO"
           categoryIcon={<Search className="h-4 w-4 text-primary" />}
           shortDescription="A dedicated optimization system built to continuously improve how your website ranks in search engines, geographic results, and AI-powered answer engines."
