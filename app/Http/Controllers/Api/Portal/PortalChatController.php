@@ -25,6 +25,49 @@ class PortalChatController extends Controller
         private OnboardingService $onboardingService
     ) {}
 
+    /**
+     * Get or create a virtual Cynessa agent access for any user.
+     */
+    private function getOrCreateCynessaAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
+    {
+        // First check if user actually has Cynessa access
+        $agentAccess = AgentAccess::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $agentId)
+            ->first();
+
+        if ($agentAccess) {
+            return $agentAccess;
+        }
+
+        // Check if Cynessa is available
+        $cynessaAvailable = PortalAvailableAgent::query()
+            ->where('name', 'Cynessa')
+            ->first();
+
+        if (! $cynessaAvailable) {
+            return null;
+        }
+
+        // Create a virtual agent access for Cynessa
+        $cynessaAgent = new AgentAccess([
+            'id' => $agentId,
+            'agent_type' => 'assistant',
+            'agent_name' => 'Cynessa',
+            'configuration' => null,
+            'is_active' => true,
+            'usage_count' => 0,
+            'usage_limit' => null,
+            'last_used_at' => null,
+            'tenant_id' => $tenant->id,
+        ]);
+
+        // Set exists to false so we know not to save it
+        $cynessaAgent->exists = false;
+
+        return $cynessaAgent;
+    }
+
     public function conversation(Request $request, string $agent): JsonResponse
     {
         $user = $request->user();
@@ -37,10 +80,7 @@ class PortalChatController extends Controller
             return response()->json(['conversation' => null], 404);
         }
 
-        $agentAccess = AgentAccess::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('id', $agent)
-            ->first();
+        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['conversation' => null], 404);
@@ -69,11 +109,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false], 404);
         }
 
-        $agentAccess = AgentAccess::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('id', $agent)
-            ->where('is_active', true)
-            ->first();
+        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false], 404);
@@ -99,10 +135,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
-        
+
         // Generate the assistant response with conversation history (before adding current message)
         $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
-        
+
         $messages[] = [
             'role' => 'user',
             'content' => $userMessage,
@@ -118,10 +154,13 @@ class PortalChatController extends Controller
             'updated_at' => now(),
         ]);
 
-        $agentAccess->update([
-            'usage_count' => ($agentAccess->usage_count ?? 0) + 1,
-            'last_used_at' => now(),
-        ]);
+        // Only update usage if this is a real agent access record
+        if ($agentAccess->exists) {
+            $agentAccess->update([
+                'usage_count' => ($agentAccess->usage_count ?? 0) + 1,
+                'last_used_at' => now(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -182,11 +221,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = AgentAccess::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('id', $agent)
-            ->where('is_active', true)
-            ->first();
+        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
@@ -195,7 +230,7 @@ class PortalChatController extends Controller
         $file = $request->file('file');
         $filename = $file->getClientOriginalName();
         $type = $request->input('type', 'brand_asset');
-        
+
         // Store file in tenant-specific directory
         $path = $file->store(
             "tenants/{$tenant->id}/brand_assets",
@@ -215,26 +250,26 @@ class PortalChatController extends Controller
         $confirmationMessage = null;
         if ($conversation && strtolower($agentAccess->agent_name) === 'cynessa') {
             $messages = $conversation->messages ?? [];
-            
+
             // Add user message about the file upload
             $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
             $fileSize = number_format($file->getSize() / 1024, 2); // KB
-            
+
             $userMessage = "[File uploaded: {$filename} ({$fileSize} KB, .{$fileExtension})]";
             $messages[] = [
                 'role' => 'user',
                 'content' => $userMessage,
             ];
-            
+
             // Let Cynessa respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
                 ->first();
-                
+
             if ($availableAgent) {
                 // Pass the conversation history (before adding the new upload message)
                 $historyBeforeUpload = array_slice($messages, 0, -1);
-                
+
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,
                     $user,
@@ -242,7 +277,7 @@ class PortalChatController extends Controller
                     $tenant,
                     $historyBeforeUpload
                 );
-                
+
                 $messages[] = [
                     'role' => 'assistant',
                     'content' => $confirmationMessage,
@@ -283,11 +318,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = AgentAccess::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('id', $agent)
-            ->where('is_active', true)
-            ->first();
+        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
