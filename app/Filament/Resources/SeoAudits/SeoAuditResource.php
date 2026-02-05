@@ -20,7 +20,7 @@ class SeoAuditResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentMagnifyingGlass;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SEO Engine';
+    protected static string|\UnitEnum|null $navigationGroup = 'Carbon';
 
     protected static ?int $navigationSort = 3;
 

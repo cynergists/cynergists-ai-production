@@ -64,7 +64,7 @@ class AdminPanelProvider extends PanelProvider
                     ->label('AI Agents')
                     ->icon('heroicon-o-sparkles'),
                 NavigationGroup::make()
-                    ->label('SEO Engine')
+                    ->label('Carbon')
                     ->icon('heroicon-o-magnifying-glass'),
                 NavigationGroup::make()
                     ->label('Client Portal')

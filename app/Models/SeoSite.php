@@ -25,11 +25,15 @@ class SeoSite extends Model
         'id',
         'tenant_id',
         'user_id',
+        'tracking_id',
         'name',
         'url',
         'status',
         'settings',
         'last_audit_at',
+        'pixel_install_method',
+        'pixel_install_status',
+        'pixel_last_seen_at',
     ];
 
     /**
@@ -40,6 +44,7 @@ class SeoSite extends Model
         return [
             'settings' => 'array',
             'last_audit_at' => 'datetime',
+            'pixel_last_seen_at' => 'datetime',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\DecideSeoRecommendationRequest;
 use App\Http\Requests\Portal\GenerateSeoReportRequest;
 use App\Http\Requests\Portal\StoreSeoSiteRequest;
+use App\Http\Requests\Portal\UpdateSeoPixelInstallRequest;
 use App\Models\PortalTenant;
 use App\Models\SeoChange;
 use App\Models\SeoRecommendation;
@@ -53,7 +54,18 @@ class PortalSeoController extends Controller
         $sites = SeoSite::query()
             ->where('tenant_id', $tenant->id)
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'url', 'status', 'last_audit_at', 'created_at']);
+            ->get([
+                'id',
+                'name',
+                'url',
+                'status',
+                'tracking_id',
+                'pixel_install_method',
+                'pixel_install_status',
+                'pixel_last_seen_at',
+                'last_audit_at',
+                'created_at',
+            ]);
 
         $siteIds = $sites->pluck('id')->all();
 
@@ -161,11 +173,15 @@ class PortalSeoController extends Controller
         $site = SeoSite::query()->create([
             'tenant_id' => $tenant->id,
             'user_id' => $user->id,
+            'tracking_id' => (string) Str::uuid(),
             'name' => $data['name'],
             'url' => $data['url'],
             'status' => 'active',
             'settings' => [],
             'last_audit_at' => null,
+            'pixel_install_method' => null,
+            'pixel_install_status' => 'not_installed',
+            'pixel_last_seen_at' => null,
         ]);
 
         return response()->json([
@@ -240,6 +256,37 @@ class PortalSeoController extends Controller
         ], 201);
     }
 
+    public function updatePixelInstall(UpdateSeoPixelInstallRequest $request, SeoSite $site): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if (! $tenant || ! $this->siteBelongsToTenant($site, $tenant->id)) {
+            return response()->json(['message' => 'Site not found'], 404);
+        }
+
+        $data = $request->validated();
+
+        $method = $data['method'] ?? null;
+        $status = $data['status'] ?? ($method && $method !== 'manual' ? 'pending' : 'pending');
+
+        if ($method === 'manual' && $status === 'installed' && ! $site->pixel_last_seen_at) {
+            $site->pixel_last_seen_at = now();
+        }
+
+        $site->update([
+            'pixel_install_method' => $method,
+            'pixel_install_status' => $status,
+        ]);
+
+        return response()->json([
+            'site' => $site->fresh(),
+        ]);
+    }
+
     public function downloadReport(Request $request, SeoReport $report): Response
     {
         $user = $request->user();
@@ -297,6 +344,11 @@ class PortalSeoController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('id', $report->seo_site_id)
             ->exists();
+    }
+
+    private function siteBelongsToTenant(SeoSite $site, string $tenantId): bool
+    {
+        return $site->tenant_id === $tenantId;
     }
 
     /**

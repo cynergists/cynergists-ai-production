@@ -19,7 +19,7 @@ class SeoRecommendationApprovalResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SEO Engine';
+    protected static string|\UnitEnum|null $navigationGroup = 'Carbon';
 
     protected static ?int $navigationSort = 5;
 
