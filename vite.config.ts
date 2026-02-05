@@ -94,7 +94,6 @@ export default defineConfig(({ mode }) => ({
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
             buildDirectory: 'build',
-            detectTls: false,
         }),
         react(),
         tailwindcss(),
@@ -105,14 +104,6 @@ export default defineConfig(({ mode }) => ({
     resolve: {
         alias: {
             '@cy': path.resolve(__dirname, 'resources/js/cynergists'),
-        },
-    },
-    server: {
-        host: '127.0.0.1',
-        port: Number(process.env.VITE_PORT ?? 5173),
-        strictPort: true,
-        hmr: {
-            host: '127.0.0.1',
         },
     },
     esbuild: {
