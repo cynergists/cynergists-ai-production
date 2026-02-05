@@ -33,7 +33,8 @@ class OnboardingService
                 'name' => 'Company Information',
                 'completed' => ! empty($tenant->company_name)
                     && ! empty($settings['industry'])
-                    && ! empty($settings['services_needed']),
+                    && ! empty($settings['services_needed'])
+                    && ! empty($settings['brand_tone']),
             ],
             'brand_assets' => [
                 'name' => 'Brand Assets',
@@ -86,6 +87,7 @@ class OnboardingService
         return ! empty($tenant->company_name)
             && ! empty($settings['industry'])
             && ! empty($settings['services_needed'])
+            && ! empty($settings['brand_tone'])
             && $this->hasBrandAssets($tenant);
     }
 
@@ -99,6 +101,19 @@ class OnboardingService
                 'onboarding_completed_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Reset onboarding to start over from the beginning.
+     * Clears all onboarding data so user can start fresh.
+     */
+    public function resetOnboarding(PortalTenant $tenant): void
+    {
+        $tenant->update([
+            'company_name' => '',
+            'onboarding_completed_at' => null,
+            'settings' => [],
+        ]);
     }
 
     /**

@@ -19,6 +19,12 @@ class CynessaAgentHandler
      */
     public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = [], int $maxTokens = 1024): string
     {
+        // Check if user wants to restart onboarding
+        if ($this->isOnboardingRestartRequest($message)) {
+            $this->onboardingService->resetOnboarding($tenant);
+            $tenant->refresh(); // Reload to get fresh state
+        }
+
         // Build context about the user and their current onboarding state
         $settings = $tenant->settings ?? [];
 
@@ -59,6 +65,7 @@ class CynessaAgentHandler
                 $hasAllData = ! empty($tenant->company_name)
                     && ! empty($settings['industry'])
                     && ! empty($settings['services_needed'])
+                    && ! empty($settings['brand_tone'])
                     && $this->onboardingService->hasBrandAssets($tenant);
 
                 if ($hasAllData) {
@@ -183,18 +190,32 @@ You can see their current information in the CURRENT USER DATA section below.".$
 
 Your personality: Friendly, professional, helpful, concise. Use emojis sparingly but appropriately.
 
-Your primary job is to collect this information step-by-step:
+🚨 CRITICAL DATA SAVING REQUIREMENT 🚨
+EVERY TIME a user provides information, you MUST end your response with:
+[DATA: field_name=\"value\"]
+
+This saves their information to the database. WITHOUT this marker, their data will NOT be saved and they will have to repeat themselves!
+
+Examples of when to include the marker:
+- User says company name → End with [DATA: company_name=\"Their Company Name\"]
+- User says industry → End with [DATA: industry=\"Their Industry\"]
+- User says services → End with [DATA: services=\"Their Services\"]
+- User says brand tone → End with [DATA: brand_tone=\"Their Brand Tone\"]
+
+Your primary job is to collect this information step-by-step IN THIS EXACT ORDER:
 1. Company name
 2. Industry
 3. What services they need from Cynergists
-4. Brand assets (logos, colors, fonts, documents)
+4. Brand tone (colors, style, personality - can be a description or specific values)
+5. Brand assets (logos, colors, fonts, documents)
 
 IMPORTANT INSTRUCTIONS:
-- Ask for ONE piece of information at a time
-- When the user provides information, acknowledge it and ask for the next piece
+- Ask for ONE piece of information at a time IN THE ORDER LISTED ABOVE
+- When the user provides information, acknowledge it and ask for the NEXT piece in sequence
 - Be conversational and natural - don't use rigid scripts
 - If information is missing or unclear, politely ask again
-- After collecting basic info, encourage them to upload brand assets (logos, images, documents)
+- Do NOT skip to brand assets until you have collected: company name, industry, services, AND brand tone
+- After collecting all basic info including brand tone, encourage them to upload brand assets (logos, images, documents)
 - When users upload files, you will see \"[File uploaded: filename]\" messages - acknowledge these!- ALWAYS ask what type of file it is when a file is uploaded (options: logo, color_palette, brand_guide, font, image, document, video)- If user says \"that's all\", \"done\", \"no more\", or similar, they're finished uploading - move forward
 - When user indicates they're done uploading, thank them and explain next steps
 - DO NOT keep asking for uploads after user says they're done
@@ -203,16 +224,27 @@ IMPORTANT INSTRUCTIONS:
 - The user's first name is: {$firstName}
 - You can check their current progress below
 
-RESPONSE FORMAT:
-When you receive information, respond naturally and include a special marker line at the end:
-[DATA: company_name=\"Their Company\" industry=\"their industry\" services=\"what they said\" brand_tone=\"their brand tone or color\"]
+CRITICAL RESPONSE FORMAT REQUIREMENT:
+When the user provides ANY information (company name, industry, services, brand tone), you MUST include a [DATA: ...] marker at the very end of your response. This is ESSENTIAL for saving their information.
+
+Format: [DATA: field_name=\"value\"]
+
+Examples:
+- When user gives company name: [DATA: company_name=\"Mike's Dev Shop\"]
+- When user gives industry: [DATA: industry=\"Web Development\"]
+- When user gives services: [DATA: services=\"LinkedIn management, DevOps support\"]
+- When user gives brand tone: [DATA: brand_tone=\"Modern and professional\"]
+- When user gives multiple things: [DATA: company_name=\"Acme Corp\" industry=\"Technology\"]
 
 When user specifies a file type for an uploaded file, use:
-[DATA: file_type=\"filename.ext:logo\" or file_type=\"filename.ext:color_palette\"]
+[DATA: file_type=\"filename.ext:logo\"]
 
 File type options: logo, color_palette, brand_guide, font, image, document, video
 
-Only include fields that were just provided or updated in the user's message.
+IMPORTANT:
+- ALWAYS include the [DATA: ...] marker when information is provided
+- Only include fields that were just provided in THIS message
+- The marker should be on its own line at the very end
 
 IMPORTANT: Do NOT create summaries or lists that rely on the [DATA: ...] marker to display information.
 The user cannot see [DATA: ...] markers - they are only for the system.
@@ -267,6 +299,12 @@ and the user indicates they're done, thank them and let them know:
 
         if (! empty($settings['brand_tone'])) {
             $context .= "✅ Brand Tone: {$settings['brand_tone']}\n";
+        } else {
+            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed'])) {
+                $context .= "❌ Brand Tone: NOT SET - This should be your next question\n";
+            } else {
+                $context .= "❌ Brand Tone: NOT SET - Ask after services needed\n";
+            }
         }
 
         // Check for brand assets
@@ -285,14 +323,14 @@ and the user indicates they're done, thank them and let them know:
             }
 
             // If they have files, they can finish onboarding
-            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed'])) {
+            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed']) && ! empty($settings['brand_tone'])) {
                 $context .= "\n💡 User has completed all required information. If they say they're done, wrap up onboarding.\n";
             }
         } else {
-            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed'])) {
+            if ($tenant->company_name && ! empty($settings['industry']) && ! empty($settings['services_needed']) && ! empty($settings['brand_tone'])) {
                 $context .= "❌ Brand Assets: NOT UPLOADED - Encourage them to upload brand assets (logos, images, etc.)\n";
             } else {
-                $context .= "❌ Brand Assets: NOT UPLOADED - Mention this after collecting basic info\n";
+                $context .= "❌ Brand Assets: NOT UPLOADED - Mention this after collecting basic info including brand tone\n";
             }
         }
 
@@ -354,5 +392,40 @@ and the user indicates they're done, thank them and let them know:
 
         // Trim any extra whitespace from start and end
         return trim($cleaned);
+    }
+
+    /**
+     * Check if the message is a request to restart onboarding.
+     */
+    private function isOnboardingRestartRequest(string $message): bool
+    {
+        $keywords = [
+            'start onboarding',
+            'start on boarding',
+            'restart onboarding',
+            'restart on boarding',
+            're-start onboarding',
+            'begin onboarding',
+            'begin on boarding',
+            'redo onboarding',
+            'redo on boarding',
+            'onboard me',
+            'onboard again',
+            'start over',
+            'restart setup',
+            'restart the onboarding',
+            'reset onboarding',
+            'reset on boarding',
+        ];
+
+        $lowerMessage = strtolower($message);
+
+        foreach ($keywords as $keyword) {
+            if (strpos($lowerMessage, $keyword) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

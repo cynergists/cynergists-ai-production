@@ -441,6 +441,13 @@ export default function PortalWorkspace() {
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         staleTime: 0,
+        // Poll every 2 seconds when talking to Cynessa to catch onboarding updates
+        refetchInterval: (query) => {
+            return agentDetails?.agent_name?.toLowerCase() === 'cynessa' &&
+                !query.state.data?.onboardingProgress?.completed
+                ? 2000
+                : false;
+        },
     });
 
     // Use real onboarding progress or fallback to empty state

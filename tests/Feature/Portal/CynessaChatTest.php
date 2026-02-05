@@ -5,8 +5,8 @@ use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
 use Illuminate\Support\Str;
+
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\postJson;
 
 it('handles cynessa greeting message', function () {
     $user = User::factory()->create(['name' => 'John Doe']);
@@ -42,7 +42,7 @@ it('handles cynessa greeting message', function () {
 
     $response->assertSuccessful();
     $response->assertJsonPath('success', true);
-    
+
     $assistantMessage = $response->json('assistantMessage');
     expect($assistantMessage)->toContain('John');
     expect($assistantMessage)->toContain('Cynessa');
@@ -81,7 +81,7 @@ it('handles cynessa onboarding start', function () {
     ]);
 
     $response->assertSuccessful();
-    
+
     $assistantMessage = $response->json('assistantMessage');
     expect($assistantMessage)->toContain('Company Information');
     expect($assistantMessage)->toContain('Company name');
@@ -119,7 +119,7 @@ it('handles cynessa help request', function () {
     ]);
 
     $response->assertSuccessful();
-    
+
     $assistantMessage = $response->json('assistantMessage');
     expect($assistantMessage)->toContain('Onboarding');
     expect($assistantMessage)->toContain('File Management');
@@ -158,7 +158,7 @@ it('detects completed onboarding', function () {
     ]);
 
     $response->assertSuccessful();
-    
+
     $assistantMessage = $response->json('assistantMessage');
     expect($assistantMessage)->toContain('already completed onboarding');
 });
@@ -197,7 +197,7 @@ it('extracts company information from message', function () {
     ]);
 
     $response->assertSuccessful();
-    
+
     $assistantMessage = $response->json('assistantMessage');
     expect($assistantMessage)->toContain('Acme Corp');
     expect($assistantMessage)->toContain('technology');
@@ -206,4 +206,54 @@ it('extracts company information from message', function () {
     $tenant->refresh();
     expect($tenant->company_name)->toBe('Acme Corp');
     expect($tenant->settings['industry'] ?? null)->toBe('technology');
+});
+
+it('resets onboarding when user explicitly requests to start onboarding', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Existing Company',
+        'onboarding_completed_at' => now(),
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO',
+            'brand_tone' => 'Professional',
+        ],
+    ]);
+
+    // Create the available agent
+    $availableAgent = PortalAvailableAgent::create([
+        'id' => (string) Str::uuid(),
+        'name' => 'Cynessa',
+        'description' => 'Onboarding Agent',
+        'agent_type' => 'bot',
+        'features' => [],
+        'is_active' => true,
+        'portal_available' => true,
+    ]);
+
+    $agentAccess = AgentAccess::create([
+        'id' => (string) Str::uuid(),
+        'subscription_id' => (string) Str::uuid(),
+        'customer_id' => (string) Str::uuid(),
+        'tenant_id' => $tenant->id,
+        'agent_type' => 'onboarding',
+        'agent_name' => 'Cynessa',
+        'is_active' => true,
+    ]);
+
+    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+        'message' => 'I want to start onboarding',
+    ]);
+
+    $response->assertSuccessful();
+
+    // Verify onboarding was reset
+    $tenant->refresh();
+    expect($tenant->onboarding_completed_at)->toBeNull();
+    expect($tenant->settings)->toBeEmpty();
+
+    // The response should ask for company name (first question)
+    $assistantMessage = $response->json('assistantMessage');
+    expect($assistantMessage)->toContain('company');
 });

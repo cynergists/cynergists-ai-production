@@ -93,3 +93,107 @@ it('preserves existing brand_tone when updating other fields', function () {
     expect($tenant->settings['brand_tone'])->toBe('Existing Tone');
     expect($tenant->settings['industry'])->toBe('Technology');
 });
+
+it('cannot complete onboarding without brand_tone', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Test Company',
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO, Dev Ops',
+            'brand_assets' => [
+                ['filename' => 'logo.png', 'path' => 'path/to/logo.png', 'type' => 'logo'],
+            ],
+        ],
+    ]);
+
+    $service = new OnboardingService;
+
+    expect($service->canComplete($tenant))->toBeFalse();
+});
+
+it('can complete onboarding with all required fields including brand_tone', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Test Company',
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO, Dev Ops',
+            'brand_tone' => 'Modern and Professional',
+            'brand_assets' => [
+                ['filename' => 'logo.png', 'path' => 'path/to/logo.png', 'type' => 'logo'],
+            ],
+        ],
+    ]);
+
+    $service = new OnboardingService;
+
+    expect($service->canComplete($tenant))->toBeTrue();
+});
+
+it('company_info step is not completed without brand_tone', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Test Company',
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO, Dev Ops',
+        ],
+    ]);
+
+    $service = new OnboardingService;
+    $progress = $service->getProgress($tenant);
+
+    expect($progress['steps']['company_info']['completed'])->toBeFalse();
+});
+
+it('company_info step is completed with brand_tone', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Test Company',
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO, Dev Ops',
+            'brand_tone' => 'Modern and Professional',
+        ],
+    ]);
+
+    $service = new OnboardingService;
+    $progress = $service->getProgress($tenant);
+
+    expect($progress['steps']['company_info']['completed'])->toBeTrue();
+});
+
+it('can reset onboarding for a completed tenant', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+        'company_name' => 'Test Company',
+        'onboarding_completed_at' => now(),
+        'settings' => [
+            'industry' => 'Technology',
+            'services_needed' => 'SEO, Dev Ops',
+            'brand_tone' => 'Modern and Professional',
+            'brand_assets' => [
+                ['filename' => 'logo.png', 'path' => 'path/to/logo.png', 'type' => 'logo'],
+            ],
+        ],
+    ]);
+
+    $service = new OnboardingService;
+
+    expect($service->isComplete($tenant))->toBeTrue();
+
+    $service->resetOnboarding($tenant);
+    $tenant->refresh();
+
+    // Onboarding should be marked as incomplete, company name cleared, and settings cleared
+    expect($service->isComplete($tenant))->toBeFalse();
+    expect($tenant->company_name)->toBe('');
+    expect($tenant->onboarding_completed_at)->toBeNull();
+    expect($tenant->settings)->toBeEmpty();
+});
