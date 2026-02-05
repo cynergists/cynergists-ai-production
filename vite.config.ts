@@ -12,6 +12,15 @@ export default defineConfig(({ mode }) => ({
         reportCompressedSize: false, // Disable gzip size reporting to save memory
         chunkSizeWarningLimit: 1000,
     },
+    server: {
+        host: process.env.VITE_DEV_SERVER_HOST || '127.0.0.1',
+        port: Number(process.env.VITE_PORT || 5173),
+        strictPort: true,
+        hmr: {
+            host: process.env.VITE_DEV_SERVER_HOST || '127.0.0.1',
+            port: Number(process.env.VITE_PORT || 5173),
+        },
+    },
     plugins: [
         {
             name: 'resolve-at-fallback',
@@ -86,6 +95,7 @@ export default defineConfig(({ mode }) => ({
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
             buildDirectory: 'build',
+            detectTls: false,
         }),
         react(),
         tailwindcss(),

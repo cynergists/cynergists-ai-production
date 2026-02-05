@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./optix.db"
     llm_model: str = "gpt-4o-mini"
     llm_temperature: float = 0.3
+    cors_allow_origins: str | None = None
 
 
 @lru_cache

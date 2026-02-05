@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class YouTubeService:
@@ -22,9 +25,13 @@ class YouTubeService:
             "maxResults": max_results,
             "key": self.api_key,
         }
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        items = response.json().get("items", [])
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            items = response.json().get("items", [])
+        except requests.RequestException as exc:
+            logger.warning("YouTube search failed: %s", exc)
+            return []
         results = []
         for item in items:
             snippet = item.get("snippet", {})
@@ -47,9 +54,13 @@ class YouTubeService:
             "id": ",".join(video_ids),
             "key": self.api_key,
         }
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        items = response.json().get("items", [])
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            items = response.json().get("items", [])
+        except requests.RequestException as exc:
+            logger.warning("YouTube stats fetch failed: %s", exc)
+            return {}
         stats = {}
         for item in items:
             stats[item["id"]] = item.get("statistics", {})

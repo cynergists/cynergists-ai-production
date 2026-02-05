@@ -19,8 +19,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pytest = ["pytest>=8.0"]
-
 test = ["pytest>=8.0"]
 
 [project.scripts]

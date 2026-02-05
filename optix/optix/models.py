@@ -52,6 +52,7 @@ class VideoAsset(Base):
     chapters_json = Column(JSON, nullable=True)
     endscreen_plan_md = Column(Text, nullable=True)
     pinned_comment_md = Column(Text, nullable=True)
+    community_post_md = Column(Text, nullable=True)
     shorts_plan_md = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow)
 

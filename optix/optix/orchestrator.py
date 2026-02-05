@@ -11,8 +11,7 @@ from .modules import analytics, ideation, packaging, publishing, research, scrip
 from .schemas import ChannelConfigCreate, VideoAssetCreate
 from .services.youtube import YouTubeService
 
-logger = logging.getLogger("optix")
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Optix:
@@ -91,6 +90,7 @@ class Optix:
                 chapters_json=publishing_output.chapters,
                 endscreen_plan_md=publishing_output.endscreen_plan_md,
                 pinned_comment_md=publishing_output.pinned_comment_md,
+                community_post_md=publishing_output.community_post_md,
                 shorts_plan_md=publishing_output.shorts_plan_md,
             )
 

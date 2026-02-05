@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import typer
@@ -15,6 +16,8 @@ channel_app = typer.Typer(help="Channel operations")
 backlog_app = typer.Typer(help="Backlog operations")
 package_app = typer.Typer(help="Packaging operations")
 metrics_app = typer.Typer(help="Metrics operations")
+
+logging.basicConfig(level=logging.INFO)
 
 app.add_typer(channel_app, name="channel")
 app.add_typer(backlog_app, name="backlog")

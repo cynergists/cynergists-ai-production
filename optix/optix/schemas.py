@@ -72,6 +72,7 @@ class VideoAssetBase(BaseModel):
     chapters_json: list[str] | None = None
     endscreen_plan_md: Optional[str] = None
     pinned_comment_md: Optional[str] = None
+    community_post_md: Optional[str] = None
     shorts_plan_md: Optional[str] = None
 
 

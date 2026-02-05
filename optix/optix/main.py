@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
+from .config import get_settings
 from .db import get_session, init_db
 from .models import ChannelConfig
 from .orchestrator import Optix
 from .schemas import (
+    AnalyticsOutput,
     BacklogRefreshResponse,
     BacklogRefreshRequest,
     ChannelConfigCreate,
@@ -18,6 +21,31 @@ from .schemas import (
 )
 
 app = FastAPI(title="Optix")
+
+settings = get_settings()
+default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+]
+
+if settings.cors_allow_origins:
+    allow_origins = [origin.strip() for origin in settings.cors_allow_origins.split(",") if origin.strip()]
+else:
+    allow_origins = default_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -71,7 +99,7 @@ def ingest_metrics(payload: MetricsIngestRequest, session=Depends(get_session)):
     return {"created": len(snapshots)}
 
 
-@app.get("/diagnose")
-def diagnose(session=Depends(get_session)):
+@app.get("/diagnose", response_model=AnalyticsOutput)
+def diagnose(session=Depends(get_session)) -> AnalyticsOutput:
     optix = Optix(session)
-    return optix.diagnose().model_dump()
+    return optix.diagnose()

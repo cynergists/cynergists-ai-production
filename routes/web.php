@@ -34,6 +34,7 @@ Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->de
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
 Route::get('/team', [CynergistsPageController::class, 'page'])->defaults('component', 'Team');
+Route::get('/optix', [CynergistsPageController::class, 'page'])->defaults('component', 'Optix');
 Route::get('/case-studies', [CynergistsPageController::class, 'page'])->defaults('component', 'CaseStudies');
 Route::get('/case-studies/jm-auto-repair', [CynergistsPageController::class, 'page'])->defaults('component', 'case-studies/JMAutoRepair');
 Route::get('/case-studies/ogden-ventures', [CynergistsPageController::class, 'page'])->defaults('component', 'case-studies/OgdenVentures');
