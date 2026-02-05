@@ -86,9 +86,7 @@ export default defineConfig(({ mode }) => ({
                     return appResolved;
                 }
 
-                return cynergistsResolved ?? appResolved;
-
-                return null;
+                return cynergistsResolved ?? appResolved ?? null;
             },
         },
         laravel({
