@@ -36,6 +36,7 @@ const Privacy = () => {
                         </p>
 
                         <h2>1. Introduction</h2>
+                        
                         <p>
                             Welcome to Cynergists ("we," "our," or "us"). We are committed to protecting your privacy and
                             ensuring transparency in how we collect, use, and safeguard your personal information. This
