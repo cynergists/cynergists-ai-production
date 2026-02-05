@@ -48,6 +48,10 @@ class PortalAvailableAgentForm
                                                 TextInput::make('slug')
                                                     ->maxLength(255)
                                                     ->helperText('URL-friendly identifier'),
+                                                TextInput::make('redirect_url')
+                                                    ->maxLength(255)
+                                                    ->url()
+                                                    ->helperText('Optional: Redirect users to this URL when clicking the agent in the portal (e.g., https://apex.cynergists.com)'),
                                                 TextInput::make('job_title')
                                                     ->maxLength(255)
                                                     ->placeholder('e.g., Marketing Assistant'),

@@ -57,4 +57,14 @@ class PortalAvailableAgentFactory extends Factory
             'is_popular' => true,
         ]);
     }
+
+    /**
+     * Indicate that the agent has a redirect URL.
+     */
+    public function withRedirect(?string $url = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'redirect_url' => $url ?? fake()->url(),
+        ]);
+    }
 }

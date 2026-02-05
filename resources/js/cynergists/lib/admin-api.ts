@@ -1,16 +1,27 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from './api-client';
 
+/**
+ * Legacy admin API wrapper for partner-related functionality.
+ * Note: Admin dashboard now uses Filament. This file only exists
+ * for partner portal features that still need backend API access.
+ */
 export async function callAdminApi<T>(
-  action: string,
-  params?: Record<string, string>,
-  body?: unknown
+    operation: string,
+    params?: Record<string, unknown>,
+    body?: unknown,
 ): Promise<T> {
-  const searchParams = new URLSearchParams({ action, ...params });
-  const url = `/api/admin-data?${searchParams.toString()}`;
+    const queryParams = new URLSearchParams({
+        operation,
+        ...(params && Object.fromEntries(
+            Object.entries(params).map(([k, v]) => [k, String(v)])
+        )),
+    });
 
-  if (body) {
-    return apiClient.post<T>(url, body);
-  }
+    const url = `/api/admin-data?${queryParams.toString()}`;
 
-  return apiClient.get<T>(url);
+    if (body) {
+        return apiClient.post<T>(url, body);
+    }
+
+    return apiClient.get<T>(url);
 }

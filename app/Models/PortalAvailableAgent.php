@@ -24,6 +24,7 @@ class PortalAvailableAgent extends Model
         'avatar',
         'job_title',
         'slug',
+        'redirect_url',
         'description',
         'price',
         'category',

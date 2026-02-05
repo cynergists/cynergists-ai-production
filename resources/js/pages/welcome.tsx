@@ -285,7 +285,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                 />
             </Head>
 
-            <div className="min-h-screen bg-background text-foreground flex flex-col items-center">
+            <div className="flex min-h-screen flex-col items-center bg-background text-foreground">
                 <nav className="fixed top-0 right-0 left-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
                     <div className="container mx-auto px-6">
                         <div className="flex h-16 items-center justify-between">
@@ -366,18 +366,20 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
 
                 <section className="relative flex min-h-screen w-full items-center justify-center overflow-hidden pt-16">
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
-                    <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/30 blur-3xl animate-pulse-glow" />
+                    <div className="animate-pulse-glow absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
                     <div
-                        className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-accent/30 blur-3xl animate-pulse-glow"
+                        className="animate-pulse-glow absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-accent/30 blur-3xl"
                         style={{ animationDelay: '1.5s' }}
                     />
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
-                    <div className="container relative z-10 px-6">
+                    <div className="relative z-10 container px-6">
                         <div className="mx-auto max-w-4xl text-center">
                             <div className="animate-fade-in mb-8 inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/50 px-4 py-2 text-sm text-muted-foreground">
                                 <Sparkles className="h-4 w-4 text-primary" />
-                                <span>Introducing the Cynergists AI roster</span>
+                                <span>
+                                    Introducing the Cynergists AI roster
+                                </span>
                             </div>
 
                             <h1
@@ -392,10 +394,10 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                 className="animate-fade-in mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-muted-foreground md:text-2xl"
                                 style={{ animationDelay: '0.2s' }}
                             >
-                                Meet the AI personas built to run outreach, content,
-                                compliance, and operations. Each Cynergist is a
-                                specialist with a defined mission and measurable
-                                impact.
+                                Meet the AI personas built to run outreach,
+                                content, compliance, and operations. Each
+                                Cynergist is a specialist with a defined mission
+                                and measurable impact.
                             </p>
 
                             <div
@@ -438,7 +440,10 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                 style={{ animationDelay: '0.4s' }}
                             >
                                 {heroStats.map((stat) => (
-                                    <div key={stat.label} className="text-center">
+                                    <div
+                                        key={stat.label}
+                                        className="text-center"
+                                    >
                                         <div className="font-display mb-1 text-3xl font-bold text-foreground md:text-4xl">
                                             {stat.value}
                                         </div>
@@ -450,29 +455,29 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </div>
                         </div>
 
-                        <div className="absolute top-1/3 left-10 hidden h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl shadow-lg shadow-primary/30 lg:flex animate-float">
+                        <div className="animate-float absolute top-1/3 left-10 hidden h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl shadow-lg shadow-primary/30 lg:flex">
                             🎯
                         </div>
-                        <div className="absolute top-1/2 right-10 hidden h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary text-xl shadow-lg shadow-accent/30 lg:flex animate-float-delayed">
+                        <div className="animate-float-delayed absolute top-1/2 right-10 hidden h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary text-xl shadow-lg shadow-accent/30 lg:flex">
                             🧠
                         </div>
                         <div
-                            className="absolute bottom-1/3 left-20 hidden h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-lg shadow-lg shadow-primary/30 lg:flex animate-float"
+                            className="animate-float absolute bottom-1/3 left-20 hidden h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-lg shadow-lg shadow-primary/30 lg:flex"
                             style={{ animationDelay: '1s' }}
                         >
                             ✍️
                         </div>
-                        <div className="absolute bottom-1/4 right-20 hidden h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary text-xl shadow-lg shadow-accent/30 lg:flex animate-float-delayed">
+                        <div className="animate-float-delayed absolute right-20 bottom-1/4 hidden h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary text-xl shadow-lg shadow-accent/30 lg:flex">
                             ⚙️
                         </div>
                     </div>
 
-                    <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 animate-bounce">
+                    <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 animate-bounce flex-col items-center gap-2">
                         <span className="text-sm text-muted-foreground">
                             Scroll to explore
                         </span>
                         <div className="flex h-10 w-6 items-start justify-center rounded-full border-2 border-muted-foreground/30 p-2">
-                            <div className="h-3 w-1.5 rounded-full bg-primary animate-pulse" />
+                            <div className="h-3 w-1.5 animate-pulse rounded-full bg-primary" />
                         </div>
                     </div>
                 </section>
@@ -482,7 +487,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                     className="relative flex w-full flex-col items-center py-24"
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/20 to-background" />
-                    <div className="container relative z-10 flex flex-col items-center px-6">
+                    <div className="relative z-10 container flex flex-col items-center px-6">
                         <div className="mb-16 text-center">
                             <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                                 Meet Your AI Team
@@ -508,7 +513,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                                 '--agent-color': visuals.color,
                                                 '--agent-gradient':
                                                     visuals.gradient,
-                                        } as CSSProperties
+                                            } as CSSProperties
                                         }
                                     >
                                         <div className="mb-6 flex items-start justify-between">
@@ -533,15 +538,17 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                         </p>
 
                                         <ul className="mb-6 flex-1 space-y-2">
-                                            {agent.capabilities.map((capability) => (
-                                                <li
-                                                    key={capability}
-                                                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                                                >
-                                                    <div className="agent-dot h-1.5 w-1.5 rounded-full" />
-                                                    {capability}
-                                                </li>
-                                            ))}
+                                            {agent.capabilities.map(
+                                                (capability) => (
+                                                    <li
+                                                        key={capability}
+                                                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                                                    >
+                                                        <div className="agent-dot h-1.5 w-1.5 rounded-full" />
+                                                        {capability}
+                                                    </li>
+                                                ),
+                                            )}
                                         </ul>
 
                                         <Button
@@ -562,7 +569,8 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </h3>
                             <p className="mx-auto max-w-xl text-muted-foreground">
                                 Expand your AI workforce with elite specialists
-                                built for revenue, compliance, and client success.
+                                built for revenue, compliance, and client
+                                success.
                             </p>
                         </div>
 
@@ -578,7 +586,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                                 '--agent-color': visuals.color,
                                                 '--agent-gradient':
                                                     visuals.gradient,
-                                        } as CSSProperties
+                                            } as CSSProperties
                                         }
                                     >
                                         <div className="mb-6 flex items-start justify-between">
@@ -598,15 +606,17 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                         </p>
 
                                         <ul className="mb-6 flex-1 space-y-2">
-                                            {agent.capabilities.map((capability) => (
-                                                <li
-                                                    key={capability}
-                                                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                                                >
-                                                    <div className="agent-dot h-1.5 w-1.5 rounded-full" />
-                                                    {capability}
-                                                </li>
-                                            ))}
+                                            {agent.capabilities.map(
+                                                (capability) => (
+                                                    <li
+                                                        key={capability}
+                                                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                                                    >
+                                                        <div className="agent-dot h-1.5 w-1.5 rounded-full" />
+                                                        {capability}
+                                                    </li>
+                                                ),
+                                            )}
                                         </ul>
 
                                         <Button
@@ -667,7 +677,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                     className="relative flex w-full flex-col items-center overflow-hidden py-24"
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/10 to-background" />
-                    <div className="container relative z-10 px-6">
+                    <div className="relative z-10 container px-6">
                         <div className="mb-16 text-center">
                             <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                                 Full Roster
@@ -676,8 +686,9 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                                 Every Cynergist at a Glance
                             </h2>
                             <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
-                                A complete lineup of AI personas spanning growth,
-                                operations, legal, creative, and executive support.
+                                A complete lineup of AI personas spanning
+                                growth, operations, legal, creative, and
+                                executive support.
                             </p>
                         </div>
 
@@ -707,7 +718,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                     className="relative flex w-full flex-col items-center py-24"
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
-                    <div className="container relative z-10 px-6">
+                    <div className="relative z-10 container px-6">
                         <div className="mb-16 text-center">
                             <span className="mb-4 inline-block rounded-full bg-secondary/50 px-4 py-2 text-sm font-medium text-foreground">
                                 Cynergists Divisions
@@ -764,8 +775,8 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                 <section className="relative flex w-full flex-col items-center overflow-hidden py-24">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
                     <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-                    <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
-                    <div className="container relative z-10 px-6">
+                    <div className="absolute right-1/4 bottom-0 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+                    <div className="relative z-10 container px-6">
                         <div className="mx-auto max-w-4xl text-center">
                             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/50 px-4 py-2 text-sm text-muted-foreground">
                                 <Sparkles className="h-4 w-4 text-primary" />
@@ -773,7 +784,9 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </div>
                             <h2 className="font-display mb-6 text-4xl font-bold text-foreground md:text-6xl">
                                 Ready to Build Your{' '}
-                                <span className="gradient-text">AI Workforce</span>
+                                <span className="gradient-text">
+                                    AI Workforce
+                                </span>
                                 ?
                             </h2>
                             <p className="mb-10 text-xl text-muted-foreground">
@@ -994,7 +1007,7 @@ export default function Welcome({ canRegister }: { canRegister: boolean }) {
                             </p>
                             <div className="flex items-center gap-6">
                                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                    <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
                                     All systems operational
                                 </span>
                             </div>

@@ -11,6 +11,16 @@ export default defineConfig(({ mode }) => ({
     build: {
         reportCompressedSize: false, // Disable gzip size reporting to save memory
         chunkSizeWarningLimit: 1000,
+        sourcemap: false, // Disable source maps in production for faster builds
+        minify: 'esbuild', // Use esbuild (faster than terser)
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'react-vendor': ['react', 'react-dom', '@inertiajs/react'],
+                    'ui-vendor': ['lucide-react', 'sonner', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+                },
+            },
+        },
     },
     plugins: [
         {

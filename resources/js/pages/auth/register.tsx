@@ -148,7 +148,7 @@ export default function Register() {
                                 />
                                 <Label
                                     htmlFor="accept_terms"
-                                    className="text-sm leading-tight cursor-pointer text-muted-foreground"
+                                    className="cursor-pointer text-sm leading-tight text-muted-foreground"
                                 >
                                     I accept the{' '}
                                     <TextLink href="/terms" tabIndex={-1}>

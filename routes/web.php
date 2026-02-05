@@ -191,6 +191,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::put('/agents/{agent}/configuration', [PortalAgentsController::class, 'updateConfiguration']);
         Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
         Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
+        Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
+        Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [PortalSeoController::class, 'overview']);
         Route::post('/seo/sites', [PortalSeoController::class, 'storeSite']);

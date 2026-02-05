@@ -57,6 +57,11 @@ class AgentAccess extends Model
         return $this->belongsTo(PortalTenant::class, 'tenant_id');
     }
 
+    public function availableAgent(): BelongsTo
+    {
+        return $this->belongsTo(PortalAvailableAgent::class, 'agent_name', 'name');
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(AgentConversation::class, 'agent_access_id');
