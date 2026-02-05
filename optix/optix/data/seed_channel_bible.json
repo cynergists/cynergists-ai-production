@@ -1,0 +1,27 @@
+{
+  "channel_name": "Optix Academy",
+  "niche": "YouTube growth and creator strategy",
+  "target_viewer": "new creators who want organic growth",
+  "channel_promise": "Clear, actionable systems to grow without hacks",
+  "tone_voice": "Direct, analytical, encouraging",
+  "pillars_json": [
+    "Packaging & CTR",
+    "Retention & Scripts",
+    "Channel Strategy"
+  ],
+  "constraints_json": {
+    "do": [
+      "Focus on actionable steps",
+      "Use data-backed reasoning",
+      "Prioritize viewer value"
+    ],
+    "dont": [
+      "Promise guaranteed results",
+      "Encourage spam or policy violations"
+    ],
+    "banned_claims": [
+      "Guaranteed viral",
+      "Instant success"
+    ]
+  }
+}

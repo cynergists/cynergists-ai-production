@@ -1,0 +1,42 @@
+[project]
+name = "optix"
+version = "0.1.0"
+description = "Optix: YouTube Organic Growth AI Agent (MVP)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Optix"}]
+
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "typer>=0.12",
+  "pydantic>=2.5",
+  "pydantic-settings>=2.2",
+  "sqlalchemy>=2.0",
+  "openai>=1.12",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+pytest = ["pytest>=8.0"]
+
+test = ["pytest>=8.0"]
+
+[project.scripts]
+optix = "optix.cli:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["optix*"]
+
+[tool.setuptools.package-data]
+optix = ["prompts/*.md", "data/*.json"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
