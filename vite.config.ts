@@ -111,7 +111,6 @@ export default defineConfig(({ mode }) => ({
         host: '127.0.0.1',
         port: Number(process.env.VITE_PORT ?? 5173),
         strictPort: true,
-        https: false,
         hmr: {
             host: '127.0.0.1',
         },
