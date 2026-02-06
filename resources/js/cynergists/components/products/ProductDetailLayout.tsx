@@ -13,16 +13,20 @@ interface ProductDetailLayoutProps {
     categoryIcon?: ReactNode;
     shortDescription: string;
     price: number;
+    priceLabel?: string;
+    priceNote?: string;
     billingPeriod?: 'monthly' | 'annual' | 'one_time';
     imageUrl?: string;
 
     // Content sections
     features?: string[];
+    featuresTitle?: string;
     whosItFor?: string;
     integrations?: string[];
 
     // CTAs
     primaryCtaText?: string;
+    primaryCtaLink?: string;
     secondaryCtaText?: string;
     secondaryCtaLink?: string;
 
@@ -46,12 +50,16 @@ export const ProductDetailLayout = ({
     categoryIcon,
     shortDescription,
     price,
+    priceLabel,
+    priceNote,
     billingPeriod = 'monthly',
     imageUrl,
     features = [],
+    featuresTitle = "What's Included",
     whosItFor,
     integrations = [],
     primaryCtaText = 'Add to Cart',
+    primaryCtaLink,
     secondaryCtaText = 'Schedule a Call',
     secondaryCtaLink = '/schedule',
     children,
@@ -69,6 +77,29 @@ export const ProductDetailLayout = ({
                 billingPeriod === 'one_time' ? undefined : billingPeriod,
         });
     };
+
+    const displayPrice = priceLabel ?? (price > 0 ? formatPrice(price) : 'Free');
+    const featureTitleParts = featuresTitle.split(' ').filter(Boolean);
+    const featureTitleLead =
+        featureTitleParts.length > 1
+            ? featureTitleParts.slice(0, -1).join(' ')
+            : '';
+    const featureTitleHighlight =
+        featureTitleParts.length > 1
+            ? featureTitleParts[featureTitleParts.length - 1]
+            : featuresTitle;
+
+    const renderPrimaryCta = () =>
+        primaryCtaLink ? (
+            <OrbitingButton asChild className="btn-primary">
+                <Link href={primaryCtaLink}>{primaryCtaText}</Link>
+            </OrbitingButton>
+        ) : (
+            <OrbitingButton className="btn-primary" onClick={handleAddToCart}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {primaryCtaText}
+            </OrbitingButton>
+        );
 
     return (
         <>
@@ -127,27 +158,30 @@ export const ProductDetailLayout = ({
                             {/* Price */}
                             <div className="mb-8">
                                 <span className="text-4xl font-bold text-primary">
-                                    {price > 0 ? formatPrice(price) : 'Free'}
+                                    {displayPrice}
                                 </span>
-                                {billingPeriod !== 'one_time' && price > 0 && (
-                                    <span className="text-lg text-muted-foreground">
-                                        /
-                                        {billingPeriod === 'monthly'
-                                            ? 'month'
-                                            : 'year'}
-                                    </span>
+                                {priceLabel ? (
+                                    priceNote && (
+                                        <span className="mt-2 block text-sm text-muted-foreground">
+                                            {priceNote}
+                                        </span>
+                                    )
+                                ) : (
+                                    billingPeriod !== 'one_time' &&
+                                    price > 0 && (
+                                        <span className="text-lg text-muted-foreground">
+                                            /
+                                            {billingPeriod === 'monthly'
+                                                ? 'month'
+                                                : 'year'}
+                                        </span>
+                                    )
                                 )}
                             </div>
 
                             {/* CTAs */}
                             <div className="flex flex-col gap-4 sm:flex-row">
-                                <OrbitingButton
-                                    className="btn-primary"
-                                    onClick={handleAddToCart}
-                                >
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                    {primaryCtaText}
-                                </OrbitingButton>
+                                {renderPrimaryCta()}
                                 <Button asChild variant="outline">
                                     <Link href={secondaryCtaLink}>
                                         {secondaryCtaText}
@@ -166,8 +200,18 @@ export const ProductDetailLayout = ({
                     <div className="container mx-auto px-4">
                         <div className="mx-auto max-w-4xl">
                             <h2 className="mb-12 text-center text-2xl font-bold md:text-3xl">
-                                What's{' '}
-                                <span className="text-gradient">Included</span>
+                                {featureTitleParts.length > 1 ? (
+                                    <>
+                                        {featureTitleLead}{' '}
+                                        <span className="text-gradient">
+                                            {featureTitleHighlight}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-gradient">
+                                        {featureTitleHighlight}
+                                    </span>
+                                )}
                             </h2>
                             <div className="grid gap-4 md:grid-cols-2">
                                 {features.map((feature, idx) => (
@@ -255,13 +299,7 @@ export const ProductDetailLayout = ({
                         {shortDescription}
                     </p>
                     <div className="flex flex-col justify-center gap-4 sm:flex-row">
-                        <OrbitingButton
-                            className="btn-primary"
-                            onClick={handleAddToCart}
-                        >
-                            <ShoppingCart className="mr-2 h-4 w-4" />
-                            {primaryCtaText}
-                        </OrbitingButton>
+                        {renderPrimaryCta()}
                         <Button asChild variant="outline">
                             <Link href={secondaryCtaLink}>
                                 {secondaryCtaText}

@@ -2,6 +2,9 @@ import React from 'react';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
+import { CarbonChat } from './carbon/CarbonChat';
+import { CarbonConfig } from './carbon/CarbonConfig';
+import CarbonSidebar from './carbon/CarbonSidebar';
 import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
@@ -23,6 +26,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: ApexConfig,
         SidebarComponent: ApexSidebar,
     },
+    carbon: {
+        ChatComponent: CarbonChat,
+        ConfigComponent: CarbonConfig,
+        SidebarComponent: CarbonSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -34,6 +42,9 @@ export {
     ApexChat,
     ApexConfig,
     ApexSidebar,
+    CarbonChat,
+    CarbonConfig,
+    CarbonSidebar,
     CynessaChat,
     CynessaConfig,
     CynessaSidebar,

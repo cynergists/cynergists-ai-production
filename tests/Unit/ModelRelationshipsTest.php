@@ -13,6 +13,12 @@ use App\Models\PartnerScheduledReport;
 use App\Models\PartnerTicket;
 use App\Models\PortalTenant;
 use App\Models\ReportRun;
+use App\Models\SeoAudit;
+use App\Models\SeoChange;
+use App\Models\SeoRecommendation;
+use App\Models\SeoRecommendationApproval;
+use App\Models\SeoReport;
+use App\Models\SeoSite;
 use App\Models\Staff;
 use App\Models\StaffHour;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -90,4 +96,29 @@ it('defines partner payout and reporting relationships', function () {
 it('defines partner ticket relationships', function () {
     expect((new PartnerTicket)->partner())->toBeInstanceOf(BelongsTo::class);
     expect((new PartnerTicket)->messages())->toBeInstanceOf(HasMany::class);
+});
+
+it('defines seo engine relationships', function () {
+    expect((new SeoSite)->tenant())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoSite)->owner())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoSite)->audits())->toBeInstanceOf(HasMany::class);
+    expect((new SeoSite)->recommendations())->toBeInstanceOf(HasMany::class);
+    expect((new SeoSite)->changes())->toBeInstanceOf(HasMany::class);
+    expect((new SeoSite)->reports())->toBeInstanceOf(HasMany::class);
+
+    expect((new SeoAudit)->site())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoAudit)->recommendations())->toBeInstanceOf(HasMany::class);
+
+    expect((new SeoRecommendation)->site())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoRecommendation)->audit())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoRecommendation)->approvals())->toBeInstanceOf(HasMany::class);
+    expect((new SeoRecommendation)->changes())->toBeInstanceOf(HasMany::class);
+
+    expect((new SeoRecommendationApproval)->recommendation())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoRecommendationApproval)->user())->toBeInstanceOf(BelongsTo::class);
+
+    expect((new SeoChange)->site())->toBeInstanceOf(BelongsTo::class);
+    expect((new SeoChange)->recommendation())->toBeInstanceOf(BelongsTo::class);
+
+    expect((new SeoReport)->site())->toBeInstanceOf(BelongsTo::class);
 });

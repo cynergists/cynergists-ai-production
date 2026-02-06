@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\Carbon\CarbonController;
+use App\Http\Controllers\Api\Carbon\CarbonPixelController;
+use App\Http\Controllers\Api\Carbon\CarbonReportController;
 use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
 use App\Http\Controllers\Api\Portal\PortalBillingController;
@@ -54,6 +57,7 @@ Route::get('/plans/enterprise', [CynergistsPageController::class, 'page'])->defa
 Route::get('/plans/test-plan', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/TestPlan');
 Route::get('/products/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'products/LinkedInOutreach');
 Route::get('/products/crm', [CynergistsPageController::class, 'page'])->defaults('component', 'products/CRM');
+Route::get('/products/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'products/SEOEngine');
 Route::get('/partner/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'partners/LinkedInOutreachPartner');
 Route::get('/partner/linkedin-outreach/checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLinkedInCheckout');
 Route::get('/quick-checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'QuickCheckout');
@@ -98,6 +102,7 @@ Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
@@ -142,9 +147,16 @@ Route::get('/admin/ai-agents/{id}', [CynergistsPageController::class, 'page'])->
 Route::get('/admin/partner-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/PartnerPortalManagement');
 Route::get('/admin/ai-agent-template', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentTemplate');
 
+Route::middleware(['auth', EnsureAdminUser::class])->group(function () {
+    Route::get('/reports/seo/{report}', [CarbonReportController::class, 'show'])->name('reports.seo.show');
+    Route::get('/reports/seo/{report}/download', [CarbonReportController::class, 'download'])->name('reports.seo.download');
+});
+
 Route::get('/api/portal/tenant/by-subdomain', [PortalTenantController::class, 'showBySubdomain']);
+Route::get('/seo/pixel/{trackingId}.js', [CarbonPixelController::class, 'script'])->name('seo.pixel.script');
 
 Route::prefix('api')->group(function () {
+    Route::match(['post', 'options'], '/seo/pixel/{trackingId}/collect', [CarbonPixelController::class, 'collect']);
     Route::get('/public/plans', [PublicDataController::class, 'activePlans']);
     Route::get('/public/plans/{slug}', [PublicDataController::class, 'planBySlug']);
     Route::get('/public/products', [PublicDataController::class, 'activeProducts']);
@@ -182,6 +194,12 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
         Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
+        Route::get('/seo/overview', [CarbonController::class, 'overview']);
+        Route::post('/seo/sites', [CarbonController::class, 'storeSite']);
+        Route::post('/seo/sites/{site}/pixel-install', [CarbonController::class, 'updatePixelInstall']);
+        Route::post('/seo/recommendations/{recommendation}/decision', [CarbonController::class, 'decideRecommendation']);
+        Route::post('/seo/reports/generate', [CarbonController::class, 'generateReport']);
+        Route::get('/seo/reports/{report}/download', [CarbonController::class, 'downloadReport']);
         Route::get('/billing', [PortalBillingController::class, 'index']);
         Route::get('/activity', [PortalActivityController::class, 'index']);
         Route::get('/tenant', [PortalTenantController::class, 'show']);

@@ -171,6 +171,7 @@ export default function PortalBrowse() {
                     {filteredAgents.map((agent) => {
                         const Icon = getAgentIcon(agent.category);
                         const owned = isOwned(agent.id);
+                        const isCustomPricing = agent.price <= 0;
 
                         return (
                             <Card
@@ -249,12 +250,25 @@ export default function PortalBrowse() {
                                 <div className="mt-auto border-t border-border/50 bg-muted/30 p-6 pt-4">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <span className="text-2xl font-bold text-foreground">
-                                                ${agent.price}
-                                            </span>
-                                            <span className="text-sm text-muted-foreground">
-                                                /mo
-                                            </span>
+                                            {isCustomPricing ? (
+                                                <div className="flex flex-col">
+                                                    <span className="text-2xl font-bold text-foreground">
+                                                        Custom
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Pricing based on scope
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="text-2xl font-bold text-foreground">
+                                                        ${agent.price}
+                                                    </span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        /mo
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                         {owned ? (
                                             <Button variant="outline" asChild>

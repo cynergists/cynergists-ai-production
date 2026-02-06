@@ -8,6 +8,7 @@ import {
 } from '@/data/essentialsAgents';
 import { useAddToCartWithToast } from '@/hooks/useAddToCartWithToast';
 import { cn } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
 import { Circle, ShoppingCart } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -45,6 +46,7 @@ export function AgentDetailSlider({
     // Use database tiers if available, otherwise use essentialsAgent tiers
     const hasDatabaseTiers = agentTiers && agentTiers.length > 0;
     const useDatabaseData = hasDatabaseTiers && !essentialsAgent;
+    const isCustomPricing = agentPrice <= 0 && !hasDatabaseTiers;
 
     const [selectedTierIndex, setSelectedTierIndex] = useState(() => {
         if (essentialsAgent) {
@@ -52,6 +54,30 @@ export function AgentDetailSlider({
         }
         return 0;
     });
+
+    // If custom pricing, show a request CTA instead of add to cart
+    if (isCustomPricing) {
+        return (
+            <div className="space-y-4">
+                <div className="rounded-lg bg-muted/30 p-4">
+                    <p className="text-base text-accent dark:text-lime-400">
+                        <span className="font-medium">Price:</span> Custom
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        Pricing scales with site size, locations, and execution
+                        scope.
+                    </p>
+                </div>
+                <Button
+                    asChild
+                    size="lg"
+                    className="w-full bg-lime-500 font-medium text-black hover:bg-lime-600"
+                >
+                    <Link href="/schedule">Schedule a Strategy Call</Link>
+                </Button>
+            </div>
+        );
+    }
 
     // If no essentials agent and no database tiers, show simple add to cart
     if (!essentialsAgent && !hasDatabaseTiers) {
