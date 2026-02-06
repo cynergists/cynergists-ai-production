@@ -12,7 +12,7 @@ it('saves brand_tone to tenant settings', function () {
         'settings' => [],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     $service->updateCompanyInfo($tenant, [
         'brand_tone' => '#556633',
@@ -34,7 +34,7 @@ it('updates brand_tone without overwriting other settings', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     $service->updateCompanyInfo($tenant, [
         'brand_tone' => 'Modern and Professional',
@@ -55,7 +55,7 @@ it('saves multiple company info fields including brand_tone', function () {
         'settings' => [],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     $service->updateCompanyInfo($tenant, [
         'company_name' => 'New Company',
@@ -82,7 +82,7 @@ it('preserves existing brand_tone when updating other fields', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     $service->updateCompanyInfo($tenant, [
         'industry' => 'Technology',
@@ -108,7 +108,7 @@ it('cannot complete onboarding without brand_tone', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     expect($service->canComplete($tenant))->toBeFalse();
 });
@@ -128,7 +128,7 @@ it('can complete onboarding with all required fields including brand_tone', func
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     expect($service->canComplete($tenant))->toBeTrue();
 });
@@ -144,7 +144,7 @@ it('company_info step is not completed without brand_tone', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
     $progress = $service->getProgress($tenant);
 
     expect($progress['steps']['company_info']['completed'])->toBeFalse();
@@ -162,7 +162,7 @@ it('company_info step is completed with brand_tone', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
     $progress = $service->getProgress($tenant);
 
     expect($progress['steps']['company_info']['completed'])->toBeTrue();
@@ -184,7 +184,7 @@ it('can reset onboarding for a completed tenant', function () {
         ],
     ]);
 
-    $service = new OnboardingService;
+    $service = app(OnboardingService::class);
 
     expect($service->isComplete($tenant))->toBeTrue();
 

@@ -4,9 +4,17 @@ namespace App\Services\Cynessa;
 
 use App\Models\PortalTenant;
 use App\Models\User;
+use App\Services\GoHighLevelService;
+use App\Services\GoogleDriveService;
+use Illuminate\Support\Facades\Log;
 
 class OnboardingService
 {
+    public function __construct(
+        private GoogleDriveService $googleDriveService,
+        private GoHighLevelService $goHighLevelService
+    ) {}
+
     /**
      * Check if tenant has completed onboarding.
      */
@@ -72,6 +80,9 @@ class OnboardingService
                 'goals' => $data['goals'] ?? ($settings['goals'] ?? null),
                 'services_needed' => $data['services_needed'] ?? ($settings['services_needed'] ?? null),
                 'brand_tone' => $data['brand_tone'] ?? ($settings['brand_tone'] ?? null),
+                'website' => $data['website'] ?? ($settings['website'] ?? null),
+                'business_description' => $data['business_description'] ?? ($settings['business_description'] ?? null),
+                'brand_colors' => $data['brand_colors'] ?? ($settings['brand_colors'] ?? null),
             ]),
         ]);
     }
@@ -192,21 +203,67 @@ class OnboardingService
     }
 
     /**
-     * Create Google Drive folder for tenant.
-     * TODO: Implement Google Drive integration
+     * Create Google Drive folder for tenant and store the folder ID.
      */
     public function createDriveFolder(PortalTenant $tenant): ?string
     {
-        // Placeholder for Google Drive integration
-        return null;
+        try {
+            $folderId = $this->googleDriveService->createClientFolder(
+                $tenant->company_name ?: 'Unknown Company',
+                $tenant->id
+            );
+
+            if ($folderId) {
+                $settings = $tenant->settings ?? [];
+                $tenant->update([
+                    'settings' => array_merge($settings, [
+                        'google_drive_folder_id' => $folderId,
+                    ]),
+                ]);
+
+                Log::info('Google Drive folder created for tenant', [
+                    'tenant_id' => $tenant->id,
+                    'folder_id' => $folderId,
+                ]);
+            }
+
+            return $folderId;
+        } catch (\Exception $e) {
+            Log::error('Failed to create Google Drive folder', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
-     * Sync tenant data to CRM (GoHighLevel).
-     * TODO: Implement GoHighLevel integration
+     * Sync tenant data to CRM (GoHighLevel) and store the contact ID.
      */
     public function syncToCRM(PortalTenant $tenant, User $user): void
     {
-        // Placeholder for GoHighLevel integration
+        try {
+            $contactId = $this->goHighLevelService->createOrUpdateContact($tenant, $user);
+
+            if ($contactId) {
+                $settings = $tenant->settings ?? [];
+                $tenant->update([
+                    'settings' => array_merge($settings, [
+                        'ghl_contact_id' => $contactId,
+                    ]),
+                ]);
+
+                Log::info('GoHighLevel contact synced for tenant', [
+                    'tenant_id' => $tenant->id,
+                    'contact_id' => $contactId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to sync to GoHighLevel', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\Cynessa;
 use App\Models\AgentAccess;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
@@ -9,6 +10,8 @@ use Illuminate\Support\Str;
 use function Pest\Laravel\actingAs;
 
 it('handles cynessa greeting message', function () {
+    Cynessa::fake(['Hi John! I\'m Cynessa, your AI assistant. How can I help you today?']);
+
     $user = User::factory()->create(['name' => 'John Doe']);
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -42,13 +45,14 @@ it('handles cynessa greeting message', function () {
 
     $response->assertSuccessful();
     $response->assertJsonPath('success', true);
+    expect($response->json('assistantMessage'))->toBe('Hi John! I\'m Cynessa, your AI assistant. How can I help you today?');
 
-    $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('John');
-    expect($assistantMessage)->toContain('Cynessa');
+    Cynessa::assertPrompted('Hello');
 });
 
 it('handles cynessa onboarding start', function () {
+    Cynessa::fake(["Welcome! Let's get you set up. What is your company name?"]);
+
     $user = User::factory()->create();
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -81,13 +85,14 @@ it('handles cynessa onboarding start', function () {
     ]);
 
     $response->assertSuccessful();
+    expect($response->json('assistantMessage'))->toBe("Welcome! Let's get you set up. What is your company name?");
 
-    $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('Company Information');
-    expect($assistantMessage)->toContain('Company name');
+    Cynessa::assertPrompted('I want to get started');
 });
 
 it('handles cynessa help request', function () {
+    Cynessa::fake(['I can help you with your Onboarding process and File Management. What would you like to know?']);
+
     $user = User::factory()->create();
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -119,13 +124,14 @@ it('handles cynessa help request', function () {
     ]);
 
     $response->assertSuccessful();
+    expect($response->json('assistantMessage'))->toBe('I can help you with your Onboarding process and File Management. What would you like to know?');
 
-    $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('Onboarding');
-    expect($assistantMessage)->toContain('File Management');
+    Cynessa::assertPrompted('help');
 });
 
 it('detects completed onboarding', function () {
+    Cynessa::fake(["You've already completed onboarding! How can I help you today?"]);
+
     $user = User::factory()->create();
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -158,12 +164,16 @@ it('detects completed onboarding', function () {
     ]);
 
     $response->assertSuccessful();
+    expect($response->json('assistantMessage'))->toBe("You've already completed onboarding! How can I help you today?");
 
-    $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('already completed onboarding');
+    Cynessa::assertPrompted('I want to get started');
 });
 
 it('extracts company information from message', function () {
+    Cynessa::fake(['Great, Acme Corp in the technology industry! What is your website URL?
+
+[DATA: company_name="Acme Corp" industry="technology"]']);
+
     $user = User::factory()->create();
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -198,17 +208,21 @@ it('extracts company information from message', function () {
 
     $response->assertSuccessful();
 
+    // DATA markers should be stripped from user-facing response
     $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('Acme Corp');
-    expect($assistantMessage)->toContain('technology');
+    expect($assistantMessage)->toBe('Great, Acme Corp in the technology industry! What is your website URL?');
 
-    // Verify the tenant was updated
+    // Verify the tenant was updated via data extraction
     $tenant->refresh();
     expect($tenant->company_name)->toBe('Acme Corp');
     expect($tenant->settings['industry'] ?? null)->toBe('technology');
+
+    Cynessa::assertPrompted('My company is Acme Corp and we are in the technology industry');
 });
 
 it('resets onboarding when user explicitly requests to start onboarding', function () {
+    Cynessa::fake(["No problem! Let's start fresh. What is your company name?"]);
+
     $user = User::factory()->create();
     $tenant = PortalTenant::factory()->create([
         'user_id' => (string) $user->id,
@@ -253,7 +267,8 @@ it('resets onboarding when user explicitly requests to start onboarding', functi
     expect($tenant->onboarding_completed_at)->toBeNull();
     expect($tenant->settings)->toBeEmpty();
 
-    // The response should ask for company name (first question)
-    $assistantMessage = $response->json('assistantMessage');
-    expect($assistantMessage)->toContain('company');
+    // The response should be our faked message
+    expect($response->json('assistantMessage'))->toBe("No problem! Let's start fresh. What is your company name?");
+
+    Cynessa::assertPrompted('I want to start onboarding');
 });

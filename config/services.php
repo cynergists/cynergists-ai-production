@@ -48,4 +48,14 @@ return [
         'api_key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    'google_drive' => [
+        'credentials_path' => env('GOOGLE_DRIVE_CREDENTIALS_PATH'),
+        'folder_id' => env('GOOGLE_DRIVE_ROOT_FOLDER_ID'),
+    ],
+
+    'gohighlevel' => [
+        'api_key' => env('GOHIGHLEVEL_API_KEY'),
+        'location_id' => env('GOHIGHLEVEL_LOCATION_ID'),
+    ],
+
 ];

@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Ai\Agents;
+
+use App\Models\PortalTenant;
+use App\Models\SeoSite;
+use App\Models\User;
+use App\Portal\Carbon\Config\CarbonSidebarConfig;
+use Laravel\Ai\Attributes\MaxTokens;
+use Laravel\Ai\Attributes\Provider;
+use Laravel\Ai\Attributes\Temperature;
+use Laravel\Ai\Attributes\Timeout;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Messages\Message;
+use Laravel\Ai\Promptable;
+use Stringable;
+
+#[Provider('anthropic')]
+#[MaxTokens(1024)]
+#[Temperature(0.7)]
+#[Timeout(120)]
+class Carbon implements Agent, Conversational
+{
+    use Promptable;
+
+    public function __construct(
+        public User $user,
+        public PortalTenant $tenant,
+        public array $conversationHistory = []
+    ) {}
+
+    /**
+     * Get the instructions that the agent should follow.
+     */
+    public function instructions(): Stringable|string
+    {
+        $seoContext = $this->buildSeoContext();
+
+        $sitesCount = count($seoContext['sites']);
+        $healthScore = $seoContext['stats']['health_score'] ?? 0;
+
+        $sitesList = '';
+        if ($sitesCount > 0) {
+            foreach ($seoContext['sites'] as $site) {
+                $sitesList .= "\n- {$site['name']} ({$site['url']}) - Status: {$site['status']}, Last audit: {$site['last_audit']}";
+            }
+        } else {
+            $sitesList = "\n(No sites are currently being tracked)";
+        }
+
+        $auditsInfo = '';
+        if (! empty($seoContext['recent_audits'])) {
+            $auditsInfo = "\n\nRecent Audits:";
+            foreach (array_slice($seoContext['recent_audits'], 0, 3) as $audit) {
+                $auditsInfo .= "\n- {$audit['site_name']}: {$audit['status']} ({$audit['date']})";
+            }
+        }
+
+        $recommendationsInfo = '';
+        if (! empty($seoContext['recommendations'])) {
+            $recommendationsInfo = "\n\nTop Recommendations:";
+            foreach (array_slice($seoContext['recommendations'], 0, 3) as $rec) {
+                $recommendationsInfo .= "\n- [{$rec['priority']}] {$rec['title']} for {$rec['site_name']}";
+            }
+        }
+
+        return <<<PROMPT
+You are Carbon, an SEO expert agent specializing in search engine optimization, website performance, and digital marketing.
+
+Your role is to help users understand and improve their website's SEO performance. You have access to their current SEO data and can provide insights, answer questions, and offer recommendations.
+
+CURRENT SEO STATUS:
+- Total Sites Tracked: {$sitesCount}
+- Overall Health Score: {$healthScore}%
+- Active Audits: {$seoContext['stats']['active_audits']}
+
+SITES BEING MONITORED:{$sitesList}{$auditsInfo}{$recommendationsInfo}
+
+GUIDELINES:
+- Be friendly, professional, and knowledgeable about SEO
+- Provide specific, actionable advice when asked
+- Reference their actual site data when relevant
+- If they ask about sites they're tracking, refer to the list above
+- If they have no sites yet, encourage them to add one using the "Add Site" button
+- Keep responses concise and focused (2-3 paragraphs max unless they ask for details)
+- Use technical SEO terminology when appropriate, but explain concepts clearly
+- Offer to help with specific SEO tasks like keyword research, technical audits, or content optimization
+
+TONE: Expert yet approachable, data-driven, helpful
+PROMPT;
+    }
+
+    /**
+     * Get the list of messages comprising the conversation so far.
+     */
+    public function messages(): iterable
+    {
+        return array_map(
+            fn (array $msg) => new Message($msg['role'], $msg['content']),
+            $this->conversationHistory
+        );
+    }
+
+    /**
+     * Build SEO context for the agent.
+     */
+    private function buildSeoContext(): array
+    {
+        $config = CarbonSidebarConfig::getConfig($this->tenant);
+
+        $sites = SeoSite::where('tenant_id', $this->tenant->id)->get([
+            'id', 'name', 'url', 'status', 'last_audit_at', 'created_at',
+        ]);
+
+        return [
+            'stats' => $config['seo_stats'] ?? [],
+            'sites' => $sites->map(fn ($site) => [
+                'name' => $site->name,
+                'url' => $site->url,
+                'status' => $site->status,
+                'last_audit' => $site->last_audit_at?->diffForHumans() ?? 'Never',
+            ])->toArray(),
+            'recent_audits' => $config['recent_audits'] ?? [],
+            'recommendations' => $config['top_recommendations'] ?? [],
+        ];
+    }
+}

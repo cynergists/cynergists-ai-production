@@ -7,9 +7,12 @@ import {
     File,
     FileSpreadsheet,
     FileText,
+    Globe,
     Image,
+    Paintbrush,
     Palette,
     Target,
+    Type,
     User,
     Video,
 } from 'lucide-react';
@@ -48,9 +51,12 @@ export default function CynessaSidebar({
 
     const onboardingData = {
         companyName: tenantData?.company_name || 'Not provided',
+        website: settings?.website || null,
         industry: settings?.industry || 'Not provided',
+        businessDescription: settings?.business_description || null,
         services: settings?.services_needed || 'Not provided',
         brandTone: settings?.brand_tone || 'Not provided',
+        brandColors: settings?.brand_colors || null,
     };
 
     const providedFiles = settings?.brand_assets || [];
@@ -77,6 +83,20 @@ export default function CynessaSidebar({
                         </p>
                     </div>
 
+                    {onboardingData.website && (
+                        <div>
+                            <div className="mb-1 flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground uppercase">
+                                    Website
+                                </span>
+                            </div>
+                            <p className="truncate text-sm text-foreground">
+                                {onboardingData.website}
+                            </p>
+                        </div>
+                    )}
+
                     <div>
                         <div className="mb-1 flex items-center gap-2">
                             <Target className="h-4 w-4 text-muted-foreground" />
@@ -88,6 +108,20 @@ export default function CynessaSidebar({
                             {onboardingData.industry}
                         </p>
                     </div>
+
+                    {onboardingData.businessDescription && (
+                        <div>
+                            <div className="mb-1 flex items-center gap-2">
+                                <Type className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground uppercase">
+                                    Description
+                                </span>
+                            </div>
+                            <p className="line-clamp-2 text-sm text-foreground">
+                                {onboardingData.businessDescription}
+                            </p>
+                        </div>
+                    )}
 
                     <div>
                         <div className="mb-1 flex items-center gap-2">
@@ -112,6 +146,20 @@ export default function CynessaSidebar({
                             {onboardingData.brandTone}
                         </p>
                     </div>
+
+                    {onboardingData.brandColors && (
+                        <div>
+                            <div className="mb-1 flex items-center gap-2">
+                                <Paintbrush className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground uppercase">
+                                    Brand Colors
+                                </span>
+                            </div>
+                            <p className="text-sm text-foreground">
+                                {onboardingData.brandColors}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-4 border-t border-primary/20 pt-4">

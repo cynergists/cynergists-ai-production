@@ -6,12 +6,14 @@ use App\Ai\Agents\Cynessa;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
+use App\Services\SlackEscalationService;
 use Illuminate\Support\Facades\Log;
 
 class CynessaAgentHandler
 {
     public function __construct(
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private SlackEscalationService $slackEscalationService
     ) {}
 
     /**
@@ -22,7 +24,7 @@ class CynessaAgentHandler
         // Check if user wants to restart onboarding
         if ($this->isOnboardingRestartRequest($message)) {
             $this->onboardingService->resetOnboarding($tenant);
-            $tenant->refresh(); // Reload to get fresh state
+            $tenant->refresh();
         }
 
         // Check if this is a question about Cynergists - if so, include knowledge base
@@ -49,14 +51,19 @@ class CynessaAgentHandler
             // Extract any structured data from the response
             $this->extractAndSaveData($responseText, $tenant);
 
+            // Handle escalation markers
+            $this->handleEscalation($responseText, $tenant, $user, $conversationHistory);
+
             // Check if onboarding should be marked complete
-            $tenant->refresh(); // Reload to get updated data
-            if (! $this->onboardingService->isComplete($tenant) && $this->onboardingService->canComplete($tenant)) {
+            $tenant->refresh();
+            $wasIncomplete = ! $this->onboardingService->isComplete($tenant);
+            if ($wasIncomplete && $this->onboardingService->canComplete($tenant)) {
                 $this->onboardingService->markComplete($tenant);
+                $this->triggerPostOnboardingActions($tenant, $user);
             }
 
-            // Strip the DATA marker from the response before showing to user
-            $cleanResponse = $this->stripDataMarkers($responseText);
+            // Strip internal markers from the response before showing to user
+            $cleanResponse = $this->stripInternalMarkers($responseText);
 
             return $cleanResponse;
         } catch (\Exception $e) {
@@ -113,11 +120,9 @@ class CynessaAgentHandler
      */
     private function extractAndSaveData(string $response, PortalTenant $tenant): void
     {
-        // Look for [DATA: ...] marker
         if (preg_match('/\[DATA: (.*?)\]/', $response, $matches)) {
             $dataString = $matches[1];
 
-            // Parse the data string
             $updates = [];
 
             if (preg_match('/company_name="([^"]+)"/', $dataString, $match)) {
@@ -136,6 +141,18 @@ class CynessaAgentHandler
                 $updates['brand_tone'] = trim($match[1]);
             }
 
+            if (preg_match('/website="([^"]+)"/', $dataString, $match)) {
+                $updates['website'] = trim($match[1]);
+            }
+
+            if (preg_match('/business_description="([^"]+)"/', $dataString, $match)) {
+                $updates['business_description'] = trim($match[1]);
+            }
+
+            if (preg_match('/brand_colors="([^"]+)"/', $dataString, $match)) {
+                $updates['brand_colors'] = trim($match[1]);
+            }
+
             // Check for file type updates
             if (preg_match('/file_type="([^"]+):([^"]+)"/', $dataString, $match)) {
                 $filename = trim($match[1]);
@@ -143,7 +160,6 @@ class CynessaAgentHandler
                 $this->onboardingService->updateBrandAssetType($tenant, $filename, $fileType);
             }
 
-            // Save company info if we have updates
             if (! empty($updates)) {
                 $this->onboardingService->updateCompanyInfo($tenant, $updates);
             }
@@ -151,17 +167,59 @@ class CynessaAgentHandler
     }
 
     /**
-     * Remove [DATA: ...] markers from the response.
+     * Handle escalation markers in the response.
      */
-    private function stripDataMarkers(string $response): string
+    private function handleEscalation(string $response, PortalTenant $tenant, User $user, array $conversationHistory): void
     {
-        // Remove all [DATA: ...] markers from the response
+        if (preg_match('/\[ESCALATE: ([^\]]+)\]/', $response, $matches)) {
+            $reason = trim($matches[1]);
+
+            $this->slackEscalationService->escalate($tenant, $user, $reason, [
+                'conversation_excerpt' => array_slice($conversationHistory, -4),
+                'google_drive_folder_id' => ($tenant->settings ?? [])['google_drive_folder_id'] ?? null,
+                'ghl_contact_id' => ($tenant->settings ?? [])['ghl_contact_id'] ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * Trigger post-onboarding actions (Google Drive folder, CRM sync).
+     */
+    private function triggerPostOnboardingActions(PortalTenant $tenant, User $user): void
+    {
+        try {
+            $this->onboardingService->createDriveFolder($tenant);
+        } catch (\Exception $e) {
+            Log::warning('Post-onboarding Google Drive folder creation failed', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $this->onboardingService->syncToCRM($tenant, $user);
+        } catch (\Exception $e) {
+            Log::warning('Post-onboarding CRM sync failed', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Remove [DATA: ...] and [ESCALATE: ...] markers from the response.
+     */
+    private function stripInternalMarkers(string $response): string
+    {
+        // Remove all [DATA: ...] markers
         $cleaned = preg_replace('/\[DATA:.*?\]/s', '', $response);
 
-        // Clean up multiple blank lines (more than 2 consecutive newlines)
+        // Remove all [ESCALATE: ...] markers
+        $cleaned = preg_replace('/\[ESCALATE:.*?\]/s', '', $cleaned);
+
+        // Clean up multiple blank lines
         $cleaned = preg_replace('/\n{3,}/', "\n\n", $cleaned);
 
-        // Trim any extra whitespace from start and end
         return trim($cleaned);
     }
 
