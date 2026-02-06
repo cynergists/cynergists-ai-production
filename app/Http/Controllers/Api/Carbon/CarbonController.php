@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Portal;
+namespace App\Http\Controllers\Api\Carbon;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\DecideSeoRecommendationRequest;
@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
-class PortalSeoController extends Controller
+class CarbonController extends Controller
 {
     public function overview(Request $request, SeoEngineMockIngestor $ingestor): JsonResponse
     {

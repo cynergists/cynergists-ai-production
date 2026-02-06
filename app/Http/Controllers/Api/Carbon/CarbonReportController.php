@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\Carbon;
 
+use App\Http\Controllers\Controller;
 use App\Models\SeoReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
-class SeoReportController extends Controller
+class CarbonReportController extends Controller
 {
     public function show(Request $request, SeoReport $report): Response
     {

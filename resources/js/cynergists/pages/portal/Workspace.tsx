@@ -31,6 +31,7 @@ import {
     ChevronLeft,
     ChevronRight,
     CircleCheck,
+    Globe,
     Headphones,
     LayoutDashboard,
     Loader2,
@@ -88,12 +89,16 @@ export default function PortalWorkspace() {
         | 'connections'
         | 'messages'
         | 'activity'
+        | 'add-site'
     >('chat');
     const [supportDialogOpen, setSupportDialogOpen] = useState(false);
     const [supportCategory, setSupportCategory] = useState('general');
     const [supportSubject, setSupportSubject] = useState('');
     const [supportMessage, setSupportMessage] = useState('');
     const [agentSearchQuery, setAgentSearchQuery] = useState('');
+    const [addSiteDialogOpen, setAddSiteDialogOpen] = useState(false);
+    const [newSiteName, setNewSiteName] = useState('');
+    const [newSiteUrl, setNewSiteUrl] = useState('');
 
     useEffect(() => {
         setSelectedAgentId(props.agentId ?? null);
@@ -228,6 +233,14 @@ export default function PortalWorkspace() {
         messages.length,
         isStreaming,
     ]);
+
+    // Handle add-site view change
+    useEffect(() => {
+        if (activeView === 'add-site') {
+            setAddSiteDialogOpen(true);
+            setActiveView('chat'); // Reset view
+        }
+    }, [activeView]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -416,6 +429,39 @@ export default function PortalWorkspace() {
         submitSupportRequest.mutate();
     };
 
+    const addSite = useMutation({
+        mutationFn: async () => {
+            if (!newSiteName.trim() || !newSiteUrl.trim()) {
+                throw new Error('Please enter both site name and URL');
+            }
+
+            return apiClient.post<{ success: boolean; site: any }>(
+                '/api/portal/seo/sites',
+                {
+                    name: newSiteName,
+                    url: newSiteUrl,
+                },
+            );
+        },
+        onSuccess: (response) => {
+            toast.success('Site added successfully');
+            setAddSiteDialogOpen(false);
+            setNewSiteName('');
+            setNewSiteUrl('');
+            queryClient.invalidateQueries({
+                queryKey: ['agent-details', selectedAgentId],
+            });
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to add site');
+        },
+    });
+
+    const handleAddSite = (e: React.FormEvent) => {
+        e.preventDefault();
+        addSite.mutate();
+    };
+
     // Fetch portal stats including onboarding progress
     const { data: portalStats } = useQuery({
         queryKey: ['portal-stats', user?.id],
@@ -472,6 +518,21 @@ export default function PortalWorkspace() {
                       completed: false,
                   },
               ],
+          };
+
+    // Carbon SEO stats from agent details
+    const seoStats = agentDetails?.seo_data
+        ? {
+              healthScore: agentDetails.seo_data.seo_stats.health_score || 0,
+              totalSites: agentDetails.seo_data.seo_stats.total_sites || 0,
+              activeAudits: agentDetails.seo_data.seo_stats.active_audits || 0,
+              metrics: agentDetails.seo_data.seo_stats.metrics || [],
+          }
+        : {
+              healthScore: 0,
+              totalSites: 0,
+              activeAudits: 0,
+              metrics: [],
           };
 
     // Mock activity data - replace with real data from API
@@ -685,6 +746,7 @@ export default function PortalWorkspace() {
                                 <div className="mx-4 mt-3 mb-2">
                                     <agentComponents.ConfigComponent
                                         setupProgress={setupProgress}
+                                        seoStats={seoStats}
                                         agentDetails={agentDetails}
                                     />
                                 </div>
@@ -925,6 +987,7 @@ export default function PortalWorkspace() {
                         setActiveView={setActiveView}
                         todayActivity={todayActivity}
                         agentDetails={agentDetails}
+                        seoStats={seoStats}
                         setupProgress={setupProgress}
                     />
                 ) : (
@@ -1189,6 +1252,92 @@ export default function PortalWorkspace() {
                                     </>
                                 ) : (
                                     'Send Request'
+                                )}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Site Dialog */}
+            <Dialog
+                open={addSiteDialogOpen}
+                onOpenChange={setAddSiteDialogOpen}
+            >
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Globe className="h-5 w-5 text-green-600" />
+                            Add New Site
+                        </DialogTitle>
+                        <DialogDescription>
+                            Add a website to monitor for SEO performance and insights.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form
+                        onSubmit={handleAddSite}
+                        className="mt-4 space-y-4"
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="site-name">
+                                Site Name{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="site-name"
+                                type="text"
+                                placeholder="My Awesome Website"
+                                value={newSiteName}
+                                onChange={(e) =>
+                                    setNewSiteName(e.target.value)
+                                }
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="site-url">
+                                Website URL{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="site-url"
+                                type="url"
+                                placeholder="https://example.com"
+                                value={newSiteUrl}
+                                onChange={(e) =>
+                                    setNewSiteUrl(e.target.value)
+                                }
+                                required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Enter the full URL including https://
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setAddSiteDialogOpen(false)}
+                                disabled={addSite.isPending}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={
+                                    addSite.isPending ||
+                                    !newSiteName.trim() ||
+                                    !newSiteUrl.trim()
+                                }
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {addSite.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Adding...
+                                    </>
+                                ) : (
+                                    'Add Site'
                                 )}
                             </Button>
                         </div>

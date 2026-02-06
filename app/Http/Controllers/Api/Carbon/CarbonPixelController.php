@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\Carbon;
 
+use App\Http\Controllers\Controller;
 use App\Models\SeoSite;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-class SeoPixelController extends Controller
+class CarbonPixelController extends Controller
 {
     public function script(string $trackingId): Response
     {

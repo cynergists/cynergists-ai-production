@@ -7,6 +7,7 @@ use App\Http\Requests\Portal\UpdateAgentConfigurationRequest;
 use App\Models\AgentAccess;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Portal\Carbon\Config\CarbonSidebarConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -145,6 +146,11 @@ class PortalAgentsController extends Controller
                 $agentAccess->redirect_url = $cynessaAvailable->redirect_url;
                 $agentAccess->tenant_data = $tenant;
 
+                // Include Carbon-specific SEO data for sidebar
+                if (strtolower($agentAccess->agent_name) === 'carbon') {
+                    $agentAccess->seo_data = CarbonSidebarConfig::getConfig($tenant);
+                }
+
                 return response()->json([
                     'agent' => $agentAccess,
                 ]);
@@ -165,6 +171,11 @@ class PortalAgentsController extends Controller
 
         // Include tenant data for sidebar display
         $agentAccess->tenant_data = $tenant;
+
+        // Include Carbon-specific SEO data for sidebar
+        if (strtolower($agentAccess->agent_name) === 'carbon') {
+            $agentAccess->seo_data = CarbonSidebarConfig::getConfig($tenant);
+        }
 
         return response()->json([
             'agent' => $agentAccess,
