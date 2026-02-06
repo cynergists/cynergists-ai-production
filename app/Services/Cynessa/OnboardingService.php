@@ -79,6 +79,7 @@ class OnboardingService
     /**
      * Check if onboarding can be marked complete.
      * All required info must be collected.
+     * Note: Brand assets are optional - nice to have but not required.
      */
     public function canComplete(PortalTenant $tenant): bool
     {
@@ -87,18 +88,36 @@ class OnboardingService
         return ! empty($tenant->company_name)
             && ! empty($settings['industry'])
             && ! empty($settings['services_needed'])
-            && ! empty($settings['brand_tone'])
-            && $this->hasBrandAssets($tenant);
+            && ! empty($settings['brand_tone']);
+        // Brand assets are optional - removed from requirements
     }
 
     /**
      * Mark onboarding as complete.
+     * Only marks complete if all requirements are met.
      */
     public function markComplete(PortalTenant $tenant): void
     {
-        if (! $this->isComplete($tenant)) {
+        // Double-check requirements before marking complete
+        if (! $this->isComplete($tenant) && $this->canComplete($tenant)) {
             $tenant->update([
                 'onboarding_completed_at' => now(),
+            ]);
+
+            \Log::info('Onboarding marked complete', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $tenant->user_id,
+                'company_name' => $tenant->company_name,
+            ]);
+        } elseif (! $this->canComplete($tenant)) {
+            \Log::warning('Attempted to mark onboarding complete but requirements not met', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $tenant->user_id,
+                'has_company_name' => ! empty($tenant->company_name),
+                'has_industry' => ! empty(($tenant->settings ?? [])['industry'] ?? null),
+                'has_services' => ! empty(($tenant->settings ?? [])['services_needed'] ?? null),
+                'has_brand_tone' => ! empty(($tenant->settings ?? [])['brand_tone'] ?? null),
+                'has_assets' => $this->hasBrandAssets($tenant),
             ]);
         }
     }

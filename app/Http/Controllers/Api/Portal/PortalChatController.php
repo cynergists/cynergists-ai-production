@@ -10,6 +10,7 @@ use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,7 @@ class PortalChatController extends Controller
 {
     public function __construct(
         private ApexAgentHandler $apexAgentHandler,
+        private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private OnboardingService $onboardingService
     ) {}
@@ -196,6 +198,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Carbon agent
+        if (strtolower($agentAccess->agent_name) === 'carbon') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->carbonAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
