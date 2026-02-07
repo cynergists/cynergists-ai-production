@@ -15,6 +15,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
+        "resend/resend-php": "^1.1",
         "square/square": "^44.0"
     },
     "require-dev": {
