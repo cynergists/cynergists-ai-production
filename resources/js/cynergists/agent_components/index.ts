@@ -8,6 +8,9 @@ import CarbonSidebar from './carbon/CarbonSidebar';
 import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
+import { LunaChat } from './luna/LunaChat';
+import { LunaConfig } from './luna/LunaConfig';
+import LunaSidebar from './luna/LunaSidebar';
 
 interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
@@ -31,6 +34,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: CarbonConfig,
         SidebarComponent: CarbonSidebar,
     },
+    luna: {
+        ChatComponent: LunaChat,
+        ConfigComponent: LunaConfig,
+        SidebarComponent: LunaSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -48,4 +56,7 @@ export {
     CynessaChat,
     CynessaConfig,
     CynessaSidebar,
+    LunaChat,
+    LunaConfig,
+    LunaSidebar,
 };

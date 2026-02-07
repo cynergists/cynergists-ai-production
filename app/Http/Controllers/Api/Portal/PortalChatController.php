@@ -7,12 +7,14 @@ use App\Http\Requests\Portal\SendMessageRequest;
 use App\Http\Requests\Portal\UploadFileRequest;
 use App\Models\AgentAccess;
 use App\Models\AgentConversation;
+use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Luna\LunaAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +26,7 @@ class PortalChatController extends Controller
         private ApexAgentHandler $apexAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private LunaAgentHandler $lunaAgentHandler,
         private OnboardingService $onboardingService
     ) {}
 
@@ -212,6 +215,17 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Luna agent
+        if (strtolower($agentAccess->agent_name) === 'luna') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->lunaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Default response for other agents
         return sprintf(
             "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
@@ -347,5 +361,39 @@ class PortalChatController extends Controller
             'success' => true,
             'deleted' => $deleted > 0,
         ]);
+    }
+
+    /**
+     * Check the status of a pending Luna image generation.
+     */
+    public function lunaImageStatus(Request $request, string $imageId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $image = LunaGeneratedImage::query()
+            ->where('id', $imageId)
+            ->where('user_id', (string) $user->id)
+            ->first();
+
+        if (! $image) {
+            return response()->json(['error' => 'Image not found'], 404);
+        }
+
+        $data = [
+            'status' => $image->status,
+        ];
+
+        if ($image->status === 'completed') {
+            $data['public_url'] = $image->public_url;
+        }
+
+        if ($image->status === 'failed') {
+            $data['error_message'] = $image->error_message ?? 'Image generation failed. Please try again.';
+        }
+
+        return response()->json($data);
     }
 }

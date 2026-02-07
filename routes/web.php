@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\Api\AdminDataController;
 use App\Http\Controllers\Api\AiAgentMediaController;
-use App\Http\Controllers\Api\PartnerDashboardController;
-use App\Http\Controllers\Api\PartnerSettingsController;
-use App\Http\Controllers\Api\PaymentSettingsController;
 use App\Http\Controllers\Api\Carbon\CarbonController;
 use App\Http\Controllers\Api\Carbon\CarbonPixelController;
 use App\Http\Controllers\Api\Carbon\CarbonReportController;
+use App\Http\Controllers\Api\PartnerDashboardController;
+use App\Http\Controllers\Api\PartnerSettingsController;
+use App\Http\Controllers\Api\PaymentSettingsController;
 use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
 use App\Http\Controllers\Api\Portal\PortalBillingController;
@@ -193,6 +193,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
         Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
         Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
+        Route::get('/luna/images/{imageId}/status', [PortalChatController::class, 'lunaImageStatus']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [CarbonController::class, 'overview']);
         Route::post('/seo/sites', [CarbonController::class, 'storeSite']);

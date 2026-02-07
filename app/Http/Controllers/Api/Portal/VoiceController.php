@@ -8,6 +8,7 @@ use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
+use App\Services\Luna\LunaAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -69,6 +70,17 @@ class VoiceController extends Controller
                 }
             }
 
+            // Ensure availableAgent with apiKeys is loaded for subscription-based agents
+            if (! $agentAccess->relationLoaded('availableAgent') || ! $agentAccess->availableAgent) {
+                $available = PortalAvailableAgent::with('apiKeys')
+                    ->where('name', $agentAccess->agent_name)
+                    ->first();
+
+                if ($available) {
+                    $agentAccess->setRelation('availableAgent', $available);
+                }
+            }
+
             $message = $request->input('message');
 
             // Process message based on agent type
@@ -84,7 +96,15 @@ class VoiceController extends Controller
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
                     conversationHistory: [],
-                    maxTokens: 128  // Very short responses for fast voice interaction
+                    maxTokens: 128
+                ),
+                'luna' => app(LunaAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: [],
+                    maxTokens: 128
                 ),
                 default => "I'm sorry, voice mode is not yet available for this agent."
             };

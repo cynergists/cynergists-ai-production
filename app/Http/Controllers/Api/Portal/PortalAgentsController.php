@@ -8,6 +8,7 @@ use App\Models\AgentAccess;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Portal\Carbon\Config\CarbonSidebarConfig;
+use App\Portal\Luna\Config\LunaSidebarConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -151,6 +152,11 @@ class PortalAgentsController extends Controller
                     $agentAccess->seo_data = CarbonSidebarConfig::getConfig($tenant);
                 }
 
+                // Include Luna-specific image gallery data for sidebar
+                if (strtolower($agentAccess->agent_name) === 'luna') {
+                    $agentAccess->luna_data = LunaSidebarConfig::getConfig($tenant);
+                }
+
                 return response()->json([
                     'agent' => $agentAccess,
                 ]);
@@ -175,6 +181,11 @@ class PortalAgentsController extends Controller
         // Include Carbon-specific SEO data for sidebar
         if (strtolower($agentAccess->agent_name) === 'carbon') {
             $agentAccess->seo_data = CarbonSidebarConfig::getConfig($tenant);
+        }
+
+        // Include Luna-specific image gallery data for sidebar
+        if (strtolower($agentAccess->agent_name) === 'luna') {
+            $agentAccess->luna_data = LunaSidebarConfig::getConfig($tenant);
         }
 
         return response()->json([
