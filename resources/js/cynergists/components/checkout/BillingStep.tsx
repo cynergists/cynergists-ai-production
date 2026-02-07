@@ -255,20 +255,20 @@ const BillingStep = ({
                 const cardStyle = {
                     input: {
                         backgroundColor: 'transparent',
-                        color: '#1a1a1a',
+                        color: '#f0f0f0',
                         fontFamily: 'inherit',
                         fontSize: '14px',
                     },
                     'input::placeholder': {
-                        color: '#6b7280',
+                        color: '#9ca3af',
                     },
                     '.input-container': {
-                        borderColor: '#d1d5db',
+                        borderColor: '#374151',
                         borderWidth: '1px',
                         borderRadius: '6px',
                     },
                     '.input-container.is-focus': {
-                        borderColor: '#6366f1',
+                        borderColor: '#818cf8',
                     },
                     '.input-container.is-error': {
                         borderColor: '#ef4444',
