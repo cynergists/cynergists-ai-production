@@ -1,4 +1,4 @@
-import { ImageIcon, Sparkles, TrendingUp } from 'lucide-react';
+import { ImageIcon, TrendingUp } from 'lucide-react';
 
 interface LunaConfigProps {
     agentDetails?: any;
@@ -45,12 +45,6 @@ export function LunaConfig({ agentDetails }: LunaConfigProps) {
                     <span className="text-sm font-semibold">
                         {stats.this_month}
                     </span>
-                </div>
-            </div>
-            <div className="pt-1">
-                <div className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400">
-                    <Sparkles className="h-3 w-3" />
-                    <span>Powered by Gemini</span>
                 </div>
             </div>
         </div>
