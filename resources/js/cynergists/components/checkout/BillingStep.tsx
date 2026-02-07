@@ -916,6 +916,22 @@ const BillingStep = ({
                                     </div>
                                 )}
 
+                                <div className="space-y-2">
+                                    <Label htmlFor="cardName">
+                                        Cardholder Name
+                                    </Label>
+                                    <Input
+                                        id="cardName"
+                                        type="text"
+                                        value={cardName}
+                                        onChange={(e) =>
+                                            setCardName(e.target.value)
+                                        }
+                                        placeholder="Name on card"
+                                        required
+                                    />
+                                </div>
+
                                 <div
                                     id="square-card-container"
                                     className="min-h-[120px] rounded-lg border border-border bg-background p-4"
