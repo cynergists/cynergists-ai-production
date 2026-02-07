@@ -44,7 +44,8 @@ class UserForm
                             ->icon('heroicon-o-shield-check')
                             ->schema([
                                 CheckboxList::make('roles')
-                                    ->label('Assign roles to control user access throughout the application.')
+                                    ->label('Roles')
+                                    ->helperText('Assign roles to control user access throughout the application.')
                                     ->options([
                                         'admin' => 'Admin - Full access to Filament admin panel',
                                         'client' => 'Client - Portal access for customers',
@@ -53,14 +54,17 @@ class UserForm
                                         'employee' => 'Employee - Internal employee access',
                                     ])
                                     ->columns(2)
-                                    ->bulkToggleable(),
+                                    ->bulkToggleable()
+                                    ->dehydrated(false)
+                                    ->validatedWhenNotDehydrated(false),
                             ]),
 
                         Tab::make('Agents')
                             ->icon('heroicon-o-sparkles')
                             ->schema([
                                 CheckboxList::make('agents')
-                                    ->label('Select AI agents to grant access to this user. A portal tenant and subscription will be created automatically if needed.')
+                                    ->label('Agents')
+                                    ->helperText('Select AI agents to grant access to this user. A portal tenant and subscription will be created automatically if needed.')
                                     ->options(fn () => PortalAvailableAgent::query()
                                         ->where('is_active', true)
                                         ->orderBy('sort_order')
@@ -72,7 +76,9 @@ class UserForm
                                         ->pluck('job_title', 'id')
                                         ->toArray())
                                     ->columns(2)
-                                    ->bulkToggleable(),
+                                    ->bulkToggleable()
+                                    ->dehydrated(false)
+                                    ->validatedWhenNotDehydrated(false),
                             ]),
 
                         Tab::make('Security')
