@@ -57,6 +57,8 @@ class AgentAttachmentService
                 $agents = $agentsQuery->orderBy('sort_order')->get();
 
                 $attachedCount = 0;
+                $newlyAttachedAgents = [];
+
                 foreach ($agents as $available) {
                     $access = AgentAccess::query()
                         ->where('tenant_id', $tenant->id)
@@ -82,9 +84,20 @@ class AgentAttachmentService
                         AgentAccess::query()->create(array_merge($payload, [
                             'id' => (string) Str::uuid(),
                         ]));
+                        $newlyAttachedAgents[] = $available;
                     }
 
                     $attachedCount++;
+                }
+
+                $eventEmailService = app(EventEmailService::class);
+                foreach ($newlyAttachedAgents as $newAgent) {
+                    $eventEmailService->fire('subscription_started', [
+                        'user' => $user,
+                        'agent' => $newAgent,
+                        'subscription' => $subscription,
+                        'tenant' => $tenant,
+                    ]);
                 }
 
                 Log::info('Agents attached to user tenant', [
@@ -123,7 +136,7 @@ class AgentAttachmentService
     private function getOrCreateTenant(User $user, ?string $companyName, ?string $subdomain): PortalTenant
     {
         $tenant = PortalTenant::forUser($user);
-        
+
         if ($tenant) {
             return $tenant;
         }

@@ -16,6 +16,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+const getCsrfToken = (): string | null =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') ?? null;
+
 // Square SDK types
 interface SquareCardLocal {
     attach: (selector: string) => Promise<void>;
@@ -181,6 +186,9 @@ const BillingStep = ({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
+                    ...(getCsrfToken() && {
+                        'X-CSRF-TOKEN': getCsrfToken()!,
+                    }),
                 },
                 credentials: 'include',
             })
@@ -355,6 +363,9 @@ const BillingStep = ({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
+                    ...(getCsrfToken() && {
+                        'X-CSRF-TOKEN': getCsrfToken()!,
+                    }),
                 },
                 credentials: 'include',
                 body: JSON.stringify({ email }),
@@ -400,6 +411,9 @@ const BillingStep = ({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
+                    ...(getCsrfToken() && {
+                        'X-CSRF-TOKEN': getCsrfToken()!,
+                    }),
                 },
                 credentials: 'include',
                 body: JSON.stringify({
@@ -485,6 +499,9 @@ const BillingStep = ({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
+                    ...(getCsrfToken() && {
+                        'X-CSRF-TOKEN': getCsrfToken()!,
+                    }),
                 },
                 credentials: 'include',
                 body: JSON.stringify({

@@ -2,9 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { CheckoutData, TransactionData } from '@/pages/Checkout';
 import {
-    AlertCircle,
     Building,
-    Calendar,
     Check,
     Clock,
     Copy,
@@ -264,133 +262,6 @@ const ConfirmationStep = ({
                             </p>
                         </div>
                     )}
-                </div>
-            </div>
-
-            {/* Important Notice */}
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6">
-                <div className="flex items-start gap-4">
-                    <AlertCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-destructive" />
-                    <div>
-                        <h3 className="font-display mb-2 text-lg font-bold text-foreground">
-                            Important: Service Activation
-                        </h3>
-                        <p className="mb-4 text-foreground">
-                            Your service will <strong>not begin</strong> until
-                            you complete your onboarding call. Scheduling your
-                            onboarding is <strong>required</strong> to activate
-                            your subscription.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Onboarding Scheduling */}
-            <div className="card-glass p-8">
-                <div className="mb-6 flex items-center gap-3">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                        <Calendar className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <h3 className="font-display text-xl font-bold text-foreground">
-                            Final Step: Schedule Your Onboarding Call
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                            This is required to start your services
-                        </p>
-                    </div>
-                </div>
-
-                {/* Calendar Embed Placeholder */}
-                <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-border bg-background/50 p-8">
-                    <Calendar className="mb-4 h-16 w-16 text-muted-foreground" />
-                    <p className="mb-2 text-lg font-medium text-foreground">
-                        Onboarding Calendar
-                    </p>
-                    <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
-                        Calendar embed will be configured here. Select a time
-                        that works best for your 30-minute onboarding call.
-                    </p>
-
-                    {/* Temporary placeholder - will be replaced with actual calendar embed */}
-                    <div className="rounded bg-muted/50 p-4 text-center text-xs text-muted-foreground">
-                        <p className="mb-1 font-medium">
-                            Calendar Integration Pending
-                        </p>
-                        <p>
-                            The calendar embed will be added once you provide
-                            the scheduling tool details.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        Can&apos;t find a time that works?{' '}
-                        <Button
-                            variant="link"
-                            className="h-auto p-0 text-primary"
-                            asChild
-                        >
-                            <a href="mailto:support@cynergists.com">
-                                Contact us directly
-                            </a>
-                        </Button>
-                    </p>
-                </div>
-            </div>
-
-            {/* What's Next */}
-            <div className="card-glass p-6">
-                <h3 className="font-display mb-4 text-lg font-bold text-foreground">
-                    What Happens Next?
-                </h3>
-
-                <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                            1
-                        </div>
-                        <div>
-                            <p className="font-medium text-foreground">
-                                Schedule Your Onboarding
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                Pick a time above to meet with your dedicated
-                                account manager
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
-                            2
-                        </div>
-                        <div>
-                            <p className="font-medium text-foreground">
-                                Complete Onboarding Call
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                We&apos;ll discuss your priorities, set up
-                                communication channels, and assign your team
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
-                            3
-                        </div>
-                        <div>
-                            <p className="font-medium text-foreground">
-                                Start Working Together
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                Your services begin immediately after onboarding
-                                is complete
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
