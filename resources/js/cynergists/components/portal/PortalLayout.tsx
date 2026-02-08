@@ -5,7 +5,7 @@ import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { Loader2, LogOut } from 'lucide-react';
+import { Loader2, LogOut, Shield } from 'lucide-react';
 import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet';
 
@@ -13,10 +13,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     const { props } = usePage<{
         auth: {
             user: { id: number | string; email?: string | null } | null;
+            roles?: string[];
         };
     }>();
     const { subdomain, isTenantDomain } = useSubdomain();
     const user = props.auth?.user ?? null;
+    const isAdmin = props.auth?.roles?.includes('admin') ?? false;
 
     // Fetch tenant by subdomain (for subdomain-based access)
     const { data: tenantBySubdomain, isLoading: tenantBySubdomainLoading } =
@@ -85,8 +87,8 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <title>{portalTitle} | Cynergists</title>
                 </Helmet>
 
-                <div className="flex min-h-screen flex-col bg-background">
-                    <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
+                <div className="flex min-h-screen flex-col bg-background md:h-screen md:max-h-screen md:min-h-0 md:overflow-hidden">
+                    <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
                         <div>
                             <p className="text-xs tracking-wide text-muted-foreground uppercase">
                                 Customer Portal
@@ -108,6 +110,18 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                     {userEmail}
                                 </p>
                             </div>
+                            {isAdmin && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <a href="/admin">
+                                        <Shield className="mr-2 h-4 w-4" />
+                                        Admin
+                                    </a>
+                                </Button>
+                            )}
                             <Button
                                 variant="outline"
                                 size="sm"

@@ -71,7 +71,7 @@ export function CynessaChat({
         <>
             {/* Messages */}
             <ScrollArea
-                className="max-h-[600px] flex-1 px-4 py-3"
+                className="min-h-0 flex-1 px-4 py-3"
                 ref={scrollRef}
             >
                 <div className="space-y-3">
@@ -94,7 +94,7 @@ export function CynessaChat({
                             >
                                 {message.role === 'assistant' &&
                                     agentDetails?.avatar_url && (
-                                        <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-accent-purple/40">
+                                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-accent-purple/40">
                                             <img
                                                 src={agentDetails.avatar_url}
                                                 alt={agentDetails.agent_name}
@@ -138,7 +138,7 @@ export function CynessaChat({
             </ScrollArea>
 
             {/* Input */}
-            <div className="rounded-xl bg-card px-4 pt-3 pb-3">
+            <div className="rounded-xl bg-card px-4 pt-3 pb-6">
                 <form onSubmit={onSend}>
                     <div className="flex items-end gap-2">
                         <input

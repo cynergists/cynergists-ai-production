@@ -551,7 +551,7 @@ export default function PortalWorkspace() {
     };
 
     return (
-        <div className="flex min-h-0 flex-col bg-background">
+        <div className="flex h-full min-h-0 flex-col bg-background">
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-3 lg:flex-row lg:gap-6 lg:p-6">
                 {/* Agents list */}
                 <div className="hidden min-h-0 w-80 shrink-0 flex-col lg:flex">
@@ -791,7 +791,7 @@ export default function PortalWorkspace() {
                             <>
                                 {/* Fallback Generic Chat UI */}
                                 <ScrollArea
-                                    className="max-h-[600px] flex-1 px-4 py-3"
+                                    className="min-h-0 flex-1 px-4 py-3"
                                     ref={scrollRef}
                                 >
                                     {selectedAgentId ? (
