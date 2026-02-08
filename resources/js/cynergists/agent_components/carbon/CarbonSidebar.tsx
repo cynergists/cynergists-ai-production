@@ -16,7 +16,7 @@ import {
 interface CarbonSidebarProps {
     agentDetails: any;
     seoStats?: {
-        healthScore: number;
+        healthScore: number | null;
         totalSites: number;
         activeAudits: number;
         metrics: Array<{
@@ -63,13 +63,14 @@ export default function CarbonSidebar({
     seoStats,
     setActiveView,
 }: CarbonSidebarProps) {
-    // Use default values if seoStats is not provided
     const stats = seoStats || {
-        healthScore: 0,
+        healthScore: null,
         totalSites: 0,
         activeAudits: 0,
         metrics: [],
     };
+
+    const hasHealthScore = stats.healthScore !== null;
 
     // Extract SEO data from agentDetails
     const seoData = agentDetails?.seo_data || {};
@@ -105,14 +106,20 @@ export default function CarbonSidebar({
                                 Health Score
                             </span>
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.healthScore}%
+                        {hasHealthScore ? (
+                            <div className="flex items-baseline gap-2">
+                                <p className="text-2xl font-bold text-green-600">
+                                    {stats.healthScore}%
+                                </p>
+                                <span className="text-xs text-muted-foreground">
+                                    Overall
+                                </span>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                No audits completed yet
                             </p>
-                            <span className="text-xs text-muted-foreground">
-                                Overall
-                            </span>
-                        </div>
+                        )}
                     </div>
 
                     <div>

@@ -40,13 +40,15 @@ class CarbonSidebarConfig
             ->take(10)
             ->get();
 
-        $avgHealthScore = $recentAudits->avg('results.health_score') ?? 75;
+        $avgHealthScore = $recentAudits->isNotEmpty()
+            ? $recentAudits->avg('metrics.health_score')
+            : null;
 
         // Get metric distributions
         $metrics = self::calculateMetrics($recentAudits);
 
         return [
-            'health_score' => round($avgHealthScore),
+            'health_score' => $avgHealthScore !== null ? round($avgHealthScore) : null,
             'total_sites' => $sites->count(),
             'active_audits' => $activeAudits,
             'metrics' => $metrics,
@@ -66,9 +68,9 @@ class CarbonSidebarConfig
             ];
         }
 
-        $good = $audits->filter(fn ($audit) => ($audit->results['health_score'] ?? 0) >= 80)->count();
-        $warning = $audits->filter(fn ($audit) => ($audit->results['health_score'] ?? 0) >= 60 && ($audit->results['health_score'] ?? 0) < 80)->count();
-        $poor = $audits->filter(fn ($audit) => ($audit->results['health_score'] ?? 0) < 60)->count();
+        $good = $audits->filter(fn ($audit) => ($audit->metrics['health_score'] ?? 0) >= 80)->count();
+        $warning = $audits->filter(fn ($audit) => ($audit->metrics['health_score'] ?? 0) >= 60 && ($audit->metrics['health_score'] ?? 0) < 80)->count();
+        $poor = $audits->filter(fn ($audit) => ($audit->metrics['health_score'] ?? 0) < 60)->count();
 
         return [
             ['id' => 'good', 'label' => 'Good', 'value' => $good, 'status' => 'good'],
@@ -136,7 +138,7 @@ class CarbonSidebarConfig
         $recommendations = [];
 
         foreach ($audits as $audit) {
-            $issues = $audit->results['issues'] ?? [];
+            $issues = $audit->metrics['issues'] ?? [];
             foreach ($issues as $issue) {
                 if (($issue['priority'] ?? 'low') === 'high') {
                     $recommendations[] = [
