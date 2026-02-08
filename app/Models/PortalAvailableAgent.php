@@ -24,6 +24,7 @@ class PortalAvailableAgent extends Model
         'redirect_url',
         'description',
         'price',
+        'billing_type',
         'category',
         'website_category',
         'icon',

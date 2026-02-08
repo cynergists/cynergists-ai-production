@@ -29,6 +29,7 @@ class PortalTenant extends Model
         'primary_color',
         'settings',
         'status',
+        'square_customer_id',
         'onboarding_completed_at',
     ];
 

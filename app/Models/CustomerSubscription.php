@@ -24,11 +24,14 @@ class CustomerSubscription extends Model
         'customer_id',
         'product_id',
         'payment_id',
+        'square_subscription_id',
+        'square_card_id',
         'status',
         'tier',
         'start_date',
         'end_date',
         'auto_renew',
+        'billing_type',
         'tenant_id',
     ];
 

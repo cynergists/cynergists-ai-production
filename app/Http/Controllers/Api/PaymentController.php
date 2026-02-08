@@ -3,33 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\AgentAttachmentService;
+use App\Http\Requests\ProcessPaymentRequest;
+use App\Models\PortalTenant;
 use App\Models\User;
+use App\Services\AgentAttachmentService;
+use App\Services\SquareSubscriptionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Square\Environments;
-use Square\Payments\Requests\CreatePaymentRequest;
-use Square\SquareClient;
-use Square\Types\Money;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
-    private SquareClient $squareClient;
-
-    public function __construct()
-    {
-        $baseUrl = config('square.environment') === 'production'
-            ? Environments::Production->value
-            : Environments::Sandbox->value;
-
-        $this->squareClient = new SquareClient(
-            token: config('square.access_token'),
-            options: [
-                'baseUrl' => $baseUrl,
-            ],
-        );
-    }
+    public function __construct(
+        private SquareSubscriptionService $squareService,
+    ) {}
 
     /**
      * Get Square configuration for the frontend.
@@ -44,111 +31,155 @@ class PaymentController extends Controller
     }
 
     /**
-     * Process a Square payment.
+     * Process a payment that may contain both subscription and one-time items.
      */
-    public function processPayment(Request $request): JsonResponse
+    public function processPayment(ProcessPaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'source_id' => ['required', 'string'],
-            'amount' => ['required', 'integer', 'min:1'],
-            'currency' => ['required', 'string', 'size:3'],
-            'customer_email' => ['required', 'email'],
-            'customer_name' => ['required', 'string'],
-            'idempotency_key' => ['required', 'string'],
-            'order_description' => ['nullable', 'string'],
-            'cart_items' => ['nullable', 'array'],
-        ]);
+        $validated = $request->validated();
 
         try {
-            $amountMoney = new Money([
-                'amount' => $validated['amount'],
-                'currency' => $validated['currency'],
-            ]);
+            $user = User::query()->where('email', $validated['customer_email'])->first();
 
-            $paymentRequest = new CreatePaymentRequest([
-                'sourceId' => $validated['source_id'],
-                'idempotencyKey' => $validated['idempotency_key'],
-                'amountMoney' => $amountMoney,
-                'locationId' => config('square.location_id'),
-                'note' => $validated['order_description'] ?? 'Cynergists Order',
-                'buyerEmailAddress' => $validated['customer_email'],
-            ]);
-
-            $response = $this->squareClient->payments->create($paymentRequest);
-
-            $payment = $response->getPayment();
-
-            if ($payment) {
-                // Find or note the user for this purchase
-                $user = User::where('email', $validated['customer_email'])->first();
-
-                Log::info('Square payment successful', [
-                    'payment_id' => $payment->getId(),
+            if (! $user) {
+                Log::warning('Payment attempted but user not found', [
                     'customer_email' => $validated['customer_email'],
-                    'amount' => $validated['amount'],
-                    'user_id' => $user?->id,
-                    'cart_items' => $validated['cart_items'] ?? [],
                 ]);
-
-                // Attach purchased agents to the user's portal tenant
-                if ($user && ! empty($validated['cart_items'])) {
-                    $purchasedAgentNames = array_map(
-                        fn ($item) => $item['name'],
-                        $validated['cart_items']
-                    );
-
-                    // Attach the purchased agents to the user's portal account
-                    $attachmentService = app(AgentAttachmentService::class);
-                    $result = $attachmentService->attachAgentsToUser(
-                        $user->email,
-                        $purchasedAgentNames,
-                        companyName: null,
-                        subdomain: null
-                    );
-
-                    if ($result['success']) {
-                        Log::info('Successfully attached agents to user', [
-                            'user_email' => $user->email,
-                            'agent_names' => $purchasedAgentNames,
-                            'agents_attached' => $result['agents_attached'],
-                            'tenant_id' => $result['tenant_id'],
-                        ]);
-                    } else {
-                        Log::error('Failed to attach agents after payment', [
-                            'user_email' => $user->email,
-                            'agent_names' => $purchasedAgentNames,
-                            'error' => $result['message'],
-                        ]);
-                    }
-                } elseif (! $user) {
-                    Log::warning('Payment successful but user not found for agent attachment', [
-                        'customer_email' => $validated['customer_email'],
-                        'payment_id' => $payment->getId(),
-                    ]);
-                }
 
                 return response()->json([
-                    'success' => true,
-                    'payment_id' => $payment->getId(),
-                    'status' => $payment->getStatus(),
-                    'receipt_url' => $payment->getReceiptUrl(),
-                ]);
+                    'success' => false,
+                    'error' => 'User account not found. Please register first.',
+                ], 422);
             }
 
-            $errors = $response->getErrors() ?? [];
-            $errorMessages = array_map(fn ($e) => $e->getDetail(), $errors);
+            $cartItems = $validated['cart_items'];
+            $monthlyItems = array_filter($cartItems, fn ($item) => $item['billing_type'] === 'monthly');
+            $oneTimeItems = array_filter($cartItems, fn ($item) => $item['billing_type'] === 'one_time');
 
-            Log::error('Square payment failed', [
-                'errors' => $errorMessages,
-                'customer_email' => $validated['customer_email'],
+            $hasMonthly = count($monthlyItems) > 0;
+            $hasOneTime = count($oneTimeItems) > 0;
+
+            /** @var array<array{name: string, billing_type: string, square_subscription_id: ?string, square_card_id: ?string, payment_id: ?string}> */
+            $agentSubscriptionData = [];
+            $paymentId = null;
+            $receiptUrl = null;
+            $cardId = null;
+
+            if ($hasMonthly) {
+                // Get or create tenant for subscription management
+                $tenant = PortalTenant::forUser($user);
+                if (! $tenant) {
+                    $attachmentService = app(AgentAttachmentService::class);
+                    $attachmentService->attachAgentsToUser($user->email, []);
+                    $tenant = PortalTenant::forUser($user);
+                }
+
+                // Create Square Customer if needed
+                $squareCustomerId = $this->squareService->getOrCreateSquareCustomer($tenant, $user);
+
+                // Create Card on File (consumes the token)
+                $cardId = $this->squareService->createCardOnFile($squareCustomerId, $validated['source_id']);
+
+                // Create a subscription for each monthly agent
+                foreach ($monthlyItems as $item) {
+                    $subscriptionResponse = $this->squareService->createSubscription(
+                        $squareCustomerId,
+                        $cardId,
+                        $item['price'] * $item['quantity'],
+                        (string) Str::uuid(),
+                    );
+
+                    $subscription = $subscriptionResponse->getSubscription();
+                    $agentSubscriptionData[] = [
+                        'name' => $item['name'],
+                        'billing_type' => 'monthly',
+                        'square_subscription_id' => $subscription?->getId(),
+                        'square_card_id' => $cardId,
+                        'payment_id' => null,
+                    ];
+                }
+
+                // Process one-time items using the card on file
+                if ($hasOneTime) {
+                    $oneTimeTotal = array_reduce(
+                        $oneTimeItems,
+                        fn ($sum, $item) => $sum + ($item['price'] * $item['quantity']),
+                        0,
+                    );
+
+                    $payment = $this->squareService->processOneTimePayment(
+                        $cardId,
+                        $oneTimeTotal,
+                        $validated['currency'],
+                        (string) Str::uuid(),
+                        $validated['customer_email'],
+                    );
+
+                    $paymentId = $payment->getId();
+                    $receiptUrl = $payment->getReceiptUrl();
+
+                    foreach ($oneTimeItems as $item) {
+                        $agentSubscriptionData[] = [
+                            'name' => $item['name'],
+                            'billing_type' => 'one_time',
+                            'square_subscription_id' => null,
+                            'square_card_id' => null,
+                            'payment_id' => $paymentId,
+                        ];
+                    }
+                }
+            } else {
+                // Only one-time items — use sourceId directly (existing flow)
+                $oneTimeTotal = array_reduce(
+                    $oneTimeItems,
+                    fn ($sum, $item) => $sum + ($item['price'] * $item['quantity']),
+                    0,
+                );
+
+                $payment = $this->squareService->processOneTimePayment(
+                    $validated['source_id'],
+                    $oneTimeTotal,
+                    $validated['currency'],
+                    $validated['idempotency_key'],
+                    $validated['customer_email'],
+                );
+
+                $paymentId = $payment->getId();
+                $receiptUrl = $payment->getReceiptUrl();
+
+                foreach ($oneTimeItems as $item) {
+                    $agentSubscriptionData[] = [
+                        'name' => $item['name'],
+                        'billing_type' => 'one_time',
+                        'square_subscription_id' => null,
+                        'square_card_id' => null,
+                        'payment_id' => $paymentId,
+                    ];
+                }
+            }
+
+            // Attach agents to user with per-agent subscription data
+            $allAgentNames = array_map(fn ($item) => $item['name'], $cartItems);
+            $attachmentService = app(AgentAttachmentService::class);
+            $result = $attachmentService->attachAgentsToUser(
+                $user->email,
+                $allAgentNames,
+                agentSubscriptionData: $agentSubscriptionData,
+            );
+
+            Log::info('Payment processed successfully', [
+                'user_email' => $validated['customer_email'],
+                'payment_id' => $paymentId,
+                'monthly_count' => count($monthlyItems),
+                'one_time_count' => count($oneTimeItems),
+                'agents_attached' => $result['agents_attached'] ?? 0,
             ]);
 
             return response()->json([
-                'success' => false,
-                'error' => $errorMessages[0] ?? 'Payment failed',
-                'errors' => $errorMessages,
-            ], 422);
-
+                'success' => true,
+                'payment_id' => $paymentId,
+                'status' => 'COMPLETED',
+                'receipt_url' => $receiptUrl,
+            ]);
         } catch (\Square\Exceptions\SquareApiException $e) {
             $errors = $e->getErrors() ?? [];
             $errorMessages = array_map(fn ($error) => $error->getDetail(), $errors);
@@ -163,9 +194,8 @@ class PaymentController extends Controller
                 'success' => false,
                 'error' => $errorMessages[0] ?? 'Payment processing failed. Please try again.',
             ], 422);
-
         } catch (\Exception $e) {
-            Log::error('Square payment exception', [
+            Log::error('Payment exception', [
                 'message' => $e->getMessage(),
                 'customer_email' => $validated['customer_email'] ?? 'unknown',
             ]);

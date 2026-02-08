@@ -20,16 +20,18 @@ class AgentAttachmentService
      * @param  array<string>|null  $agentNames  Specific agent names to attach, or null for all active agents
      * @param  string|null  $companyName  Optional company name for new tenant
      * @param  string|null  $subdomain  Optional subdomain for new tenant
+     * @param  array<array{name: string, billing_type: string, square_subscription_id: ?string, square_card_id: ?string, payment_id: ?string}>|null  $agentSubscriptionData  Per-agent subscription metadata from payment processing
      * @return array{success: bool, tenant_id: string|null, agents_attached: int, message: string}
      */
     public function attachAgentsToUser(
         string $email,
         ?array $agentNames = null,
         ?string $companyName = null,
-        ?string $subdomain = null
+        ?string $subdomain = null,
+        ?array $agentSubscriptionData = null,
     ): array {
         try {
-            return DB::transaction(function () use ($email, $agentNames, $companyName, $subdomain) {
+            return DB::transaction(function () use ($email, $agentNames, $companyName, $subdomain, $agentSubscriptionData) {
                 $user = User::query()->where('email', $email)->first();
                 if (! $user) {
                     return [
@@ -43,8 +45,13 @@ class AgentAttachmentService
                 // Get or create tenant
                 $tenant = $this->getOrCreateTenant($user, $companyName, $subdomain);
 
-                // Get or create subscription
-                $subscription = $this->getOrCreateSubscription($tenant);
+                // Index subscription data by agent name for fast lookup
+                $subscriptionDataByName = [];
+                if ($agentSubscriptionData) {
+                    foreach ($agentSubscriptionData as $data) {
+                        $subscriptionDataByName[$data['name']] = $data;
+                    }
+                }
 
                 // Build query for available agents
                 $agentsQuery = PortalAvailableAgent::query()->where('is_active', true);
@@ -56,17 +63,33 @@ class AgentAttachmentService
 
                 $agents = $agentsQuery->orderBy('sort_order')->get();
 
+                // When no per-agent data, use shared subscription (legacy behavior)
+                $sharedSubscription = null;
+                if (! $agentSubscriptionData) {
+                    $sharedSubscription = $this->getOrCreateSubscription($tenant);
+                }
+
                 $attachedCount = 0;
                 $newlyAttachedAgents = [];
 
                 foreach ($agents as $available) {
+                    $agentData = $subscriptionDataByName[$available->name] ?? null;
+
+                    // Create per-agent subscription if subscription data is provided
+                    $subscription = $sharedSubscription;
+                    if ($agentData) {
+                        $subscription = $this->createAgentSubscription($tenant, $available, $agentData);
+                    } elseif (! $subscription) {
+                        $subscription = $this->getOrCreateSubscription($tenant);
+                    }
+
                     $access = AgentAccess::query()
                         ->where('tenant_id', $tenant->id)
                         ->where('agent_name', $available->name)
                         ->first();
 
                     $payload = [
-                        'subscription_id' => $access?->subscription_id ?? $subscription->id,
+                        'subscription_id' => $subscription->id,
                         'customer_id' => $tenant->id,
                         'agent_type' => $available->category ?: 'general',
                         'agent_name' => $available->name,
@@ -95,7 +118,10 @@ class AgentAttachmentService
                     $eventEmailService->fire('subscription_started', [
                         'user' => $user,
                         'agent' => $newAgent,
-                        'subscription' => $subscription,
+                        'subscription' => $sharedSubscription ?? CustomerSubscription::query()
+                            ->where('tenant_id', $tenant->id)
+                            ->where('status', 'active')
+                            ->first(),
                         'tenant' => $tenant,
                     ]);
                 }
@@ -105,6 +131,7 @@ class AgentAttachmentService
                     'tenant_id' => $tenant->id,
                     'agents_attached' => $attachedCount,
                     'agent_names' => $agentNames ?? 'all active',
+                    'has_subscription_data' => $agentSubscriptionData !== null,
                 ]);
 
                 return [
@@ -156,7 +183,7 @@ class AgentAttachmentService
     }
 
     /**
-     * Get existing active subscription or create a new one.
+     * Get existing active subscription or create a new one (legacy shared subscription).
      */
     private function getOrCreateSubscription(PortalTenant $tenant): CustomerSubscription
     {
@@ -179,6 +206,36 @@ class AgentAttachmentService
             'start_date' => now(),
             'end_date' => now()->addYear(),
             'auto_renew' => false,
+            'billing_type' => 'one_time',
+            'tenant_id' => $tenant->id,
+        ]);
+    }
+
+    /**
+     * Create a dedicated subscription record for a specific agent.
+     *
+     * @param  array{name: string, billing_type: string, square_subscription_id: ?string, square_card_id: ?string, payment_id: ?string}  $agentData
+     */
+    private function createAgentSubscription(
+        PortalTenant $tenant,
+        PortalAvailableAgent $agent,
+        array $agentData,
+    ): CustomerSubscription {
+        $isMonthly = $agentData['billing_type'] === 'monthly';
+
+        return CustomerSubscription::query()->create([
+            'id' => (string) Str::uuid(),
+            'customer_id' => $tenant->id,
+            'product_id' => $agent->id,
+            'payment_id' => $agentData['payment_id'],
+            'square_subscription_id' => $agentData['square_subscription_id'],
+            'square_card_id' => $agentData['square_card_id'],
+            'status' => 'active',
+            'tier' => 'starter',
+            'start_date' => now(),
+            'end_date' => $isMonthly ? null : now()->addYear(),
+            'auto_renew' => $isMonthly,
+            'billing_type' => $agentData['billing_type'],
             'tenant_id' => $tenant->id,
         ]);
     }

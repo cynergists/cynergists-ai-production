@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Carbon\CarbonReportController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\Portal\PortalAccountController;
 use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
 use App\Http\Controllers\Api\Portal\PortalBillingController;
@@ -102,6 +103,7 @@ Route::get('/portal/support', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
+Route::get('/portal/account', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Account');
 Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
@@ -210,6 +212,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::put('/profile', [PortalProfileController::class, 'update']);
         Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
         Route::post('/support', [PortalSupportController::class, 'store']);
+        Route::get('/account', [PortalAccountController::class, 'index']);
+        Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);
     });
 });
 

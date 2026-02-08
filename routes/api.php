@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Apex\PendingActionController;
 use App\Http\Controllers\Api\Apex\ProspectController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SquareWebhookController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,13 @@ Route::prefix('payment')->group(function () {
     Route::get('/config', [PaymentController::class, 'getConfig']);
     Route::post('/process', [PaymentController::class, 'processPayment']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Square Webhook Routes
+|--------------------------------------------------------------------------
+*/
+Route::post('/webhooks/square', [SquareWebhookController::class, 'handle']);
 
 /*
 |--------------------------------------------------------------------------

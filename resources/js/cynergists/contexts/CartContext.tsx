@@ -15,6 +15,7 @@ export interface CartItem {
     description: string;
     price: number;
     billingPeriod: 'monthly' | 'annual';
+    billingType?: 'monthly' | 'one_time';
     quantity: number;
     metadata?: {
         hoursPerMonth?: number;

@@ -5,7 +5,7 @@ import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { Loader2, LogOut, Shield } from 'lucide-react';
+import { Loader2, LogOut, Shield, UserCircle } from 'lucide-react';
 import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet';
 
@@ -110,6 +110,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                     {userEmail}
                                 </p>
                             </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                            >
+                                <a href="/portal/account">
+                                    <UserCircle className="mr-2 h-4 w-4" />
+                                    Account
+                                </a>
+                            </Button>
                             {isAdmin && (
                                 <Button
                                     variant="outline"

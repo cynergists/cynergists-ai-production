@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
-import { usePaymentSettings } from '@/hooks/usePaymentSettings';
 import type { TransactionData } from '@/pages/Checkout';
 import {
     CheckCircle2,
@@ -84,7 +83,6 @@ const BillingStep = ({
     user,
 }: BillingStepProps) => {
     const { items, clearCart } = useCart();
-    const { settings: paymentSettings } = usePaymentSettings();
     const squareCardRef = useRef<SquareCardLocal | null>(null);
 
     // Account state
@@ -110,6 +108,9 @@ const BillingStep = ({
     const [squareCard, setSquareCard] = useState<SquareCardLocal | null>(null);
     const [locationId, setLocationId] = useState<string | null>(null);
     const [applicationId, setApplicationId] = useState<string | null>(null);
+    const [squareEnvironment, setSquareEnvironment] = useState<string | null>(
+        null,
+    );
     const [isInitializingCard, setIsInitializingCard] = useState(false);
     const [cardInitError, setCardInitError] = useState<string | null>(null);
 
@@ -119,7 +120,8 @@ const BillingStep = ({
     const [cvv, setCvv] = useState('');
     const [cardName, setCardName] = useState('');
 
-    const isProduction = paymentSettings.paymentMode === 'production';
+    // Use Square SDK when backend Square environment is production
+    const isProduction = squareEnvironment === 'production';
 
     // Calculate totals
     const monthlyItems = items.filter(
@@ -178,33 +180,33 @@ const BillingStep = ({
         }
     }, [isProduction, squareLoaded]);
 
-    // Fetch Square config from Laravel API
+    // Fetch Square config from Laravel API (always, to determine environment)
     useEffect(() => {
-        if (isProduction && (!locationId || !applicationId)) {
-            fetch('/api/payment/config', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    ...(getCsrfToken() && {
-                        'X-CSRF-TOKEN': getCsrfToken()!,
-                    }),
-                },
-                credentials: 'include',
+        if (locationId && applicationId && squareEnvironment) return;
+
+        fetch('/api/payment/config', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(getCsrfToken() && {
+                    'X-CSRF-TOKEN': getCsrfToken()!,
+                }),
+            },
+            credentials: 'include',
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.locationId) setLocationId(data.locationId);
+                if (data.applicationId) setApplicationId(data.applicationId);
+                if (data.environment) setSquareEnvironment(data.environment);
+                if (data.error) setCardInitError(data.error);
             })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.locationId) setLocationId(data.locationId);
-                    if (data.applicationId)
-                        setApplicationId(data.applicationId);
-                    if (data.error) setCardInitError(data.error);
-                })
-                .catch((err) => {
-                    console.error('Failed to fetch Square config:', err);
-                    setCardInitError('Failed to connect to payment service');
-                });
-        }
-    }, [isProduction, locationId, applicationId]);
+            .catch((err) => {
+                console.error('Failed to fetch Square config:', err);
+                setCardInitError('Failed to connect to payment service');
+            });
+    }, []);
 
     // Initialize Square Card
     useEffect(() => {
@@ -485,6 +487,7 @@ const BillingStep = ({
                 description: item.description,
                 quantity: item.quantity,
                 price: Math.round(item.price * 100),
+                billing_type: item.billingType ?? 'monthly',
             }));
 
             const customerEmail = loggedInUser?.email || email;

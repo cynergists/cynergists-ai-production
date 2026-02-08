@@ -9,6 +9,12 @@ class SystemEventSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->seedSubscriptionStarted();
+        $this->seedSubscriptionCancelled();
+    }
+
+    private function seedSubscriptionStarted(): void
+    {
         $event = SystemEvent::query()->updateOrCreate(
             ['slug' => 'subscription_started'],
             [
@@ -23,7 +29,7 @@ class SystemEventSeeder extends Seeder
             [
                 'name' => 'Subscription Welcome Email',
                 'subject' => 'Welcome to {{ agent_name }}!',
-                'body' => $this->clientEmailBody(),
+                'body' => $this->startedClientBody(),
                 'is_active' => true,
             ]
         );
@@ -33,13 +39,45 @@ class SystemEventSeeder extends Seeder
             [
                 'name' => 'New Subscription Admin Notification',
                 'subject' => 'New Subscription: {{ user_name }} started {{ agent_name }}',
-                'body' => $this->adminEmailBody(),
+                'body' => $this->startedAdminBody(),
                 'is_active' => true,
             ]
         );
     }
 
-    private function clientEmailBody(): string
+    private function seedSubscriptionCancelled(): void
+    {
+        $event = SystemEvent::query()->updateOrCreate(
+            ['slug' => 'subscription_cancelled'],
+            [
+                'name' => 'Subscription Cancelled',
+                'description' => 'Fired when a user cancels a subscription for an agent.',
+                'is_active' => true,
+            ]
+        );
+
+        $event->emailTemplates()->updateOrCreate(
+            ['recipient_type' => 'client'],
+            [
+                'name' => 'Subscription Cancellation Confirmation',
+                'subject' => 'Your {{ agent_name }} subscription has been cancelled',
+                'body' => $this->cancelledClientBody(),
+                'is_active' => true,
+            ]
+        );
+
+        $event->emailTemplates()->updateOrCreate(
+            ['recipient_type' => 'admin'],
+            [
+                'name' => 'Subscription Cancellation Admin Notification',
+                'subject' => 'Subscription Cancelled: {{ user_name }} cancelled {{ agent_name }}',
+                'body' => $this->cancelledAdminBody(),
+                'is_active' => true,
+            ]
+        );
+    }
+
+    private function startedClientBody(): string
     {
         return '<h2>Welcome to '.$this->mt('agent_name').', '.$this->mt('user_name').'!</h2>'
             .'<p>Your subscription is active and your new AI agent is ready to work for you.</p>'
@@ -50,7 +88,7 @@ class SystemEventSeeder extends Seeder
             .'<p><a href="'.$this->mt('portal_url').'">Go to Your Agent Portal</a></p>';
     }
 
-    private function adminEmailBody(): string
+    private function startedAdminBody(): string
     {
         return '<h2>New Subscription Started</h2>'
             .'<p><strong>User:</strong> '.$this->mt('user_name').' ('.$this->mt('user_email').')<br>'
@@ -58,6 +96,25 @@ class SystemEventSeeder extends Seeder
             .'<strong>Agent:</strong> '.$this->mt('agent_name').'<br>'
             .'<strong>Tier:</strong> '.$this->mt('tier').'<br>'
             .'<strong>Start Date:</strong> '.$this->mt('start_date').'</p>';
+    }
+
+    private function cancelledClientBody(): string
+    {
+        return '<h2>Subscription Cancelled</h2>'
+            .'<p>Hi '.$this->mt('user_name').',</p>'
+            .'<p>Your subscription for <strong>'.$this->mt('agent_name').'</strong> has been cancelled.</p>'
+            .'<p>If this was a monthly subscription, your access will remain active until the end of your current billing period.</p>'
+            .'<p>If you change your mind, you can re-subscribe at any time from your portal.</p>'
+            .'<p><a href="'.$this->mt('portal_url').'">Go to Your Agent Portal</a></p>';
+    }
+
+    private function cancelledAdminBody(): string
+    {
+        return '<h2>Subscription Cancelled</h2>'
+            .'<p><strong>User:</strong> '.$this->mt('user_name').' ('.$this->mt('user_email').')<br>'
+            .'<strong>Company:</strong> '.$this->mt('company_name').'<br>'
+            .'<strong>Agent:</strong> '.$this->mt('agent_name').'<br>'
+            .'<strong>Tier:</strong> '.$this->mt('tier').'</p>';
     }
 
     /**
