@@ -747,6 +747,16 @@ export default function PortalWorkspace() {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
+                        {/* Agent-Specific View Component (non-chat views) */}
+                        {agentComponents?.ViewComponent &&
+                        activeView !== 'chat' ? (
+                            <agentComponents.ViewComponent
+                                activeView={activeView}
+                                setActiveView={setActiveView}
+                                agentDetails={agentDetails}
+                            />
+                        ) : (
+                            <>
                         {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
                         {selectedAgentId &&
                             agentComponents?.ConfigComponent && (
@@ -982,6 +992,8 @@ export default function PortalWorkspace() {
                                         </Button>
                                     </div>
                                 </div>
+                            </>
+                        )}
                             </>
                         )}
                     </div>

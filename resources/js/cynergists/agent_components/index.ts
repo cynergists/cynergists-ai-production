@@ -2,6 +2,7 @@ import React from 'react';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
+import ApexViewRouter from './apex/views/ApexViewRouter';
 import { CarbonChat } from './carbon/CarbonChat';
 import { CarbonConfig } from './carbon/CarbonConfig';
 import CarbonSidebar from './carbon/CarbonSidebar';
@@ -16,6 +17,7 @@ interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
     ConfigComponent: React.ComponentType<any>;
     SidebarComponent: React.ComponentType<any>;
+    ViewComponent?: React.ComponentType<any>;
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
@@ -28,6 +30,7 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: ApexChat,
         ConfigComponent: ApexConfig,
         SidebarComponent: ApexSidebar,
+        ViewComponent: ApexViewRouter,
     },
     carbon: {
         ChatComponent: CarbonChat,

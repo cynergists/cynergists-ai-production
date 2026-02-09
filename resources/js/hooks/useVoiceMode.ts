@@ -19,7 +19,9 @@ export function useVoiceMode({
 
     const recognitionRef = useRef<any>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const shouldContinueRef = useRef(false); // Track if we should continue listening after speaking
+    const shouldContinueRef = useRef(false);
+    const isInitiatingRef = useRef(false);
+    const isPlayingAudioRef = useRef(false);
 
     const agentIdRef = useRef(agentId);
     const onTranscriptReceivedRef = useRef(onTranscriptReceived);
@@ -32,101 +34,141 @@ export function useVoiceMode({
         onResponseReceivedRef.current = onResponseReceived;
     }, [agentId, onTranscriptReceived, onResponseReceived]);
 
-    // Process voice message
-    const processVoiceMessage = useCallback(async (transcript: string) => {
-        const currentAgentId = agentIdRef.current;
-        if (!currentAgentId || !transcript.trim()) return;
+    // Use refs for functions that reference each other to avoid stale closures
+    const startListeningRef = useRef<() => void>(() => {});
+    const processVoiceMessageRef = useRef<(transcript: string) => void>(
+        () => {},
+    );
 
-        console.log('[Voice] Processing:', transcript);
-        setState('processing');
+    // Play audio response and continue listening when done
+    const playAudioResponse = useCallback((audio: string) => {
+        // Kill recognition BEFORE playing so mic doesn't pick up speaker audio
+        isPlayingAudioRef.current = true;
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                // Ignore
+            }
+            recognitionRef.current = null;
+        }
 
-        try {
-            const response = await apiClient.post<{
-                success: boolean;
-                text: string;
-                audio: string | null;
-            }>(`/api/portal/voice/${currentAgentId}`, {
-                message: transcript,
-            });
+        setState('speaking');
 
-            if (response.success) {
-                onResponseReceivedRef.current?.({ text: response.text });
+        const binaryString = atob(audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(blob);
 
-                if (response.audio) {
-                    // Play audio
-                    setState('speaking');
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
 
-                    const binaryString = atob(response.audio);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    const blob = new Blob([bytes], { type: 'audio/mpeg' });
-                    const audioUrl = URL.createObjectURL(blob);
+        const audioEl = new Audio(audioUrl);
+        audioRef.current = audioEl;
 
-                    if (audioRef.current) {
-                        audioRef.current.pause();
-                    }
+        audioEl.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            audioRef.current = null;
+            isPlayingAudioRef.current = false;
 
-                    const audio = new Audio(audioUrl);
-                    audioRef.current = audio;
-
-                    audio.onended = () => {
-                        URL.revokeObjectURL(audioUrl);
-                        audioRef.current = null;
-
-                        // If we should continue, restart listening
-                        if (shouldContinueRef.current) {
-                            startListening();
-                        } else {
-                            setState('idle');
-                        }
-                    };
-
-                    audio.onerror = () => {
-                        URL.revokeObjectURL(audioUrl);
-                        audioRef.current = null;
-                        toast.error('Failed to play audio');
-
-                        // If we should continue, restart listening
-                        if (shouldContinueRef.current) {
-                            startListening();
-                        } else {
-                            setState('idle');
-                        }
-                    };
-
-                    await audio.play();
-                } else {
-                    // No audio, continue if needed
+            // Brief delay before listening for mic to settle
+            if (shouldContinueRef.current) {
+                setTimeout(() => {
                     if (shouldContinueRef.current) {
-                        startListening();
+                        startListeningRef.current();
+                    } else {
+                        setState('idle');
+                    }
+                }, 300);
+            } else {
+                setState('idle');
+            }
+        };
+
+        audioEl.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            audioRef.current = null;
+            isPlayingAudioRef.current = false;
+            toast.error('Failed to play audio');
+
+            if (shouldContinueRef.current) {
+                startListeningRef.current();
+            } else {
+                setState('idle');
+            }
+        };
+
+        audioEl.play();
+    }, []);
+
+    // Process voice message
+    const processVoiceMessage = useCallback(
+        async (transcript: string) => {
+            const currentAgentId = agentIdRef.current;
+            if (!currentAgentId || !transcript.trim()) return;
+
+            console.log('[Voice] Processing:', transcript);
+            setState('processing');
+
+            try {
+                const response = await apiClient.post<{
+                    success: boolean;
+                    text: string;
+                    audio: string | null;
+                }>(`/api/portal/voice/${currentAgentId}`, {
+                    message: transcript,
+                });
+
+                if (response.success) {
+                    onResponseReceivedRef.current?.({
+                        text: response.text,
+                    });
+
+                    if (response.audio) {
+                        playAudioResponse(response.audio);
+                    } else if (shouldContinueRef.current) {
+                        startListeningRef.current();
                     } else {
                         setState('idle');
                     }
                 }
-            }
-        } catch (error) {
-            console.error('[Voice] Error:', error);
-            toast.error('Failed to process voice message');
+            } catch (error) {
+                console.error('[Voice] Error:', error);
+                toast.error('Failed to process voice message');
 
-            // On error, continue if needed
-            if (shouldContinueRef.current) {
-                startListening();
-            } else {
-                setState('idle');
+                if (shouldContinueRef.current) {
+                    startListeningRef.current();
+                } else {
+                    setState('idle');
+                }
             }
-        }
-    }, []);
+        },
+        [playAudioResponse],
+    );
 
-    // Start listening
+    // Start listening for user speech
     const startListening = useCallback(() => {
+        // Never start listening while audio is playing
+        if (isPlayingAudioRef.current) {
+            console.log('[Voice] Skipping listen — audio is playing');
+            return;
+        }
+
         if (!agentIdRef.current) {
             toast.error('Please select an agent first');
             return;
         }
 
-        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        if (
+            !(
+                'webkitSpeechRecognition' in window ||
+                'SpeechRecognition' in window
+            )
+        ) {
             toast.error('Speech recognition not supported');
             return;
         }
@@ -140,14 +182,17 @@ export function useVoiceMode({
             }
         }
 
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
 
-        recognition.continuous = false; // One utterance at a time
+        recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
+            console.log('[Voice] Listening started');
             setState('listening');
         };
 
@@ -156,7 +201,7 @@ export function useVoiceMode({
             console.log('[Voice] Transcript:', transcript);
 
             onTranscriptReceivedRef.current?.(transcript);
-            processVoiceMessage(transcript);
+            processVoiceMessageRef.current(transcript);
         };
 
         recognition.onerror = (event: any) => {
@@ -165,21 +210,37 @@ export function useVoiceMode({
                 toast.error('Voice recognition failed');
             }
 
-            // On error, retry if we should continue
-            if (shouldContinueRef.current) {
+            // On error, retry if we should continue (but not while audio is playing)
+            if (shouldContinueRef.current && !isPlayingAudioRef.current) {
                 setTimeout(() => {
-                    if (shouldContinueRef.current) {
-                        startListening();
+                    if (
+                        shouldContinueRef.current &&
+                        !isPlayingAudioRef.current
+                    ) {
+                        startListeningRef.current();
                     }
                 }, 500);
-            } else {
+            } else if (!isPlayingAudioRef.current) {
                 setState('idle');
             }
         };
 
         recognition.onend = () => {
-            // Recognition ended, but we're already transitioning to processing
-            // Don't do anything here - let the onresult handler manage the flow
+            // Recognition ended naturally — restart if active and not playing audio
+            if (
+                shouldContinueRef.current &&
+                !isPlayingAudioRef.current &&
+                recognitionRef.current === recognition
+            ) {
+                setTimeout(() => {
+                    if (
+                        shouldContinueRef.current &&
+                        !isPlayingAudioRef.current
+                    ) {
+                        startListeningRef.current();
+                    }
+                }, 300);
+            }
         };
 
         recognitionRef.current = recognition;
@@ -190,11 +251,61 @@ export function useVoiceMode({
             console.error('[Voice] Failed to start recognition:', error);
             setState('idle');
         }
-    }, [processVoiceMessage]);
+    }, []);
+
+    // Keep function refs up to date
+    useEffect(() => {
+        startListeningRef.current = startListening;
+        processVoiceMessageRef.current = processVoiceMessage;
+    }, [startListening, processVoiceMessage]);
+
+    // Initiate conversation - agent speaks first
+    const initiateConversation = useCallback(async () => {
+        const currentAgentId = agentIdRef.current;
+        if (!currentAgentId || isInitiatingRef.current) return;
+        isInitiatingRef.current = true;
+
+        console.log('[Voice] Initiating conversation');
+        setState('processing');
+
+        try {
+            const response = await apiClient.post<{
+                success: boolean;
+                text: string;
+                audio: string | null;
+            }>(`/api/portal/voice/${currentAgentId}`, {
+                initiate: true,
+            });
+
+            if (response.success) {
+                onResponseReceivedRef.current?.({ text: response.text });
+
+                if (response.audio) {
+                    playAudioResponse(response.audio);
+                } else if (shouldContinueRef.current) {
+                    startListeningRef.current();
+                } else {
+                    setState('idle');
+                }
+            }
+        } catch (error) {
+            console.error('[Voice] Initiation error:', error);
+            toast.error('Failed to start voice conversation');
+
+            if (shouldContinueRef.current) {
+                startListeningRef.current();
+            } else {
+                setState('idle');
+            }
+        } finally {
+            isInitiatingRef.current = false;
+        }
+    }, [playAudioResponse]);
 
     // Stop all voice activity
     const stopAll = useCallback(() => {
         shouldContinueRef.current = false;
+        isPlayingAudioRef.current = false;
 
         if (recognitionRef.current) {
             try {
@@ -216,20 +327,21 @@ export function useVoiceMode({
     // Toggle voice mode
     const toggleVoiceMode = useCallback(() => {
         if (state === 'idle') {
-            // Start continuous voice mode
+            // Start continuous voice mode - agent speaks first
             shouldContinueRef.current = true;
-            startListening();
-            toast.info('🎤 Voice mode activated');
+            initiateConversation();
         } else {
             // Stop voice mode
             stopAll();
             toast.info('Voice mode stopped');
         }
-    }, [state, startListening, stopAll]);
+    }, [state, initiateConversation, stopAll]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
+            shouldContinueRef.current = false;
+            isPlayingAudioRef.current = false;
             if (recognitionRef.current) {
                 try {
                     recognitionRef.current.stop();
