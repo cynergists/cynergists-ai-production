@@ -1,5 +1,8 @@
-import { Linkedin } from 'lucide-react';
-import { useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { useQueryClient } from '@tanstack/react-query';
+import { Linkedin, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { LinkedInConnectModal } from './LinkedInConnectModal';
 
 interface LinkedInStatus {
@@ -22,11 +25,79 @@ interface ApexConfigProps {
 
 export function ApexConfig({ agentDetails }: ApexConfigProps) {
     const [connectModalOpen, setConnectModalOpen] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const queryClient = useQueryClient();
 
     const apexData: ApexData | null = agentDetails?.apex_data ?? null;
     const linkedin = apexData?.linkedin;
     const availableAgentId = apexData?.available_agent_id;
     const isConnected = linkedin?.connected === true;
+
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const checkStatus = useCallback(async () => {
+        if (!linkedin?.account_id || !availableAgentId) return;
+        setIsChecking(true);
+        try {
+            await apiClient.get(
+                `/api/apex/linkedin/${linkedin.account_id}/status?agent_id=${availableAgentId}`,
+            );
+            queryClient.invalidateQueries({
+                queryKey: ['agent-details', agentDetails?.id],
+            });
+        } catch {
+            toast.error('Failed to check status');
+        } finally {
+            setIsChecking(false);
+        }
+    }, [linkedin?.account_id, availableAgentId, queryClient, agentDetails?.id]);
+
+    const reconnect = useCallback(async () => {
+        if (!linkedin?.account_id || !availableAgentId) return;
+        setIsReconnecting(true);
+        try {
+            await apiClient.delete(
+                `/api/apex/linkedin/${linkedin.account_id}?agent_id=${availableAgentId}`,
+            );
+            queryClient.invalidateQueries({
+                queryKey: ['agent-details', agentDetails?.id],
+            });
+            setConnectModalOpen(true);
+        } catch {
+            toast.error('Failed to disconnect account');
+        } finally {
+            setIsReconnecting(false);
+        }
+    }, [linkedin?.account_id, availableAgentId, queryClient, agentDetails?.id]);
+
+    // Auto-poll while status is pending
+    useEffect(() => {
+        const isPending = linkedin?.status === 'pending' && !isConnected;
+        if (!isPending || !linkedin?.account_id || !availableAgentId) {
+            return;
+        }
+
+        pollRef.current = setInterval(async () => {
+            try {
+                await apiClient.get(
+                    `/api/apex/linkedin/${linkedin.account_id}/status?agent_id=${availableAgentId}`,
+                );
+                queryClient.invalidateQueries({
+                    queryKey: ['agent-details', agentDetails?.id],
+                });
+            } catch {
+                // Silently continue polling
+            }
+        }, 5000);
+
+        return () => {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+        };
+    }, [linkedin?.status, linkedin?.account_id, isConnected, availableAgentId, queryClient, agentDetails?.id]);
 
     return (
         <div className="space-y-4">
@@ -92,6 +163,32 @@ export function ApexConfig({ agentDetails }: ApexConfigProps) {
                                     ? 'Verification required — check your LinkedIn app'
                                     : 'Connection in progress...'}
                             </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                                onClick={checkStatus}
+                                disabled={isChecking || isReconnecting}
+                                title="Check status"
+                                className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1.5 text-xs font-medium text-yellow-700 transition-colors hover:bg-yellow-500/20"
+                            >
+                                {isChecking ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                    <RefreshCw className="h-3 w-3" />
+                                )}
+                            </button>
+                            <button
+                                onClick={reconnect}
+                                disabled={isReconnecting || isChecking}
+                                title="Reconnect"
+                                className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1.5 text-xs font-medium text-yellow-700 transition-colors hover:bg-yellow-500/20"
+                            >
+                                {isReconnecting ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                    <RotateCcw className="h-3 w-3" />
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
