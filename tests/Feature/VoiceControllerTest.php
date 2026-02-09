@@ -117,10 +117,45 @@ it('requires authentication for voice endpoint', function () {
     $response->assertUnauthorized();
 });
 
-it('validates message is required', function () {
+it('validates message is required when not initiating', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/portal/voice/some-agent-id', []);
 
     $response->assertUnprocessable()
         ->assertJsonValidationErrors('message');
+});
+
+it('initiates voice conversation with agent greeting', function () {
+    $agent = createAgentWithAccess('Apex', $this);
+
+    $this->mock(ApexAgentHandler::class)
+        ->shouldReceive('handle')
+        ->once()
+        ->andReturn("Hey, I'm Apex. Ready to help with your LinkedIn outreach.");
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/portal/voice/{$agent->id}", [
+            'initiate' => true,
+        ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('text', "Hey, I'm Apex. Ready to help with your LinkedIn outreach.");
+});
+
+it('does not require message when initiating voice conversation', function () {
+    $agent = createAgentWithAccess('Cynessa', $this);
+
+    $this->mock(CynessaAgentHandler::class)
+        ->shouldReceive('handle')
+        ->once()
+        ->andReturn('Hi there! I\'m Cynessa.');
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/portal/voice/{$agent->id}", [
+            'initiate' => true,
+        ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('success', true);
 });

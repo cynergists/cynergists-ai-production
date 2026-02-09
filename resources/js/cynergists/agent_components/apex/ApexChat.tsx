@@ -67,7 +67,7 @@ export function ApexChat({
                 <div className="space-y-3">
                     {messages.length === 0 ? (
                         <div className="animate-in py-8 text-center text-sm text-muted-foreground duration-300 fade-in">
-                            Ask Apex about your business growth strategies.
+                            Ask Apex about setting up your campaigns.
                         </div>
                     ) : (
                         messages.map((message, index) => (

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ApexCampaign;
 use App\Models\ApexUserSettings;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
@@ -121,4 +122,41 @@ it('does not trigger escalation when no ESCALATE marker is present', function ()
     $response = 'Just a normal response.';
 
     $reflection->invoke($handler, $response, $this->tenant, $this->user, []);
+});
+
+it('creates an ApexCampaign when onboarding is confirmed via DATA markers', function () {
+    $handler = new ApexAgentHandler(
+        app(SlackEscalationService::class)
+    );
+
+    $reflection = new ReflectionMethod($handler, 'extractAndSaveCampaignData');
+
+    $response = 'All set! [DATA: campaign_goal="promote_event" campaign_type="connect_new" job_titles="Software Developers" locations="Dallas, Texas" industries="tech" autopilot_mode="autopilot_off" reply_handling="manual_review" onboarding_confirmed="true"]';
+
+    $reflection->invoke($handler, $response, $this->user);
+
+    $settings = ApexUserSettings::forUser($this->user);
+    expect($settings->onboarding_completed)->toBeTrue();
+
+    $campaign = ApexCampaign::where('user_id', $this->user->id)->first();
+    expect($campaign)->not->toBeNull()
+        ->and($campaign->status)->toBe('draft')
+        ->and($campaign->campaign_type)->toBe('connection')
+        ->and($campaign->job_titles)->toBe(['Software Developers'])
+        ->and($campaign->locations)->toBe(['Dallas', 'Texas'])
+        ->and($campaign->industries)->toBe(['tech']);
+});
+
+it('does not create a campaign when onboarding is not confirmed', function () {
+    $handler = new ApexAgentHandler(
+        app(SlackEscalationService::class)
+    );
+
+    $reflection = new ReflectionMethod($handler, 'extractAndSaveCampaignData');
+
+    $response = 'Got it! [DATA: campaign_goal="promote_event" job_titles="CTO"]';
+
+    $reflection->invoke($handler, $response, $this->user);
+
+    expect(ApexCampaign::where('user_id', $this->user->id)->count())->toBe(0);
 });

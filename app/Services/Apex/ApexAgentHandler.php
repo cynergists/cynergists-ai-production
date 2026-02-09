@@ -3,12 +3,15 @@
 namespace App\Services\Apex;
 
 use App\Ai\Agents\Apex;
+use App\Models\ApexActivityLog;
+use App\Models\ApexCampaign;
 use App\Models\ApexUserSettings;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\SlackEscalationService;
 use Illuminate\Support\Facades\Log;
+use Laravel\Ai\Exceptions\RateLimitedException;
 
 class ApexAgentHandler
 {
@@ -45,6 +48,13 @@ class ApexAgentHandler
             // Strip internal markers before returning to user
             return $this->stripInternalMarkers($responseText);
 
+        } catch (RateLimitedException $e) {
+            Log::warning('Apex rate limited by AI provider', [
+                'user_id' => $user->id,
+                'tenant_id' => $tenant->id,
+            ]);
+
+            return "I'm getting a lot of requests right now. Give me about 30 seconds and try again.";
         } catch (\Exception $e) {
             Log::error('Laravel AI error in Apex: '.$e->getMessage(), [
                 'exception' => $e,
@@ -111,9 +121,10 @@ class ApexAgentHandler
                 'apex_context_updated_at' => now(),
             ]);
 
-            // Sync onboarding completion flag
+            // Sync onboarding completion flag and create campaign
             if (isset($context['onboarding_confirmed']) && strtolower($context['onboarding_confirmed']) === 'true') {
                 $settings->update(['onboarding_completed' => true]);
+                $this->createCampaignFromContext($context, $user);
             }
 
             // Sync autopilot mode to settings columns
@@ -125,6 +136,81 @@ class ApexAgentHandler
                 ]);
             }
         }
+    }
+
+    /**
+     * Create an ApexCampaign record from onboarding context data.
+     *
+     * @param  array<string, string>  $context
+     */
+    private function createCampaignFromContext(array $context, User $user): void
+    {
+        $campaignTypeMap = [
+            'connect_new' => 'connection',
+            'message_existing' => 'message',
+            'follow_up' => 'follow_up',
+        ];
+
+        $campaignType = $campaignTypeMap[$context['campaign_type'] ?? ''] ?? 'connection';
+
+        $name = $context['campaign_name']
+            ?? ucfirst($context['campaign_goal'] ?? 'Campaign').' - '.now()->format('M j, Y');
+
+        $attributes = [
+            'user_id' => $user->id,
+            'name' => $name,
+            'campaign_type' => $campaignType,
+            'status' => 'draft',
+            'job_titles' => $this->parseToArray($context['job_titles'] ?? null),
+            'locations' => $this->parseToArray($context['locations'] ?? null),
+            'keywords' => $this->parseToArray($context['keywords'] ?? null),
+            'industries' => $this->parseToArray($context['industries'] ?? null),
+        ];
+
+        $optionalStrings = [
+            'connection_message', 'follow_up_message_1', 'follow_up_message_2',
+            'follow_up_message_3', 'booking_method', 'calendar_link',
+        ];
+
+        foreach ($optionalStrings as $field) {
+            if (! empty($context[$field])) {
+                $attributes[$field] = $context[$field];
+            }
+        }
+
+        $optionalIntegers = [
+            'follow_up_delay_days_1', 'follow_up_delay_days_2', 'follow_up_delay_days_3',
+            'daily_connection_limit', 'daily_message_limit',
+        ];
+
+        foreach ($optionalIntegers as $field) {
+            if (isset($context[$field]) && is_numeric($context[$field])) {
+                $attributes[$field] = (int) $context[$field];
+            }
+        }
+
+        $campaign = ApexCampaign::create($attributes);
+
+        ApexActivityLog::log(
+            $user,
+            'campaign_created',
+            "Campaign created via voice onboarding: {$campaign->name}",
+            $campaign
+        );
+    }
+
+    /**
+     * Parse a comma-separated string into an array.
+     *
+     * @return list<string>|null
+     */
+    private function parseToArray(?string $value): ?array
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
     /**
