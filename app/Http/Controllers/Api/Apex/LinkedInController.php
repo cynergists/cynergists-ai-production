@@ -207,6 +207,17 @@ class LinkedInController extends Controller
 
         $status = $this->unipileService->getAccountStatus($linkedInAccount->unipile_account_id);
 
+        // Account no longer exists on Unipile — clean up the orphaned record
+        if ($status && $status['status'] === 'not_found') {
+            $linkedInAccount->delete();
+
+            return response()->json([
+                'account' => null,
+                'unipile_status' => $status,
+                'deleted' => true,
+            ]);
+        }
+
         if ($status) {
             $linkedInAccount->update([
                 'status' => $this->mapUnipileStatus($status['status']),

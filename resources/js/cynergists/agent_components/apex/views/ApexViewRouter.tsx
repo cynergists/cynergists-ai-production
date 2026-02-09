@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import ApexActivityView from './ApexActivityView';
 import ApexCampaignsView from './ApexCampaignsView';
 import ApexConnectionsView from './ApexConnectionsView';
@@ -15,6 +16,20 @@ export default function ApexViewRouter({
     setActiveView,
     agentDetails,
 }: ApexViewRouterProps) {
+    const isLinkedInConnected =
+        agentDetails?.apex_data?.linkedin?.connected === true;
+
+    // Redirect to chat if LinkedIn isn't connected
+    useEffect(() => {
+        if (!isLinkedInConnected) {
+            setActiveView('chat');
+        }
+    }, [isLinkedInConnected, setActiveView]);
+
+    if (!isLinkedInConnected) {
+        return null;
+    }
+
     switch (activeView) {
         case 'dashboard':
             return (

@@ -194,6 +194,23 @@ class UnipileService
                 ];
             }
 
+            // Account no longer exists on Unipile — return a failed status so the caller can clean up
+            if ($response->status() === 404) {
+                Log::warning('Unipile account not found', ['account_id' => $accountId]);
+
+                return [
+                    'status' => 'not_found',
+                    'checkpoint_type' => null,
+                    'profile' => [],
+                ];
+            }
+
+            Log::error('Unipile get account status failed', [
+                'account_id' => $accountId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
             return null;
         } catch (\Exception $e) {
             Log::error('Unipile get account status exception', ['error' => $e->getMessage()]);
