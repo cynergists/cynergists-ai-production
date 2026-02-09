@@ -188,8 +188,8 @@ class PortalChatController extends Controller
                 ->where('name', $agentAccess->agent_name)
                 ->first();
 
-            if ($availableAgent) {
-                return $this->apexAgentHandler->handle($message, $user, $availableAgent);
+            if ($availableAgent && $tenant) {
+                return $this->apexAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 

@@ -72,6 +72,53 @@ class UnipileService
     }
 
     /**
+     * Connect a LinkedIn account using credentials.
+     *
+     * @return array{account_id: string, status: string, checkpoint_type: string|null}|null
+     */
+    public function connectWithCredentials(string $username, string $password): ?array
+    {
+        try {
+            $response = $this->client()->post('/accounts', [
+                'provider' => 'LINKEDIN',
+                'username' => $username,
+                'password' => $password,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                $sourceStatus = $data['sources'][0]['status'] ?? null;
+                $status = $sourceStatus
+                    ?? $data['connection_params']['status']
+                    ?? $data['status']
+                    ?? 'pending';
+
+                $checkpointType = $data['connection_params']['checkpoint']['type']
+                    ?? $data['sources'][0]['checkpoint']['type']
+                    ?? null;
+
+                return [
+                    'account_id' => $data['account_id'] ?? $data['id'] ?? null,
+                    'status' => $status,
+                    'checkpoint_type' => $checkpointType,
+                ];
+            }
+
+            Log::error('Unipile connect with credentials failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Unipile connect with credentials exception', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
      * Get the hosted auth URL for LinkedIn connection.
      *
      * @return array{url: string, account_id: string}|null
@@ -80,9 +127,11 @@ class UnipileService
     {
         try {
             $response = $this->client()->post('/hosted/accounts/link', [
-                'type' => 'LINKEDIN',
-                'api_url' => $redirectUrl,
-                'expiresOn' => now()->addHour()->toIso8601String(),
+                'type' => 'create',
+                'providers' => ['LINKEDIN'],
+                'api_url' => "https://{$this->domain}/api/v1",
+                'success_redirect_url' => $redirectUrl,
+                'expiresOn' => now()->addHour()->format('Y-m-d\TH:i:s.v\Z'),
             ]);
 
             if ($response->successful()) {
@@ -118,14 +167,29 @@ class UnipileService
             if ($response->successful()) {
                 $data = $response->json();
 
+                // Status lives in sources[].status (e.g., "OK", "ERROR")
+                $sourceStatus = $data['sources'][0]['status'] ?? null;
+                // Fallback to legacy path
+                $status = $sourceStatus
+                    ?? $data['connection_params']['status']
+                    ?? 'unknown';
+
+                $checkpointType = $data['connection_params']['checkpoint']['type']
+                    ?? $data['sources'][0]['checkpoint']['type']
+                    ?? null;
+
+                // Profile info lives in connection_params.im for LinkedIn
+                $im = $data['connection_params']['im'] ?? [];
+                $publicId = $im['publicIdentifier'] ?? null;
+
                 return [
-                    'status' => $data['connection_params']['status'] ?? 'unknown',
-                    'checkpoint_type' => $data['connection_params']['checkpoint']['type'] ?? null,
+                    'status' => $status,
+                    'checkpoint_type' => $checkpointType,
                     'profile' => [
                         'id' => $data['id'] ?? null,
                         'name' => $data['name'] ?? null,
                         'email' => $data['email'] ?? null,
-                        'profile_url' => $data['linkedin_profile_url'] ?? null,
+                        'profile_url' => $publicId ? "https://www.linkedin.com/in/{$publicId}" : null,
                     ],
                 ];
             }
@@ -322,6 +386,36 @@ class UnipileService
             Log::error('Unipile start chat exception', ['error' => $e->getMessage()]);
 
             return null;
+        }
+    }
+
+    /**
+     * Get all chat attendees for an account.
+     *
+     * @return Collection<int, array>
+     */
+    public function getChatAttendees(string $accountId, int $limit = 100, ?string $cursor = null): Collection
+    {
+        try {
+            $params = [
+                'account_id' => $accountId,
+                'limit' => $limit,
+            ];
+            if ($cursor) {
+                $params['cursor'] = $cursor;
+            }
+
+            $response = $this->client()->get('/chat_attendees', $params);
+
+            if ($response->successful()) {
+                return collect($response->json('items') ?? []);
+            }
+
+            return collect();
+        } catch (\Exception $e) {
+            Log::error('Unipile get chat attendees exception', ['error' => $e->getMessage()]);
+
+            return collect();
         }
     }
 
