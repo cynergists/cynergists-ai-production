@@ -11,6 +11,9 @@ import CynessaSidebar from './cynessa/CynessaSidebar';
 import { LunaChat } from './luna/LunaChat';
 import { LunaConfig } from './luna/LunaConfig';
 import LunaSidebar from './luna/LunaSidebar';
+import { MosaicChat } from './mosaic/MosaicChat';
+import { MosaicConfig } from './mosaic/MosaicConfig';
+import MosaicSidebar from './mosaic/MosaicSidebar';
 
 interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
@@ -39,6 +42,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: LunaConfig,
         SidebarComponent: LunaSidebar,
     },
+    mosaic: {
+        ChatComponent: MosaicChat,
+        ConfigComponent: MosaicConfig,
+        SidebarComponent: MosaicSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -59,4 +67,7 @@ export {
     LunaChat,
     LunaConfig,
     LunaSidebar,
+    MosaicChat,
+    MosaicConfig,
+    MosaicSidebar,
 };
