@@ -125,11 +125,18 @@ export function LinkedInConnectModal({
 
             if (response.account.status === 'active') {
                 handleComplete();
-            } else if (response.requires_checkpoint) {
-                setCheckpointType(response.checkpoint_type);
+            } else if (response.requires_checkpoint || response.checkpoint_type) {
+                // Checkpoint required — show code input
+                setCheckpointType(response.checkpoint_type ?? 'OTP');
                 setStep('checkpoint');
+            } else if (response.account.status === 'pending') {
+                // Pending without explicit checkpoint — likely needs a code
+                // Show checkpoint UI as fallback since LinkedIn usually sends a code
+                setCheckpointType('OTP');
+                setStep('checkpoint');
+                pollForStatus(response.account.id);
             } else {
-                // Account is pending — poll for status
+                // Unknown state — poll for status
                 setStep('polling');
                 pollForStatus(response.account.id);
             }
@@ -173,7 +180,7 @@ export function LinkedInConnectModal({
     const checkpointLabel =
         checkpointType === 'IN_APP_VALIDATION'
             ? 'Check your LinkedIn mobile app and approve the sign-in request.'
-            : 'Enter the verification code sent to your email or phone.';
+            : 'LinkedIn has sent a verification code to your email. Enter the 6-digit code below.';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -269,15 +276,17 @@ export function LinkedInConnectModal({
                             </div>
                             {checkpointType !== 'IN_APP_VALIDATION' && (
                                 <div className="space-y-2">
-                                    <Label htmlFor="checkpoint-code">Verification Code</Label>
+                                    <Label htmlFor="checkpoint-code">6-Digit Verification Code</Label>
                                     <Input
                                         id="checkpoint-code"
                                         type="text"
-                                        placeholder="Enter code"
+                                        placeholder="000000"
                                         value={checkpointCode}
-                                        onChange={(e) => setCheckpointCode(e.target.value)}
+                                        onChange={(e) => setCheckpointCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                         required
                                         autoFocus
+                                        maxLength={6}
+                                        className="text-center text-lg tracking-widest"
                                     />
                                 </div>
                             )}

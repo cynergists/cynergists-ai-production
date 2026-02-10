@@ -88,15 +88,30 @@ class UnipileService
             if ($response->successful()) {
                 $data = $response->json();
 
+                Log::info('Unipile connect response', [
+                    'http_status' => $response->status(),
+                    'response_keys' => array_keys($data),
+                    'has_checkpoint' => isset($data['checkpoint']),
+                    'has_connection_params' => isset($data['connection_params']),
+                    'has_sources' => isset($data['sources']),
+                ]);
+
                 $sourceStatus = $data['sources'][0]['status'] ?? null;
                 $status = $sourceStatus
                     ?? $data['connection_params']['status']
                     ?? $data['status']
                     ?? 'pending';
 
-                $checkpointType = $data['connection_params']['checkpoint']['type']
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
                     ?? $data['sources'][0]['checkpoint']['type']
                     ?? null;
+
+                // A 202 response indicates a checkpoint is required
+                if ($response->status() === 202 && ! $checkpointType) {
+                    $checkpointType = 'OTP';
+                    $status = 'pending';
+                }
 
                 return [
                     'account_id' => $data['account_id'] ?? $data['id'] ?? null,
@@ -174,7 +189,8 @@ class UnipileService
                     ?? $data['connection_params']['status']
                     ?? 'unknown';
 
-                $checkpointType = $data['connection_params']['checkpoint']['type']
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
                     ?? $data['sources'][0]['checkpoint']['type']
                     ?? null;
 
