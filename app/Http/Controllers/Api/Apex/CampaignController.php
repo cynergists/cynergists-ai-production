@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Api\Apex;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\Apex\DiscoverProspectsJob;
+use App\Jobs\Apex\ProcessFollowUpsJob;
+use App\Jobs\Apex\RunCampaignJob;
+use App\Jobs\Apex\SyncLinkedInMessagesJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
+use App\Models\PortalAvailableAgent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -58,19 +63,30 @@ class CampaignController extends Controller
         $campaign = ApexCampaign::create([
             ...$validated,
             'user_id' => $request->user()->id,
-            'status' => 'draft',
+            'status' => 'active',
+            'started_at' => now(),
         ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+        }
 
         ApexActivityLog::log(
             $request->user(),
             'campaign_created',
-            "Campaign created: {$campaign->name}",
+            "Campaign created and started: {$campaign->name}",
             $campaign
         );
 
         return response()->json([
             'campaign' => $campaign,
-            'message' => 'Campaign created successfully.',
+            'message' => 'Campaign created and started successfully.',
         ], 201);
     }
 
@@ -177,6 +193,16 @@ class CampaignController extends Controller
             'started_at' => $campaign->started_at ?? now(),
             'paused_at' => null,
         ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+        }
 
         ApexActivityLog::log(
             $request->user(),

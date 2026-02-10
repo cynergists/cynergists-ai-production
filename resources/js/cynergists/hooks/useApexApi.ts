@@ -116,6 +116,12 @@ export function useApexCampaigns() {
         queryKey: ['apex-campaigns'],
         queryFn: () =>
             apiClient.get<{ campaigns: ApexCampaign[] }>('/api/apex/campaigns'),
+        refetchInterval: (query) => {
+            const hasActive = query.state.data?.campaigns?.some(
+                (c) => c.status === 'active',
+            );
+            return hasActive ? 15000 : false;
+        },
     });
 }
 
@@ -287,7 +293,7 @@ export function useCreateCampaign() {
             ),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
-            toast.success('Campaign created');
+            toast.success('Campaign created and started — discovering prospects now');
         },
         onError: () => toast.error('Failed to create campaign'),
     });
