@@ -83,8 +83,9 @@ class RunCampaignJob implements ShouldQueue
 
             $prospect = $campaignProspect->prospect;
 
-            if (! $prospect->linkedin_profile_url) {
-                Log::warning("Prospect {$prospect->id} has no LinkedIn URL, skipping");
+            if (! $prospect->linkedin_profile_id) {
+                Log::warning("Prospect {$prospect->id} has no LinkedIn profile ID, marking as failed");
+                $campaignProspect->update(['status' => 'failed']);
 
                 continue;
             }
@@ -105,6 +106,8 @@ class RunCampaignJob implements ShouldQueue
         }
 
         Log::info("Campaign {$campaign->id} job completed. Processed {$queuedProspects->count()} prospects.");
+
+        $campaign->fresh()->autoCompleteIfDone();
     }
 
     /**
@@ -120,7 +123,7 @@ class RunCampaignJob implements ShouldQueue
 
         $success = $unipileService->sendConnectionRequest(
             $linkedInAccount->unipile_account_id,
-            $prospect->linkedin_profile_url,
+            $prospect->linkedin_profile_id,
             $campaign->connection_message
         );
 
@@ -144,7 +147,8 @@ class RunCampaignJob implements ShouldQueue
                 $prospect
             );
         } else {
-            Log::warning("Failed to send connection to prospect {$prospect->id}");
+            $campaignProspect->update(['status' => 'failed']);
+            Log::warning("Failed to send connection to prospect {$prospect->id}, marked as failed");
         }
     }
 

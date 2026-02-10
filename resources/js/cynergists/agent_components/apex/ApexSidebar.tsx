@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     Lock,
     MessageSquare,
+    Settings,
     Target,
     TrendingUp,
     Users,
@@ -40,6 +41,7 @@ export default function ApexSidebar({
         { key: 'connections', label: 'Connections', icon: Users, requiresLinkedIn: true },
         { key: 'messages', label: 'Messages', icon: MessageSquare, requiresLinkedIn: true },
         { key: 'activity', label: 'Activity Log', icon: Activity, requiresLinkedIn: true },
+        { key: 'settings', label: 'Settings', icon: Settings, requiresLinkedIn: true },
     ];
 
     return (

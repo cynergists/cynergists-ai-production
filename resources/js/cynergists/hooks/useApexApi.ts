@@ -111,6 +111,16 @@ interface PaginatedResponse<T> {
 
 // ─── Query Hooks ─────────────────────────────────────────────────────────────
 
+export function useApexSync(enabled: boolean) {
+    return useQuery({
+        queryKey: ['apex-sync'],
+        queryFn: () => apiClient.post('/api/apex/sync'),
+        enabled,
+        refetchInterval: enabled ? 5 * 60 * 1000 : false,
+        refetchOnWindowFocus: false,
+    });
+}
+
 export function useApexCampaigns() {
     return useQuery({
         queryKey: ['apex-campaigns'],
@@ -120,8 +130,51 @@ export function useApexCampaigns() {
             const hasActive = query.state.data?.campaigns?.some(
                 (c) => c.status === 'active',
             );
-            return hasActive ? 15000 : false;
+            return hasActive ? 5000 : false;
         },
+    });
+}
+
+interface CampaignStats {
+    total_prospects: number;
+    queued: number;
+    connection_sent: number;
+    connected: number;
+    replied: number;
+    meetings_scheduled: number;
+    connections_sent: number;
+    connections_accepted: number;
+    messages_sent: number;
+    replies_received: number;
+    meetings_booked: number;
+    acceptance_rate: number;
+    reply_rate: number;
+}
+
+export function useApexCampaignStats(campaignId: string | null, enabled = true) {
+    return useQuery({
+        queryKey: ['apex-campaign-stats', campaignId],
+        queryFn: () =>
+            apiClient.get<{ stats: CampaignStats }>(
+                `/api/apex/campaigns/${campaignId}/stats`,
+            ),
+        enabled: !!campaignId && enabled,
+        refetchInterval: 5000,
+    });
+}
+
+export function useApexCampaignActivity(
+    campaignId: string | null,
+    enabled = true,
+) {
+    return useQuery({
+        queryKey: ['apex-campaign-activity', campaignId],
+        queryFn: () =>
+            apiClient.get<PaginatedResponse<ApexActivityLog>>(
+                `/api/apex/activity-logs?campaign_id=${campaignId}&per_page=10`,
+            ),
+        enabled: !!campaignId && enabled,
+        refetchInterval: enabled ? 5000 : false,
     });
 }
 
@@ -350,6 +403,56 @@ export function useDeleteCampaign() {
     });
 }
 
+// ─── LinkedIn Account Hooks ──────────────────────────────────────────────────
+
+interface LinkedInAccount {
+    id: string;
+    unipile_account_id: string;
+    linkedin_profile_id: string | null;
+    linkedin_profile_url: string | null;
+    display_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+    status: 'active' | 'pending' | 'disconnected';
+    last_synced_at: string | null;
+    created_at: string;
+}
+
+export function useApexLinkedInAccounts() {
+    return useQuery({
+        queryKey: ['apex-linkedin-accounts'],
+        queryFn: () =>
+            apiClient.get<{ accounts: LinkedInAccount[] }>(
+                '/api/apex/linkedin',
+            ),
+    });
+}
+
+export function useDisconnectLinkedIn() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            accountId,
+            agentId,
+        }: {
+            accountId: string;
+            agentId: string;
+        }) =>
+            apiClient.delete(
+                `/api/apex/linkedin/${accountId}?agent_id=${agentId}`,
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['apex-linkedin-accounts'],
+            });
+            queryClient.invalidateQueries({ queryKey: ['agent-details'] });
+            toast.success('LinkedIn account disconnected');
+        },
+        onError: () => toast.error('Failed to disconnect LinkedIn account'),
+    });
+}
+
 // ─── LinkedIn Chat Hooks ─────────────────────────────────────────────────────
 
 interface LinkedInChat {
@@ -429,6 +532,8 @@ export type {
     ApexPendingAction,
     ApexProspect,
     CampaignFormData,
+    CampaignStats,
+    LinkedInAccount,
     LinkedInChat,
     LinkedInMessage,
     PaginatedResponse,

@@ -307,12 +307,12 @@ class UnipileService
     /**
      * Send a connection request.
      */
-    public function sendConnectionRequest(string $accountId, string $profileUrl, ?string $message = null): bool
+    public function sendConnectionRequest(string $accountId, string $providerId, ?string $message = null): bool
     {
         try {
             $payload = [
                 'account_id' => $accountId,
-                'linkedin_url' => $profileUrl,
+                'provider_id' => $providerId,
             ];
 
             if ($message) {
@@ -320,6 +320,14 @@ class UnipileService
             }
 
             $response = $this->client()->post('/users/invite', $payload);
+
+            if (! $response->successful()) {
+                Log::warning('Unipile send connection request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json() ?? $response->body(),
+                    'provider_id' => $providerId,
+                ]);
+            }
 
             return $response->successful();
         } catch (\Exception $e) {

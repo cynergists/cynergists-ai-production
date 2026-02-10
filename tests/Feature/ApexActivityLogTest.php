@@ -42,6 +42,26 @@ it('filters activity logs by activity_type', function () {
         ->assertJsonCount(2, 'data');
 });
 
+it('filters activity logs by campaign_id', function () {
+    $campaign = ApexCampaign::factory()->create(['user_id' => $this->user->id]);
+    $otherCampaign = ApexCampaign::factory()->create(['user_id' => $this->user->id]);
+
+    ApexActivityLog::factory()->count(3)->create([
+        'user_id' => $this->user->id,
+        'campaign_id' => $campaign->id,
+    ]);
+    ApexActivityLog::factory()->count(2)->create([
+        'user_id' => $this->user->id,
+        'campaign_id' => $otherCampaign->id,
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->getJson("/api/apex/activity-logs?campaign_id={$campaign->id}");
+
+    $response->assertSuccessful()
+        ->assertJsonCount(3, 'data');
+});
+
 it('does not return other users activity logs', function () {
     $otherUser = User::factory()->create();
     ApexActivityLog::factory()->count(3)->create(['user_id' => $otherUser->id]);

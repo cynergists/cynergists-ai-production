@@ -12,6 +12,7 @@ use App\Models\ApexCampaign;
 use App\Models\PortalAvailableAgent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class CampaignController extends Controller
@@ -61,7 +62,7 @@ class CampaignController extends Controller
         ]);
 
         $campaign = ApexCampaign::create([
-            ...$validated,
+            ...array_filter($validated, fn ($value) => ! is_null($value)),
             'user_id' => $request->user()->id,
             'status' => 'active',
             'started_at' => now(),
@@ -72,9 +73,9 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
         }
 
         ApexActivityLog::log(
@@ -200,9 +201,9 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
         }
 
         ApexActivityLog::log(
@@ -244,9 +245,9 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
         }
 
         ApexActivityLog::log(
@@ -328,6 +329,32 @@ class CampaignController extends Controller
             'campaign' => $campaign->fresh(),
             'message' => 'Campaign marked as completed.',
         ]);
+    }
+
+    /**
+     * Trigger a LinkedIn sync for the authenticated user.
+     * Throttled to once per 4 minutes per user.
+     */
+    public function sync(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $cacheKey = "apex_sync_throttle:{$user->id}";
+
+        if (Cache::has($cacheKey)) {
+            return response()->json(['message' => 'Sync already scheduled recently.']);
+        }
+
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if (! $agent) {
+            return response()->json(['error' => 'Apex agent not found.'], 422);
+        }
+
+        SyncLinkedInMessagesJob::dispatch($user, $agent);
+
+        Cache::put($cacheKey, true, now()->addMinutes(4));
+
+        return response()->json(['message' => 'Sync triggered.']);
     }
 
     /**

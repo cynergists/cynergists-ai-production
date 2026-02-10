@@ -109,6 +109,8 @@ class ProcessFollowUpsJob implements ShouldQueue
         }
 
         Log::info("Follow-up job for campaign {$campaign->id} completed. Processed {$prospectsForFollowUp->count()} prospects.");
+
+        $campaign->fresh()->autoCompleteIfDone();
     }
 
     /**

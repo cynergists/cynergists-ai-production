@@ -72,6 +72,7 @@ Route::prefix('apex')->middleware('auth:sanctum')->group(function () {
     Route::post('/campaigns/{campaign}/complete', [CampaignController::class, 'complete']);
     Route::post('/campaigns/{campaign}/restart', [CampaignController::class, 'restart']);
     Route::get('/campaigns/{campaign}/stats', [CampaignController::class, 'stats']);
+    Route::post('/sync', [CampaignController::class, 'sync']);
 
     // Prospects
     Route::apiResource('prospects', ProspectController::class);

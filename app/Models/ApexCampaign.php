@@ -154,6 +154,55 @@ class ApexCampaign extends Model
     }
 
     /**
+     * Auto-complete the campaign if all work is done.
+     * Returns true if the campaign was completed.
+     */
+    public function autoCompleteIfDone(): bool
+    {
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        $hasQueuedProspects = $this->campaignProspects()
+            ->where('status', 'queued')
+            ->exists();
+
+        if ($hasQueuedProspects) {
+            return false;
+        }
+
+        $hasPendingFollowUps = $this->campaignProspects()
+            ->whereNotNull('next_follow_up_at')
+            ->exists();
+
+        if ($hasPendingFollowUps) {
+            return false;
+        }
+
+        $hasPendingActions = $this->pendingActions()
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingActions) {
+            return false;
+        }
+
+        $this->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        ApexActivityLog::log(
+            $this->user,
+            'campaign_completed',
+            "Campaign auto-completed: {$this->name}",
+            $this
+        );
+
+        return true;
+    }
+
+    /**
      * Calculate the acceptance rate.
      */
     public function getAcceptanceRateAttribute(): float
