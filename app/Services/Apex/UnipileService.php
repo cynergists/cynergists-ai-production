@@ -463,20 +463,38 @@ class UnipileService
     /**
      * Search for LinkedIn profiles.
      *
+     * @param  array<string, mixed>  $filters  Unipile search body (keywords, role, etc.)
      * @return Collection<int, array>
      */
     public function searchProfiles(string $accountId, array $filters, int $limit = 25): Collection
     {
         try {
-            $response = $this->client()->post('/linkedin/search/people', [
+            $body = array_merge([
+                'api' => 'classic',
+                'category' => 'people',
+            ], $filters);
+
+            Log::info('Unipile searchProfiles request', [
                 'account_id' => $accountId,
-                'limit' => $limit,
-                ...$filters,
+                'body' => $body,
             ]);
 
+            $response = $this->client()->post(
+                "/linkedin/search?account_id={$accountId}",
+                $body
+            );
+
             if ($response->successful()) {
-                return collect($response->json('items') ?? []);
+                $items = collect($response->json('items') ?? []);
+                Log::info('Unipile searchProfiles returned', ['count' => $items->count()]);
+
+                return $items;
             }
+
+            Log::warning('Unipile search profiles failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return collect();
         } catch (\Exception $e) {
