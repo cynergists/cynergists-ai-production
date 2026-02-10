@@ -24,5 +24,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CynergistSeeder::class);
         $this->call(PortalAvailableAgentsSeeder::class);
+        $this->call(BriggsTrainingScenarioSeeder::class);
     }
 }

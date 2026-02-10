@@ -8,6 +8,7 @@ use App\Models\AgentAccess;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Portal\Apex\Config\ApexSidebarConfig;
+use App\Portal\Briggs\Config\BriggsSidebarConfig;
 use App\Portal\Carbon\Config\CarbonSidebarConfig;
 use App\Portal\Luna\Config\LunaSidebarConfig;
 use Illuminate\Http\JsonResponse;
@@ -163,6 +164,11 @@ class PortalAgentsController extends Controller
                     $agentAccess->apex_data = ApexSidebarConfig::getConfig($tenant);
                 }
 
+                // Include Briggs-specific training data for sidebar
+                if (strtolower($agentAccess->agent_name) === 'briggs') {
+                    $agentAccess->briggs_data = BriggsSidebarConfig::getConfig($tenant);
+                }
+
                 return response()->json([
                     'agent' => $agentAccess,
                 ]);
@@ -197,6 +203,11 @@ class PortalAgentsController extends Controller
         // Include Apex-specific LinkedIn data for sidebar
         if (strtolower($agentAccess->agent_name) === 'apex') {
             $agentAccess->apex_data = ApexSidebarConfig::getConfig($tenant);
+        }
+
+        // Include Briggs-specific training data for sidebar
+        if (strtolower($agentAccess->agent_name) === 'briggs') {
+            $agentAccess->briggs_data = BriggsSidebarConfig::getConfig($tenant);
         }
 
         return response()->json([

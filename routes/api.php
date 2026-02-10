@@ -94,6 +94,17 @@ Route::prefix('apex')->middleware('auth:sanctum')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Briggs API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('briggs')->middleware('auth:sanctum')->group(function () {
+    Route::get('/scenarios', [\App\Http\Controllers\Api\Briggs\BriggsController::class, 'scenarios']);
+    Route::get('/sessions', [\App\Http\Controllers\Api\Briggs\BriggsController::class, 'sessions']);
+    Route::get('/sessions/{session}', [\App\Http\Controllers\Api\Briggs\BriggsController::class, 'sessionDetail']);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Voice API Routes
 |--------------------------------------------------------------------------
 */
