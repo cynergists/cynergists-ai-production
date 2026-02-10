@@ -241,8 +241,16 @@ class UnipileService
     public function solveCheckpoint(string $accountId, string $code): bool
     {
         try {
-            $response = $this->client()->post("/accounts/{$accountId}/checkpoint", [
+            $response = $this->client()->post('/accounts/checkpoint', [
+                'provider' => 'LINKEDIN',
+                'account_id' => $accountId,
                 'code' => $code,
+            ]);
+
+            Log::info('Unipile solve checkpoint response', [
+                'account_id' => $accountId,
+                'http_status' => $response->status(),
+                'body' => $response->json(),
             ]);
 
             return $response->successful();
