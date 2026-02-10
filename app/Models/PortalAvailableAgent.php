@@ -12,6 +12,52 @@ class PortalAvailableAgent extends Model
     /** @use HasFactory<\Database\Factories\PortalAvailableAgentFactory> */
     use HasFactory, HasUuids;
 
+    protected static function booted(): void
+    {
+        static::saving(function (PortalAvailableAgent $agent) {
+            // Automatically set base price from lowest tier when saving
+            if (! empty($agent->tiers) && is_array($agent->tiers)) {
+                $prices = array_map(
+                    fn ($tier) => is_numeric($tier['price'] ?? null) ? (float) $tier['price'] : PHP_FLOAT_MAX,
+                    $agent->tiers
+                );
+                $lowestPrice = min($prices);
+                if ($lowestPrice < PHP_FLOAT_MAX) {
+                    $agent->price = $lowestPrice;
+                }
+            }
+
+            // Process card_media: convert file paths to full URLs
+            if (! empty($agent->card_media) && is_array($agent->card_media)) {
+                $agent->card_media = self::processMediaArray($agent->card_media);
+            }
+
+            // Process product_media: convert file paths to full URLs
+            if (! empty($agent->product_media) && is_array($agent->product_media)) {
+                $agent->product_media = self::processMediaArray($agent->product_media);
+            }
+        });
+    }
+
+    /**
+     * Process media array to convert file uploads to storage URLs.
+     * Keeps both url and file fields separate.
+     *
+     * @param  array<int, array<string, mixed>>  $mediaArray
+     * @return array<int, array<string, mixed>>
+     */
+    private static function processMediaArray(array $mediaArray): array
+    {
+        return array_map(function ($item) {
+            // Convert file path to full storage URL if uploaded
+            if (! empty($item['file'])) {
+                $item['file'] = '/storage/'.$item['file'];
+            }
+
+            return $item;
+        }, $mediaArray);
+    }
+
     /**
      * @var list<string>
      */

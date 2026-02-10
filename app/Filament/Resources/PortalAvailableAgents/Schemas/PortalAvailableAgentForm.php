@@ -5,9 +5,9 @@ namespace App\Filament\Resources\PortalAvailableAgents\Schemas;
 use App\Models\AgentApiKey;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
@@ -110,40 +110,44 @@ class PortalAvailableAgentForm
                                                     ->placeholder('Add integration')
                                                     ->helperText('e.g., Slack, Zapier, etc.'),
                                             ]),
-                                        Section::make('Tiers')
-                                            ->schema([
-                                                Textarea::make('tiers')
-                                                    ->rows(5)
-                                                    ->placeholder('JSON array of tier configurations')
-                                                    ->helperText('Advanced: Enter as JSON array'),
-                                            ]),
                                     ]),
                             ]),
 
                         Tab::make('Pricing & Category')
                             ->icon('heroicon-o-currency-dollar')
                             ->schema([
-                                Grid::make(2)
+                                Section::make('Pricing')
+                                    ->description('Add pricing tiers for this agent. The lowest price will be shown on the marketplace. Add 2+ tiers to enable the pricing slider.')
                                     ->schema([
-                                        Section::make('Pricing')
+                                        Repeater::make('tiers')
                                             ->schema([
                                                 TextInput::make('price')
                                                     ->required()
                                                     ->numeric()
-                                                    ->default(0.0)
                                                     ->prefix('$')
-                                                    ->step(0.01),
-                                            ]),
-                                        Section::make('Categorization')
-                                            ->schema([
-                                                TextInput::make('category')
+                                                    ->step(1)
+                                                    ->placeholder('247'),
+                                                TextInput::make('description')
                                                     ->required()
-                                                    ->default('general')
-                                                    ->placeholder('e.g., marketing, sales, support'),
-                                                TagsInput::make('website_category')
-                                                    ->placeholder('Add category')
-                                                    ->helperText('Categories for website display'),
-                                            ]),
+                                                    ->maxLength(255)
+                                                    ->placeholder('e.g., Single Campaign, Basic Features'),
+                                            ])
+                                            ->columns(2)
+                                            ->defaultItems(1)
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->itemLabel(fn (array $state): ?string => $state['price'] ? '$'.number_format((float) $state['price']).' - '.($state['description'] ?? '') : null)
+                                            ->addActionLabel('Add Tier'),
+                                    ]),
+                                Section::make('Categorization')
+                                    ->schema([
+                                        TextInput::make('category')
+                                            ->required()
+                                            ->default('general')
+                                            ->placeholder('e.g., marketing, sales, support'),
+                                        TagsInput::make('website_category')
+                                            ->placeholder('Add category')
+                                            ->helperText('e.g., New, Popular, Software'),
                                     ]),
                             ]),
 
@@ -178,24 +182,69 @@ class PortalAvailableAgentForm
                                                     ->helperText('Show as popular/featured'),
                                             ]),
                                     ]),
-                                Section::make('Media URLs')
-                                    ->description('External URLs for media assets')
+                                Section::make('Card Media')
+                                    ->description('Images and videos shown on the marketplace card (carousel). Use URL for external links or upload a file.')
                                     ->schema([
-                                        Textarea::make('image_url')
-                                            ->rows(2)
-                                            ->placeholder('https://...')
-                                            ->columnSpanFull(),
-                                        Grid::make(2)
+                                        Repeater::make('card_media')
                                             ->schema([
-                                                Textarea::make('card_media')
-                                                    ->rows(3)
-                                                    ->placeholder('JSON for card media')
-                                                    ->helperText('Card display media config'),
-                                                Textarea::make('product_media')
-                                                    ->rows(3)
-                                                    ->placeholder('JSON for product media')
-                                                    ->helperText('Product page media config'),
-                                            ]),
+                                                TextInput::make('url')
+                                                    ->label('URL or Upload')
+                                                    ->placeholder('https://... or upload below')
+                                                    ->helperText('Paste external URL here'),
+                                                FileUpload::make('file')
+                                                    ->label('Or Upload File')
+                                                    ->disk('public')
+                                                    ->directory('agents/card-media')
+                                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
+                                                    ->maxSize(51200)
+                                                    ->imagePreviewHeight('100')
+                                                    ->helperText('Upload overwrites URL'),
+                                                \Filament\Forms\Components\Select::make('type')
+                                                    ->options([
+                                                        'image' => 'Image',
+                                                        'video' => 'Video',
+                                                    ])
+                                                    ->required()
+                                                    ->default('image'),
+                                            ])
+                                            ->columns(3)
+                                            ->defaultItems(0)
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->itemLabel(fn (array $state): ?string => isset($state['type']) ? ucfirst($state['type']).': '.($state['url'] ?? $state['file'] ?? '') : 'Media')
+                                            ->addActionLabel('Add Media'),
+                                    ]),
+                                Section::make('Product Page Media')
+                                    ->description('Images and videos shown on the product detail page. Use URL for external links or upload a file.')
+                                    ->schema([
+                                        Repeater::make('product_media')
+                                            ->schema([
+                                                TextInput::make('url')
+                                                    ->label('URL or Upload')
+                                                    ->placeholder('https://... or upload below')
+                                                    ->helperText('Paste external URL here'),
+                                                FileUpload::make('file')
+                                                    ->label('Or Upload File')
+                                                    ->disk('public')
+                                                    ->directory('agents/product-media')
+                                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
+                                                    ->maxSize(51200)
+                                                    ->imagePreviewHeight('100')
+                                                    ->helperText('Upload overwrites URL'),
+                                                \Filament\Forms\Components\Select::make('type')
+                                                    ->options([
+                                                        'image' => 'Image',
+                                                        'video' => 'Video',
+                                                    ])
+                                                    ->required()
+                                                    ->default('image'),
+                                            ])
+                                            ->columns(3)
+                                            ->defaultItems(0)
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->itemLabel(fn (array $state): ?string => isset($state['type']) ? ucfirst($state['type']).': '.($state['url'] ?? $state['file'] ?? '') : 'Media')
+                                            ->addActionLabel('Add Media'),
                                     ]),
                             ]),
 

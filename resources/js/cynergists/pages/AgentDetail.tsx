@@ -20,8 +20,16 @@ import {
 } from 'lucide-react';
 
 interface MediaItem {
-    url: string;
+    url?: string;
+    file?: string;
     type: 'image' | 'video';
+}
+
+/**
+ * Get the URL for a media item (prefers file upload over external URL)
+ */
+function getMediaUrl(media: MediaItem): string {
+    return media.file || media.url || '';
 }
 
 interface AgentTier {
@@ -157,9 +165,9 @@ export default function AgentDetail({ slug }: { slug: string }) {
                                     {(() => {
                                         const primaryMedia =
                                             agent.product_media?.[0];
-                                        const displayUrl =
-                                            primaryMedia?.url ||
-                                            agent.image_url;
+                                        const displayUrl = primaryMedia
+                                            ? getMediaUrl(primaryMedia)
+                                            : agent.image_url;
                                         const isVideo =
                                             primaryMedia?.type === 'video';
 
