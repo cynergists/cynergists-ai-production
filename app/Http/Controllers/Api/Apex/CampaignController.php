@@ -182,9 +182,9 @@ class CampaignController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        if (! in_array($campaign->status, ['draft', 'paused'])) {
+        if (! in_array($campaign->status, ['draft', 'paused', 'completed'])) {
             return response()->json([
-                'error' => 'Campaign cannot be started. It must be in draft or paused status.',
+                'error' => 'Campaign cannot be started from its current status.',
             ], 422);
         }
 
@@ -192,6 +192,7 @@ class CampaignController extends Controller
             'status' => 'active',
             'started_at' => $campaign->started_at ?? now(),
             'paused_at' => null,
+            'completed_at' => null,
         ]);
 
         // Dispatch campaign jobs immediately
@@ -214,6 +215,50 @@ class CampaignController extends Controller
         return response()->json([
             'campaign' => $campaign->fresh(),
             'message' => 'Campaign started successfully.',
+        ]);
+    }
+
+    /**
+     * Restart a completed campaign.
+     */
+    public function restart(Request $request, string $id): JsonResponse
+    {
+        $campaign = ApexCampaign::query()
+            ->where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if ($campaign->status !== 'completed') {
+            return response()->json([
+                'error' => 'Only completed campaigns can be restarted.',
+            ], 422);
+        }
+
+        $campaign->update([
+            'status' => 'active',
+            'completed_at' => null,
+        ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+        }
+
+        ApexActivityLog::log(
+            $request->user(),
+            'campaign_restarted',
+            "Campaign restarted: {$campaign->name}",
+            $campaign
+        );
+
+        return response()->json([
+            'campaign' => $campaign->fresh(),
+            'message' => 'Campaign restarted successfully.',
         ]);
     }
 

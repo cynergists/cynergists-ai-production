@@ -34,7 +34,7 @@ describe('Campaign API', function () {
 
         $response->assertCreated()
             ->assertJsonPath('campaign.name', 'Test Campaign')
-            ->assertJsonPath('campaign.status', 'draft');
+            ->assertJsonPath('campaign.status', 'active');
 
         $this->assertDatabaseHas('apex_campaigns', [
             'user_id' => $this->user->id,

@@ -282,6 +282,20 @@ export function useCompleteCampaign() {
     });
 }
 
+export function useRestartCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (campaignId: string) =>
+            apiClient.post(`/api/apex/campaigns/${campaignId}/restart`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
+            toast.success('Campaign restarted');
+        },
+        onError: () => toast.error('Failed to restart campaign'),
+    });
+}
+
 export function useCreateCampaign() {
     const queryClient = useQueryClient();
 

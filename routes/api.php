@@ -70,6 +70,7 @@ Route::prefix('apex')->middleware('auth:sanctum')->group(function () {
     Route::post('/campaigns/{campaign}/start', [CampaignController::class, 'start']);
     Route::post('/campaigns/{campaign}/pause', [CampaignController::class, 'pause']);
     Route::post('/campaigns/{campaign}/complete', [CampaignController::class, 'complete']);
+    Route::post('/campaigns/{campaign}/restart', [CampaignController::class, 'restart']);
     Route::get('/campaigns/{campaign}/stats', [CampaignController::class, 'stats']);
 
     // Prospects

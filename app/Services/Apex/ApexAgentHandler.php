@@ -3,6 +3,10 @@
 namespace App\Services\Apex;
 
 use App\Ai\Agents\Apex;
+use App\Jobs\Apex\DiscoverProspectsJob;
+use App\Jobs\Apex\ProcessFollowUpsJob;
+use App\Jobs\Apex\RunCampaignJob;
+use App\Jobs\Apex\SyncLinkedInMessagesJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
 use App\Models\ApexUserSettings;
@@ -160,7 +164,8 @@ class ApexAgentHandler
             'user_id' => $user->id,
             'name' => $name,
             'campaign_type' => $campaignType,
-            'status' => 'draft',
+            'status' => 'active',
+            'started_at' => now(),
             'job_titles' => $this->parseToArray($context['job_titles'] ?? null),
             'locations' => $this->parseToArray($context['locations'] ?? null),
             'keywords' => $this->parseToArray($context['keywords'] ?? null),
@@ -191,10 +196,20 @@ class ApexAgentHandler
 
         $campaign = ApexCampaign::create($attributes);
 
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            SyncLinkedInMessagesJob::dispatch($user, $agent);
+            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
+            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
+            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+        }
+
         ApexActivityLog::log(
             $user,
             'campaign_created',
-            "Campaign created via voice onboarding: {$campaign->name}",
+            "Campaign created and started via onboarding: {$campaign->name}",
             $campaign
         );
     }

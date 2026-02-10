@@ -140,7 +140,7 @@ it('creates an ApexCampaign when onboarding is confirmed via DATA markers', func
 
     $campaign = ApexCampaign::where('user_id', $this->user->id)->first();
     expect($campaign)->not->toBeNull()
-        ->and($campaign->status)->toBe('draft')
+        ->and($campaign->status)->toBe('active')
         ->and($campaign->campaign_type)->toBe('connection')
         ->and($campaign->job_titles)->toBe(['Software Developers'])
         ->and($campaign->locations)->toBe(['Dallas', 'Texas'])

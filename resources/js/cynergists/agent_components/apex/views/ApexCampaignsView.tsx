@@ -4,6 +4,7 @@ import {
     useApexCampaigns,
     useCompleteCampaign,
     usePauseCampaign,
+    useRestartCampaign,
     useStartCampaign,
 } from '@/hooks/useApexApi';
 import {
@@ -14,6 +15,7 @@ import {
     Pencil,
     Play,
     Plus,
+    RotateCcw,
     Target,
     Users,
 } from 'lucide-react';
@@ -37,6 +39,7 @@ export default function ApexCampaignsView({
     const startCampaign = useStartCampaign();
     const pauseCampaign = usePauseCampaign();
     const completeCampaign = useCompleteCampaign();
+    const restartCampaign = useRestartCampaign();
 
     const campaigns = data?.campaigns ?? [];
     const filtered =
@@ -275,6 +278,28 @@ export default function ApexCampaignsView({
                                                 >
                                                     <Play className="h-3 w-3" />
                                                     Resume
+                                                </Button>
+                                            )}
+                                            {campaign.status === 'completed' && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 gap-1 text-xs"
+                                                    onClick={() =>
+                                                        restartCampaign.mutate(
+                                                            campaign.id,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        restartCampaign.isPending
+                                                    }
+                                                >
+                                                    {restartCampaign.isPending ? (
+                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                    ) : (
+                                                        <RotateCcw className="h-3 w-3" />
+                                                    )}
+                                                    Restart
                                                 </Button>
                                             )}
                                         </div>
