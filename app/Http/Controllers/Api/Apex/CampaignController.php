@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Api\Apex;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\Apex\DiscoverProspectsJob;
-use App\Jobs\Apex\ProcessFollowUpsJob;
-use App\Jobs\Apex\RunCampaignJob;
+use App\Jobs\Apex\RunCampaignPipelineJob;
 use App\Jobs\Apex\SyncLinkedInMessagesJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
@@ -73,9 +71,7 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
+            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
         }
 
         ApexActivityLog::log(
@@ -201,9 +197,7 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
+            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
         }
 
         ApexActivityLog::log(
@@ -245,9 +239,7 @@ class CampaignController extends Controller
 
         if ($agent) {
             SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addSeconds(30));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addSeconds(60));
+            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
         }
 
         ApexActivityLog::log(

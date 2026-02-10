@@ -3,10 +3,7 @@
 namespace App\Services\Apex;
 
 use App\Ai\Agents\Apex;
-use App\Jobs\Apex\DiscoverProspectsJob;
-use App\Jobs\Apex\ProcessFollowUpsJob;
-use App\Jobs\Apex\RunCampaignJob;
-use App\Jobs\Apex\SyncLinkedInMessagesJob;
+use App\Jobs\Apex\RunCampaignPipelineJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
 use App\Models\ApexUserSettings;
@@ -222,14 +219,11 @@ class ApexAgentHandler
 
         $campaign = ApexCampaign::create($attributes);
 
-        // Dispatch campaign jobs immediately
+        // Dispatch campaign job immediately
         $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
 
         if ($agent) {
-            SyncLinkedInMessagesJob::dispatch($user, $agent);
-            DiscoverProspectsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(2, 5)));
-            RunCampaignJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(8, 15)));
-            ProcessFollowUpsJob::dispatch($campaign, $agent)->delay(now()->addMinutes(rand(20, 30)));
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
         }
 
         ApexActivityLog::log(

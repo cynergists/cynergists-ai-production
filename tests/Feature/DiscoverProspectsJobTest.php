@@ -1,6 +1,6 @@
 <?php
 
-use App\Jobs\Apex\DiscoverProspectsJob;
+use App\Jobs\Apex\RunCampaignPipelineJob;
 use App\Models\ApexCampaign;
 use App\Models\ApexCampaignProspect;
 use App\Models\ApexLinkedInAccount;
@@ -61,7 +61,7 @@ it('discovers prospects from LinkedIn search results', function () {
     $mock->shouldReceive('isConfigured')->andReturn(true);
     $mock->shouldReceive('searchProfiles')->once()->andReturn($mockResults);
 
-    $job = new DiscoverProspectsJob($this->campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($this->campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     expect(ApexProspect::where('user_id', $this->user->id)->count())->toBe(2);
@@ -100,7 +100,7 @@ it('skips duplicate prospects already in the campaign', function () {
     $mock->shouldReceive('isConfigured')->andReturn(true);
     $mock->shouldReceive('searchProfiles')->once()->andReturn($mockResults);
 
-    $job = new DiscoverProspectsJob($this->campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($this->campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     // Should only create 1 new campaign-prospect, not duplicate the existing one
@@ -128,7 +128,7 @@ it('reuses existing prospect records for known linkedin_profile_id', function ()
     $mock->shouldReceive('isConfigured')->andReturn(true);
     $mock->shouldReceive('searchProfiles')->once()->andReturn($mockResults);
 
-    $job = new DiscoverProspectsJob($this->campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($this->campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     // Should not create a new prospect, should reuse the existing one
@@ -144,7 +144,7 @@ it('skips inactive campaigns', function () {
     $mock = $this->mock(UnipileService::class);
     $mock->shouldNotReceive('searchProfiles');
 
-    $job = new DiscoverProspectsJob($inactiveCampaign, $this->agent);
+    $job = new RunCampaignPipelineJob($inactiveCampaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     expect(ApexCampaignProspect::where('campaign_id', $inactiveCampaign->id)->count())->toBe(0);
@@ -156,7 +156,7 @@ it('skips when no active LinkedIn account', function () {
     $mock = $this->mock(UnipileService::class);
     $mock->shouldNotReceive('searchProfiles');
 
-    $job = new DiscoverProspectsJob($this->campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($this->campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     expect(ApexCampaignProspect::where('campaign_id', $this->campaign->id)->count())->toBe(0);
@@ -176,7 +176,7 @@ it('skips when campaign has no targeting criteria', function () {
     $mock->shouldReceive('isConfigured')->andReturn(true);
     $mock->shouldNotReceive('searchProfiles');
 
-    $job = new DiscoverProspectsJob($emptyCampaign, $this->agent);
+    $job = new RunCampaignPipelineJob($emptyCampaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     expect(ApexCampaignProspect::where('campaign_id', $emptyCampaign->id)->count())->toBe(0);
@@ -202,7 +202,7 @@ it('limits discovery to daily_connection_limit', function () {
         })
         ->andReturn(new Collection([]));
 
-    $job = new DiscoverProspectsJob($campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     expect($limitUsed)->toBe(5);
@@ -223,7 +223,7 @@ it('logs activity when prospects are discovered', function () {
     $mock->shouldReceive('isConfigured')->andReturn(true);
     $mock->shouldReceive('searchProfiles')->once()->andReturn($mockResults);
 
-    $job = new DiscoverProspectsJob($this->campaign, $this->agent);
+    $job = new RunCampaignPipelineJob($this->campaign, $this->agent);
     $job->handle(app(UnipileService::class));
 
     $this->assertDatabaseHas('apex_activity_log', [

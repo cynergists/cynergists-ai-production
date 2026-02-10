@@ -1,9 +1,6 @@
 <?php
 
-use App\Jobs\Apex\DiscoverProspectsJob;
-use App\Jobs\Apex\ProcessFollowUpsJob;
-use App\Jobs\Apex\RunCampaignJob;
-use App\Jobs\Apex\SyncLinkedInMessagesJob;
+use App\Jobs\Apex\RunCampaignPipelineJob;
 use App\Models\ApexCampaign;
 use App\Models\ApexPendingAction;
 use App\Models\PortalAvailableAgent;
@@ -19,7 +16,7 @@ beforeEach(function () {
     Bus::fake();
 });
 
-it('dispatches all four jobs for each active campaign', function () {
+it('dispatches jobs for each active campaign', function () {
     $agent = PortalAvailableAgent::factory()->create(['name' => 'Apex']);
     $user = User::factory()->create();
     $campaign = ApexCampaign::factory()->active()->create(['user_id' => $user->id]);
@@ -27,10 +24,7 @@ it('dispatches all four jobs for each active campaign', function () {
     $this->artisan('apex:run-campaigns')
         ->assertSuccessful();
 
-    Bus::assertDispatched(SyncLinkedInMessagesJob::class);
-    Bus::assertDispatched(DiscoverProspectsJob::class);
-    Bus::assertDispatched(RunCampaignJob::class);
-    Bus::assertDispatched(ProcessFollowUpsJob::class);
+    Bus::assertDispatched(RunCampaignPipelineJob::class);
 });
 
 it('skips inactive campaigns', function () {
@@ -44,10 +38,7 @@ it('skips inactive campaigns', function () {
     $this->artisan('apex:run-campaigns')
         ->assertSuccessful();
 
-    Bus::assertNotDispatched(SyncLinkedInMessagesJob::class);
-    Bus::assertNotDispatched(DiscoverProspectsJob::class);
-    Bus::assertNotDispatched(RunCampaignJob::class);
-    Bus::assertNotDispatched(ProcessFollowUpsJob::class);
+    Bus::assertNotDispatched(RunCampaignPipelineJob::class);
 });
 
 it('fails when apex agent not found', function () {
@@ -66,10 +57,7 @@ it('dispatches jobs for multiple active campaigns', function () {
     $this->artisan('apex:run-campaigns')
         ->assertSuccessful();
 
-    Bus::assertDispatchedTimes(SyncLinkedInMessagesJob::class, 2);
-    Bus::assertDispatchedTimes(DiscoverProspectsJob::class, 2);
-    Bus::assertDispatchedTimes(RunCampaignJob::class, 2);
-    Bus::assertDispatchedTimes(ProcessFollowUpsJob::class, 2);
+    Bus::assertDispatchedTimes(RunCampaignPipelineJob::class, 2);
 });
 
 it('expires stale pending actions', function () {
@@ -99,17 +87,7 @@ it('dispatches jobs with delays', function () {
     $this->artisan('apex:run-campaigns')
         ->assertSuccessful();
 
-    // Verify all four job types were dispatched
-    Bus::assertDispatched(SyncLinkedInMessagesJob::class, function ($job) {
-        return $job->delay !== null;
-    });
-    Bus::assertDispatched(DiscoverProspectsJob::class, function ($job) {
-        return $job->delay !== null;
-    });
-    Bus::assertDispatched(RunCampaignJob::class, function ($job) {
-        return $job->delay !== null;
-    });
-    Bus::assertDispatched(ProcessFollowUpsJob::class, function ($job) {
+    Bus::assertDispatched(RunCampaignPipelineJob::class, function ($job) {
         return $job->delay !== null;
     });
 });
