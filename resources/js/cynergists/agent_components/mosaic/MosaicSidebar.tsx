@@ -5,12 +5,16 @@ import { FileText, LayoutTemplate, MessageSquare, Settings, Sparkles } from 'luc
 interface MosaicSidebarProps {
     activeView: string;
     setActiveView: (view: string) => void;
+<<<<<<< Updated upstream
     agentDetails?: any;
+=======
+>>>>>>> Stashed changes
 }
 
 export default function MosaicSidebar({
     activeView,
     setActiveView,
+<<<<<<< Updated upstream
     agentDetails,
 }: MosaicSidebarProps) {
     const changeUsage = agentDetails?.mosaic_data?.monthly_change_usage || 0;
@@ -27,6 +31,11 @@ export default function MosaicSidebar({
                 </div>
             )}
 
+=======
+}: MosaicSidebarProps) {
+    return (
+        <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
+>>>>>>> Stashed changes
             <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-5">
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Quick Links
@@ -87,7 +96,11 @@ export default function MosaicSidebar({
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Build Status
                 </h2>
+<<<<<<< Updated upstream
                 <div className="flex-1 space-y-4 overflow-y-auto">
+=======
+                <div className="flex-1 overflow-y-auto">
+>>>>>>> Stashed changes
                     <div className="space-y-3 text-sm text-foreground">
                         <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-primary" />
@@ -98,6 +111,7 @@ export default function MosaicSidebar({
                             onboarding is complete.
                         </div>
                     </div>
+<<<<<<< Updated upstream
                     <div className="space-y-2 border-t border-primary/10 pt-4">
                         <h3 className="text-xs font-semibold text-foreground">
                             Monthly Changes
@@ -117,6 +131,8 @@ export default function MosaicSidebar({
                             />
                         </div>
                     </div>
+=======
+>>>>>>> Stashed changes
                 </div>
                 <div className="shrink-0 border-t border-primary/20 pt-4">
                     <Button

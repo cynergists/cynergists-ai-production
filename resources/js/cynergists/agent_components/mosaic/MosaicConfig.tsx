@@ -5,16 +5,20 @@ interface MosaicConfigProps {
 }
 
 export function MosaicConfig({ agentDetails }: MosaicConfigProps) {
+<<<<<<< Updated upstream
     const progress = agentDetails?.mosaic_data?.progress || {
         completed: 0,
         total: 11,
         percent: 0,
     };
 
+=======
+>>>>>>> Stashed changes
     return (
         <div className="space-y-4">
             <div className="rounded-xl border border-primary/10 bg-muted/30 p-4">
                 <h3 className="mb-3 text-sm font-semibold text-foreground">
+<<<<<<< Updated upstream
                     Onboarding Progress
                 </h3>
                 <div className="space-y-2">
@@ -37,6 +41,8 @@ export function MosaicConfig({ agentDetails }: MosaicConfigProps) {
 
             <div className="rounded-xl border border-primary/10 bg-muted/30 p-4">
                 <h3 className="mb-3 text-sm font-semibold text-foreground">
+=======
+>>>>>>> Stashed changes
                     Mosaic Build Status
                 </h3>
                 <div className="space-y-3">
@@ -48,9 +54,13 @@ export function MosaicConfig({ agentDetails }: MosaicConfigProps) {
                             </span>
                         </div>
                         <span className="text-sm font-semibold text-foreground">
+<<<<<<< Updated upstream
                             {agentDetails?.mosaic_data?.config
                                 ? 'Ready'
                                 : 'Pending'}
+=======
+                            Pending
+>>>>>>> Stashed changes
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -61,9 +71,13 @@ export function MosaicConfig({ agentDetails }: MosaicConfigProps) {
                             </span>
                         </div>
                         <span className="text-sm font-semibold text-foreground">
+<<<<<<< Updated upstream
                             {agentDetails?.mosaic_data?.config
                                 ? 'Queued'
                                 : 'Waiting'}
+=======
+                            Waiting
+>>>>>>> Stashed changes
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -74,10 +88,14 @@ export function MosaicConfig({ agentDetails }: MosaicConfigProps) {
                             </span>
                         </div>
                         <span className="text-sm font-semibold text-foreground">
+<<<<<<< Updated upstream
                             {agentDetails?.mosaic_data?.config
                                 ?.deployment?.production_approved
                                 ? 'Live'
                                 : 'Locked'}
+=======
+                            Locked
+>>>>>>> Stashed changes
                         </span>
                     </div>
                 </div>

@@ -15,6 +15,8 @@ use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Mosaic\MosaicAgentHandler;
+use App\Services\Mosaic\MosaicMediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +29,8 @@ class PortalChatController extends Controller
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
+        private MosaicAgentHandler $mosaicAgentHandler,
+        private MosaicMediaService $mosaicMediaService,
         private OnboardingService $onboardingService
     ) {}
 
@@ -226,6 +230,17 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Mosaic agent
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->mosaicAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Default response for other agents
         return sprintf(
             "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
@@ -258,14 +273,39 @@ class PortalChatController extends Controller
         $filename = $file->getClientOriginalName();
         $type = $request->input('type', 'brand_asset');
 
-        // Store file in tenant-specific directory
-        $path = $file->store(
-            "tenants/{$tenant->id}/brand_assets",
-            'public'
-        );
+        $warnings = [];
 
-        // Track the uploaded file
-        $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+        // Handle Mosaic media processing
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $mimeType = $file->getMimeType();
+
+            if (str_starts_with($mimeType ?? '', 'image/')) {
+                $result = $this->mosaicMediaService->processImage($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } elseif (str_starts_with($mimeType ?? '', 'video/')) {
+                $result = $this->mosaicMediaService->processVideo($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } else {
+                // Fallback for other file types
+                $path = $file->store(
+                    "tenants/{$tenant->id}/mosaic_assets",
+                    'public'
+                );
+            }
+        } else {
+            // Store file in tenant-specific directory (for other agents)
+            $path = $file->store(
+                "tenants/{$tenant->id}/brand_assets",
+                'public'
+            );
+
+            // Track the uploaded file for Cynessa
+            if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+            }
+        }
 
         // Get conversation to add upload notification
         $conversation = AgentConversation::query()
@@ -275,7 +315,7 @@ class PortalChatController extends Controller
             ->first();
 
         $confirmationMessage = null;
-        if ($conversation && strtolower($agentAccess->agent_name) === 'cynessa') {
+        if ($conversation && in_array(strtolower($agentAccess->agent_name), ['cynessa', 'mosaic'], true)) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -283,12 +323,18 @@ class PortalChatController extends Controller
             $fileSize = number_format($file->getSize() / 1024, 2); // KB
 
             $userMessage = "[File uploaded: {$filename} ({$fileSize} KB, .{$fileExtension})]";
+
+            // Add warnings if any (for Mosaic)
+            if (! empty($warnings)) {
+                $userMessage .= "\nWarnings: ".implode('; ', $warnings);
+            }
+
             $messages[] = [
                 'role' => 'user',
                 'content' => $userMessage,
             ];
 
-            // Let Cynessa respond to the file upload with full history
+            // Let the agent respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
                 ->first();
@@ -297,13 +343,23 @@ class PortalChatController extends Controller
                 // Pass the conversation history (before adding the new upload message)
                 $historyBeforeUpload = array_slice($messages, 0, -1);
 
-                $confirmationMessage = $this->cynessaAgentHandler->handle(
-                    $userMessage,
-                    $user,
-                    $availableAgent,
-                    $tenant,
-                    $historyBeforeUpload
-                );
+                if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                    $confirmationMessage = $this->cynessaAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif (strtolower($agentAccess->agent_name) === 'mosaic') {
+                    $confirmationMessage = $this->mosaicAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                }
 
                 $messages[] = [
                     'role' => 'assistant',
