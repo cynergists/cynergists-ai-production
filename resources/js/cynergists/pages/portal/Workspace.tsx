@@ -179,19 +179,9 @@ export default function PortalWorkspace() {
     // Get agent-specific components dynamically
     const agentComponents = useMemo(() => {
         if (!agentDetails?.agent_name) {
-            console.log('[Workspace] No agent name, agentComponents = null');
             return null;
         }
-        const components = getAgentComponents(
-            agentDetails.agent_name.toLowerCase(),
-        );
-        console.log(
-            '[Workspace] Agent:',
-            agentDetails.agent_name,
-            'Components:',
-            components,
-        );
-        return components;
+        return getAgentComponents(agentDetails.agent_name.toLowerCase());
     }, [agentDetails?.agent_name]);
 
     useEffect(() => {
