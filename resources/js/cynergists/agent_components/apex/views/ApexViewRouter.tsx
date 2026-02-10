@@ -4,6 +4,7 @@ import ApexCampaignsView from './ApexCampaignsView';
 import ApexConnectionsView from './ApexConnectionsView';
 import ApexDashboardView from './ApexDashboardView';
 import ApexMessagesView from './ApexMessagesView';
+import ApexPendingActionsView from './ApexPendingActionsView';
 import ApexSettingsView from './ApexSettingsView';
 
 interface ApexViewRouterProps {
@@ -46,6 +47,10 @@ export default function ApexViewRouter({
         case 'messages':
             return (
                 <ApexMessagesView agentDetails={agentDetails} />
+            );
+        case 'pending-actions':
+            return (
+                <ApexPendingActionsView agentDetails={agentDetails} />
             );
         case 'activity':
             return <ApexActivityView />;
