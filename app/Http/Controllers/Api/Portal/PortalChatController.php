@@ -11,6 +11,7 @@ use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
@@ -24,6 +25,7 @@ class PortalChatController extends Controller
 {
     public function __construct(
         private ApexAgentHandler $apexAgentHandler,
+        private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
@@ -188,8 +190,8 @@ class PortalChatController extends Controller
                 ->where('name', $agentAccess->agent_name)
                 ->first();
 
-            if ($availableAgent) {
-                return $this->apexAgentHandler->handle($message, $user, $availableAgent);
+            if ($availableAgent && $tenant) {
+                return $this->apexAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -223,6 +225,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->lunaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Briggs agent
+        if (strtolower($agentAccess->agent_name) === 'briggs') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->briggsAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 

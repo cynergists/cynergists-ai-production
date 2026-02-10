@@ -530,13 +530,13 @@ export default function PortalWorkspace() {
     // Carbon SEO stats from agent details
     const seoStats = agentDetails?.seo_data
         ? {
-              healthScore: agentDetails.seo_data.seo_stats.health_score || 0,
+              healthScore: agentDetails.seo_data.seo_stats.health_score ?? null,
               totalSites: agentDetails.seo_data.seo_stats.total_sites || 0,
               activeAudits: agentDetails.seo_data.seo_stats.active_audits || 0,
               metrics: agentDetails.seo_data.seo_stats.metrics || [],
           }
         : {
-              healthScore: 0,
+              healthScore: null,
               totalSites: 0,
               activeAudits: 0,
               metrics: [],
@@ -747,6 +747,16 @@ export default function PortalWorkspace() {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
+                        {/* Agent-Specific View Component (non-chat views) */}
+                        {agentComponents?.ViewComponent &&
+                        activeView !== 'chat' ? (
+                            <agentComponents.ViewComponent
+                                activeView={activeView}
+                                setActiveView={setActiveView}
+                                agentDetails={agentDetails}
+                            />
+                        ) : (
+                            <>
                         {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
                         {selectedAgentId &&
                             agentComponents?.ConfigComponent && (
@@ -982,6 +992,8 @@ export default function PortalWorkspace() {
                                         </Button>
                                     </div>
                                 </div>
+                            </>
+                        )}
                             </>
                         )}
                     </div>

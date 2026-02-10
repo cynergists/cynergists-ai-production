@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -33,6 +34,24 @@ it('updates a user password from the Filament edit form', function () {
 
     expect(Hash::check('new-password', $user->password))->toBeTrue();
     expect($user->is_active)->toBeTrue();
+});
+
+it('sends a password reset link from the edit page', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $user = User::factory()->create();
+
+    $this->actingAs($admin);
+
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    Livewire::test(EditUser::class, ['record' => $user->getKey()])
+        ->callAction('sendPasswordReset')
+        ->assertNotified('Password reset link sent');
+
+    Notification::assertSentTo($user, \Illuminate\Auth\Notifications\ResetPassword::class);
 });
 
 it('shows connected cynergists on the user view page', function () {

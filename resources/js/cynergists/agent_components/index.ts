@@ -2,6 +2,11 @@ import React from 'react';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
+import ApexViewRouter from './apex/views/ApexViewRouter';
+import { BriggsChat } from './briggs/BriggsChat';
+import { BriggsConfig } from './briggs/BriggsConfig';
+import BriggsSidebar from './briggs/BriggsSidebar';
+import BriggsViewRouter from './briggs/views/BriggsViewRouter';
 import { CarbonChat } from './carbon/CarbonChat';
 import { CarbonConfig } from './carbon/CarbonConfig';
 import CarbonSidebar from './carbon/CarbonSidebar';
@@ -16,6 +21,7 @@ interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
     ConfigComponent: React.ComponentType<any>;
     SidebarComponent: React.ComponentType<any>;
+    ViewComponent?: React.ComponentType<any>;
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
@@ -28,6 +34,13 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: ApexChat,
         ConfigComponent: ApexConfig,
         SidebarComponent: ApexSidebar,
+        ViewComponent: ApexViewRouter,
+    },
+    briggs: {
+        ChatComponent: BriggsChat,
+        ConfigComponent: BriggsConfig,
+        SidebarComponent: BriggsSidebar,
+        ViewComponent: BriggsViewRouter,
     },
     carbon: {
         ChatComponent: CarbonChat,
@@ -50,6 +63,9 @@ export {
     ApexChat,
     ApexConfig,
     ApexSidebar,
+    BriggsChat,
+    BriggsConfig,
+    BriggsSidebar,
     CarbonChat,
     CarbonConfig,
     CarbonSidebar,

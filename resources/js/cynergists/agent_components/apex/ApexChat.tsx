@@ -3,9 +3,21 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
+import { apiClient } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
-import { Loader2, Mic, Send, Square, Trash2 } from 'lucide-react';
-import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    Linkedin,
+    Loader2,
+    Mic,
+    RotateCcw,
+    Send,
+    Square,
+    Trash2,
+} from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { LinkedInConnectModal } from './LinkedInConnectModal';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -40,6 +52,82 @@ export function ApexChat({
     selectedAgentId,
     onMessageReceived,
 }: ApexChatProps) {
+    const queryClient = useQueryClient();
+    const [connectModalOpen, setConnectModalOpen] = useState(false);
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const apexData = agentDetails?.apex_data ?? null;
+    const linkedin = apexData?.linkedin;
+    const availableAgentId = apexData?.available_agent_id;
+    const isLinkedInConnected = linkedin?.connected === true;
+    const isPending = linkedin?.status === 'pending' && !isLinkedInConnected;
+
+    const reconnect = useCallback(async () => {
+        if (!linkedin?.account_id || !availableAgentId) return;
+        setIsReconnecting(true);
+        try {
+            await apiClient.delete(
+                `/api/apex/linkedin/${linkedin.account_id}?agent_id=${availableAgentId}`,
+            );
+            queryClient.invalidateQueries({
+                queryKey: ['agent-details', agentDetails?.id],
+            });
+            setConnectModalOpen(true);
+        } catch {
+            toast.error('Failed to disconnect account');
+        } finally {
+            setIsReconnecting(false);
+        }
+    }, [
+        linkedin?.account_id,
+        availableAgentId,
+        queryClient,
+        agentDetails?.id,
+    ]);
+
+    // Auto-poll while status is pending
+    useEffect(() => {
+        if (!isPending || !linkedin?.account_id || !availableAgentId) {
+            return;
+        }
+
+        pollRef.current = setInterval(async () => {
+            try {
+                await apiClient.get(
+                    `/api/apex/linkedin/${linkedin.account_id}/status?agent_id=${availableAgentId}`,
+                );
+                queryClient.invalidateQueries({
+                    queryKey: ['agent-details', agentDetails?.id],
+                });
+            } catch (error: any) {
+                // Account not found — stop polling and refresh cache
+                if (error?.status === 404) {
+                    if (pollRef.current) {
+                        clearInterval(pollRef.current);
+                        pollRef.current = null;
+                    }
+                    queryClient.invalidateQueries({
+                        queryKey: ['agent-details', agentDetails?.id],
+                    });
+                }
+            }
+        }, 5000);
+
+        return () => {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+        };
+    }, [
+        isPending,
+        linkedin?.account_id,
+        availableAgentId,
+        queryClient,
+        agentDetails?.id,
+    ]);
+
     // Voice mode hook for continuous conversation
     const {
         isListening,
@@ -53,9 +141,88 @@ export function ApexChat({
             onMessageReceived?.({ role: 'user', content: text });
         },
         onResponseReceived: (response) => {
-            onMessageReceived?.({ role: 'assistant', content: response.text });
+            onMessageReceived?.({
+                role: 'assistant',
+                content: response.text,
+            });
         },
     });
+
+    // Gate: LinkedIn must be connected before using Apex
+    if (!isLinkedInConnected) {
+        return (
+            <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+                <div className="flex max-w-sm flex-col items-center gap-6 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0A66C2]/10">
+                        <Linkedin className="h-8 w-8 text-[#0A66C2]" />
+                    </div>
+
+                    {isPending ? (
+                        <>
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground">
+                                    Connecting to LinkedIn
+                                </h3>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    {linkedin?.requires_checkpoint
+                                        ? 'LinkedIn requires verification. Check your LinkedIn app to approve the login, then wait here.'
+                                        : 'Your connection is being established. This usually takes a few moments.'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-yellow-600">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Waiting for connection...
+                            </div>
+                            <button
+                                onClick={reconnect}
+                                disabled={isReconnecting}
+                                className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
+                            >
+                                {isReconnecting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <RotateCcw className="h-4 w-4" />
+                                )}
+                                Try Again
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground">
+                                    Connect Your LinkedIn
+                                </h3>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Apex needs access to your LinkedIn account to
+                                    manage outreach campaigns, send connection
+                                    requests, and track messages.
+                                </p>
+                            </div>
+                            {availableAgentId && (
+                                <button
+                                    onClick={() => setConnectModalOpen(true)}
+                                    className="flex items-center gap-2 rounded-lg bg-[#0A66C2] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#004182]"
+                                >
+                                    <Linkedin className="h-4 w-4" />
+                                    Connect LinkedIn
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* LinkedIn Connect Modal */}
+                {availableAgentId && agentDetails?.id && (
+                    <LinkedInConnectModal
+                        open={connectModalOpen}
+                        onOpenChange={setConnectModalOpen}
+                        availableAgentId={availableAgentId}
+                        selectedAgentId={agentDetails.id}
+                    />
+                )}
+            </div>
+        );
+    }
 
     return (
         <>
@@ -67,7 +234,7 @@ export function ApexChat({
                 <div className="space-y-3">
                     {messages.length === 0 ? (
                         <div className="animate-in py-8 text-center text-sm text-muted-foreground duration-300 fade-in">
-                            Ask Apex about your business growth strategies.
+                            Ask Apex about setting up your campaigns.
                         </div>
                     ) : (
                         messages.map((message, index) => (

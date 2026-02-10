@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentAccess;
+use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Apex\ApexAgentHandler;
+use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
 use App\Services\Luna\LunaAgentHandler;
@@ -13,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class VoiceController extends Controller
 {
@@ -21,8 +25,11 @@ class VoiceController extends Controller
      */
     public function processVoiceMessage(Request $request, string $agentId): JsonResponse
     {
+        $isInitiate = $request->boolean('initiate');
+
         $request->validate([
-            'message' => 'required|string|max:10000',
+            'message' => $isInitiate ? 'nullable|string|max:10000' : 'required|string|max:10000',
+            'initiate' => 'sometimes|boolean',
         ]);
 
         try {
@@ -81,13 +88,37 @@ class VoiceController extends Controller
                 }
             }
 
-            $message = $request->input('message');
+            // Load or create conversation for context continuity
+            $conversation = AgentConversation::query()
+                ->where('agent_access_id', $agentAccess->id)
+                ->where('status', 'active')
+                ->orderByDesc('created_at')
+                ->first();
+
+            if (! $conversation) {
+                $conversation = AgentConversation::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'agent_access_id' => $agentAccess->id,
+                    'customer_id' => $tenant->id,
+                    'title' => 'New Conversation',
+                    'messages' => [],
+                    'status' => 'active',
+                    'tenant_id' => $tenant->id,
+                ]);
+            }
+
+            $conversationHistory = $conversation->messages ?? [];
 
             // Process message based on agent type
             $agentName = strtolower($agentAccess->agent_name);
 
-            // Prepend instruction for very brief voice responses
-            $voiceMessage = "IMPORTANT: This is voice mode - keep your response to 1-2 sentences maximum, conversational and natural.\n\n{$message}";
+            // Build the voice message
+            if ($isInitiate) {
+                $voiceMessage = 'IMPORTANT: This is voice mode - the user just activated voice mode. Greet them briefly in 1-2 sentences, conversational and natural. Introduce yourself if this is the first interaction.';
+            } else {
+                $message = $request->input('message');
+                $voiceMessage = "IMPORTANT: This is voice mode - keep your response to 1-2 sentences maximum, conversational and natural.\n\n{$message}";
+            }
 
             $textResponse = match ($agentName) {
                 'cynessa' => app(CynessaAgentHandler::class)->handle(
@@ -95,7 +126,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: [],
+                    conversationHistory: $conversationHistory,
                     maxTokens: 128
                 ),
                 'luna' => app(LunaAgentHandler::class)->handle(
@@ -103,11 +134,45 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: [],
+                    conversationHistory: $conversationHistory,
+                    maxTokens: 128
+                ),
+                'carbon' => app(CarbonAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory,
+                    maxTokens: 128
+                ),
+                'apex' => app(ApexAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory,
                     maxTokens: 128
                 ),
                 default => "I'm sorry, voice mode is not yet available for this agent."
             };
+
+            // Save voice messages to conversation history
+            if (! $isInitiate) {
+                $conversationHistory[] = [
+                    'role' => 'user',
+                    'content' => $message,
+                ];
+            }
+
+            $conversationHistory[] = [
+                'role' => 'assistant',
+                'content' => $textResponse,
+            ];
+
+            $conversation->update([
+                'messages' => $conversationHistory,
+                'updated_at' => now(),
+            ]);
 
             // Get ElevenLabs API key for this agent
             $elevenLabsKey = $agentAccess->availableAgent->apiKeys()

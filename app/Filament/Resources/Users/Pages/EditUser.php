@@ -8,9 +8,12 @@ use App\Models\CustomerSubscription;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\UserRole;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class EditUser extends EditRecord
@@ -25,6 +28,32 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('sendPasswordReset')
+                ->label('Send Password Reset')
+                ->icon('heroicon-o-envelope')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Send Password Reset Email')
+                ->modalDescription(fn (): string => "Send a password reset link to {$this->record->email}?")
+                ->action(function (): void {
+                    $status = Password::sendResetLink(
+                        ['email' => $this->record->email],
+                    );
+
+                    if ($status === Password::RESET_LINK_SENT) {
+                        Notification::make()
+                            ->success()
+                            ->title('Password reset link sent')
+                            ->body("A reset link has been sent to {$this->record->email}.")
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->danger()
+                            ->title('Failed to send reset link')
+                            ->body(__($status))
+                            ->send();
+                    }
+                }),
             DeleteAction::make(),
         ];
     }

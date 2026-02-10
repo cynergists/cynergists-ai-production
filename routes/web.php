@@ -73,8 +73,7 @@ Route::get('/signup/partner', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/partner-signup', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
 Route::get('/signup/partner/apply', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/PartnerApplication');
 Route::get('/signup/partner/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/PartnerApplicationThankYou');
-Route::get('/forgot-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ForgotPassword');
-Route::get('/reset-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ResetPassword');
+Route::redirect('/dashboard', '/portal');
 Route::post('/signin', [SessionController::class, 'store'])->name('signin');
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
