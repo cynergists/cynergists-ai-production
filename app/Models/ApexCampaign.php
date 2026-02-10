@@ -163,11 +163,11 @@ class ApexCampaign extends Model
             return false;
         }
 
-        $hasQueuedProspects = $this->campaignProspects()
-            ->where('status', 'queued')
+        $hasActiveProspects = $this->campaignProspects()
+            ->whereIn('status', ['queued', 'connection_sent', 'connection_accepted', 'message_sent'])
             ->exists();
 
-        if ($hasQueuedProspects) {
+        if ($hasActiveProspects) {
             return false;
         }
 
