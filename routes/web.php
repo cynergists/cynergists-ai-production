@@ -68,6 +68,7 @@ Route::get('/checkout', [CynergistsPageController::class, 'page'])->defaults('co
 Route::get('/cart', [CynergistsPageController::class, 'page'])->defaults('component', 'Cart');
 Route::get('/sign-agreement', [CynergistsPageController::class, 'page'])->defaults('component', 'SignAgreement');
 Route::get('/signin', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignIn');
+Route::get('/welcome', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/Welcome');
 Route::get('/signup/client', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpClient');
 Route::get('/signup/partner', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
 Route::get('/partner-signup', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
