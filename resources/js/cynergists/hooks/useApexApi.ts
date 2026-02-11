@@ -207,6 +207,8 @@ export function useApexPendingActions() {
             apiClient.get<{ actions: ApexPendingAction[]; total: number }>(
                 '/api/apex/pending-actions',
             ),
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
     });
 }
 
@@ -260,7 +262,9 @@ export function useApprovePendingAction(agentId: string) {
             return { previousData };
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Don't immediately invalidate pending-actions to avoid race condition with DB commit
+            // The optimistic update handles the UI, query will be refreshed on navigation
+            // Still invalidate campaigns to update stats
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
             toast.success('Action approved');
         },
@@ -300,7 +304,8 @@ export function useDenyPendingAction() {
             return { previousData };
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Don't immediately invalidate to avoid race condition with DB commit
+            // The optimistic update handles the UI, query will be refreshed on navigation
             toast.success('Action denied');
         },
         onError: (_error, _actionId, context) => {
@@ -321,12 +326,36 @@ export function useApproveAllPendingActions(agentId: string) {
             apiClient.post('/api/apex/pending-actions/approve-all', {
                 agent_id: agentId,
             }),
+        onMutate: async () => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically clear all actions
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    actions: [],
+                    total: 0,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Invalidate campaigns to update stats
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
             toast.success('All actions approved');
         },
-        onError: () => toast.error('Failed to approve all actions'),
+        onError: (_error, _variables, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to approve all actions');
+        },
     });
 }
 
@@ -335,11 +364,34 @@ export function useDenyAllPendingActions() {
 
     return useMutation({
         mutationFn: () => apiClient.post('/api/apex/pending-actions/deny-all'),
+        onMutate: async () => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically clear all actions
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    actions: [],
+                    total: 0,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
             toast.success('All actions denied');
         },
-        onError: () => toast.error('Failed to deny all actions'),
+        onError: (_error, _variables, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to deny all actions');
+        },
     });
 }
 
