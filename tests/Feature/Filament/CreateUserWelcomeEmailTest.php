@@ -23,7 +23,29 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 });
 
-it('dispatches welcome email job when user is created in Filament', function () {
+it('dispatches welcome email job when user is created without password', function () {
+    $event = SystemEvent::factory()->create(['slug' => 'user_created']);
+
+    EventEmailTemplate::factory()->client()->create([
+        'system_event_id' => $event->id,
+        'subject' => 'Welcome {{ user_name }}',
+        'body' => '<p>Hello '.mt('user_name').'</p>',
+    ]);
+
+    $this->actingAs($this->admin);
+
+    Livewire::test(CreateUser::class)
+        ->set('data.name', 'John Doe')
+        ->set('data.email', 'john@example.com')
+        ->set('data.is_active', true)
+        ->set('data.roles', ['client'])
+        ->call('create')
+        ->assertHasNoErrors();
+
+    Bus::assertDispatched(SendEventEmail::class);
+});
+
+it('does not dispatch welcome email when user is created with password', function () {
     $event = SystemEvent::factory()->create(['slug' => 'user_created']);
 
     EventEmailTemplate::factory()->client()->create([
@@ -38,13 +60,12 @@ it('dispatches welcome email job when user is created in Filament', function () 
         ->set('data.name', 'John Doe')
         ->set('data.email', 'john@example.com')
         ->set('data.password', 'password123')
-        ->set('data.password_confirmation', 'password123')
         ->set('data.is_active', true)
         ->set('data.roles', ['client'])
         ->call('create')
         ->assertHasNoErrors();
 
-    Bus::assertDispatched(SendEventEmail::class);
+    Bus::assertNotDispatched(SendEventEmail::class);
 });
 
 it('sends client welcome email to user email address', function () {
@@ -61,8 +82,6 @@ it('sends client welcome email to user email address', function () {
     Livewire::test(CreateUser::class)
         ->set('data.name', 'Jane Smith')
         ->set('data.email', 'jane@example.com')
-        ->set('data.password', 'password123')
-        ->set('data.password_confirmation', 'password123')
         ->set('data.is_active', true)
         ->set('data.roles', ['client'])
         ->call('create')
@@ -98,8 +117,6 @@ it('sends admin notification to configured admin addresses', function () {
     Livewire::test(CreateUser::class)
         ->set('data.name', 'Bob Johnson')
         ->set('data.email', 'bob@example.com')
-        ->set('data.password', 'password123')
-        ->set('data.password_confirmation', 'password123')
         ->set('data.is_active', true)
         ->set('data.roles', ['client'])
         ->call('create')
@@ -129,8 +146,6 @@ it('renders merge tags correctly in welcome email', function () {
     Livewire::test(CreateUser::class)
         ->set('data.name', 'Alice Cooper')
         ->set('data.email', 'alice@example.com')
-        ->set('data.password', 'password123')
-        ->set('data.password_confirmation', 'password123')
         ->set('data.is_active', true)
         ->set('data.roles', ['client'])
         ->call('create')
@@ -166,8 +181,6 @@ it('does not send admin email when no admin emails configured', function () {
     Livewire::test(CreateUser::class)
         ->set('data.name', 'Charlie Brown')
         ->set('data.email', 'charlie@example.com')
-        ->set('data.password', 'password123')
-        ->set('data.password_confirmation', 'password123')
         ->set('data.is_active', true)
         ->set('data.roles', ['client'])
         ->call('create')
