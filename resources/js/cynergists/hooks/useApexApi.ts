@@ -88,7 +88,13 @@ interface ApexPendingAction {
     executed_at: string | null;
     created_at: string;
     campaign?: { id: string; name: string };
-    prospect?: { id: string; full_name: string; first_name: string; last_name: string };
+    prospect?: { 
+        id: string; 
+        full_name: string; 
+        first_name: string; 
+        last_name: string;
+        headline?: string;
+    };
 }
 
 interface ApexActivityLog {
@@ -111,11 +117,70 @@ interface PaginatedResponse<T> {
 
 // ─── Query Hooks ─────────────────────────────────────────────────────────────
 
+export function useApexSync(enabled: boolean) {
+    return useQuery({
+        queryKey: ['apex-sync'],
+        queryFn: () => apiClient.post('/api/apex/sync'),
+        enabled,
+        refetchInterval: enabled ? 5 * 60 * 1000 : false,
+        refetchOnWindowFocus: false,
+    });
+}
+
 export function useApexCampaigns() {
     return useQuery({
         queryKey: ['apex-campaigns'],
         queryFn: () =>
             apiClient.get<{ campaigns: ApexCampaign[] }>('/api/apex/campaigns'),
+        refetchInterval: (query) => {
+            const hasActive = query.state.data?.campaigns?.some(
+                (c) => c.status === 'active',
+            );
+            return hasActive ? 5000 : false;
+        },
+    });
+}
+
+interface CampaignStats {
+    total_prospects: number;
+    queued: number;
+    connection_sent: number;
+    connected: number;
+    replied: number;
+    meetings_scheduled: number;
+    connections_sent: number;
+    connections_accepted: number;
+    messages_sent: number;
+    replies_received: number;
+    meetings_booked: number;
+    acceptance_rate: number;
+    reply_rate: number;
+}
+
+export function useApexCampaignStats(campaignId: string | null, enabled = true) {
+    return useQuery({
+        queryKey: ['apex-campaign-stats', campaignId],
+        queryFn: () =>
+            apiClient.get<{ stats: CampaignStats }>(
+                `/api/apex/campaigns/${campaignId}/stats`,
+            ),
+        enabled: !!campaignId && enabled,
+        refetchInterval: 5000,
+    });
+}
+
+export function useApexCampaignActivity(
+    campaignId: string | null,
+    enabled = true,
+) {
+    return useQuery({
+        queryKey: ['apex-campaign-activity', campaignId],
+        queryFn: () =>
+            apiClient.get<PaginatedResponse<ApexActivityLog>>(
+                `/api/apex/activity-logs?campaign_id=${campaignId}&per_page=10`,
+            ),
+        enabled: !!campaignId && enabled,
+        refetchInterval: enabled ? 5000 : false,
     });
 }
 
@@ -148,6 +213,8 @@ export function useApexPendingActions() {
             apiClient.get<{ actions: ApexPendingAction[]; total: number }>(
                 '/api/apex/pending-actions',
             ),
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
     });
 }
 
@@ -181,12 +248,39 @@ export function useApprovePendingAction(agentId: string) {
             apiClient.post(`/api/apex/pending-actions/${actionId}/approve`, {
                 agent_id: agentId,
             }),
+        onMutate: async (actionId: string) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically update by removing the action
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    actions: old.actions.filter((a: any) => a.id !== actionId),
+                    total: old.total - 1,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Don't immediately invalidate pending-actions to avoid race condition with DB commit
+            // The optimistic update handles the UI, query will be refreshed on navigation
+            // Still invalidate campaigns to update stats
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
             toast.success('Action approved');
         },
-        onError: () => toast.error('Failed to approve action'),
+        onError: (_error, _actionId, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to approve action');
+        },
     });
 }
 
@@ -196,11 +290,37 @@ export function useDenyPendingAction() {
     return useMutation({
         mutationFn: (actionId: string) =>
             apiClient.post(`/api/apex/pending-actions/${actionId}/deny`),
+        onMutate: async (actionId: string) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically update by removing the action
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    actions: old.actions.filter((a: any) => a.id !== actionId),
+                    total: old.total - 1,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Don't immediately invalidate to avoid race condition with DB commit
+            // The optimistic update handles the UI, query will be refreshed on navigation
             toast.success('Action denied');
         },
-        onError: () => toast.error('Failed to deny action'),
+        onError: (_error, _actionId, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to deny action');
+        },
     });
 }
 
@@ -212,12 +332,36 @@ export function useApproveAllPendingActions(agentId: string) {
             apiClient.post('/api/apex/pending-actions/approve-all', {
                 agent_id: agentId,
             }),
+        onMutate: async () => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically clear all actions
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    actions: [],
+                    total: 0,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
+            // Invalidate campaigns to update stats
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
             toast.success('All actions approved');
         },
-        onError: () => toast.error('Failed to approve all actions'),
+        onError: (_error, _variables, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to approve all actions');
+        },
     });
 }
 
@@ -226,11 +370,34 @@ export function useDenyAllPendingActions() {
 
     return useMutation({
         mutationFn: () => apiClient.post('/api/apex/pending-actions/deny-all'),
+        onMutate: async () => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically clear all actions
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    actions: [],
+                    total: 0,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
             toast.success('All actions denied');
         },
-        onError: () => toast.error('Failed to deny all actions'),
+        onError: (_error, _variables, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to deny all actions');
+        },
     });
 }
 
@@ -276,6 +443,20 @@ export function useCompleteCampaign() {
     });
 }
 
+export function useRestartCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (campaignId: string) =>
+            apiClient.post(`/api/apex/campaigns/${campaignId}/restart`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
+            toast.success('Campaign restarted');
+        },
+        onError: () => toast.error('Failed to restart campaign'),
+    });
+}
+
 export function useCreateCampaign() {
     const queryClient = useQueryClient();
 
@@ -287,7 +468,7 @@ export function useCreateCampaign() {
             ),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
-            toast.success('Campaign created');
+            toast.success('Campaign created and started — discovering prospects now');
         },
         onError: () => toast.error('Failed to create campaign'),
     });
@@ -327,6 +508,56 @@ export function useDeleteCampaign() {
             toast.success('Campaign deleted');
         },
         onError: () => toast.error('Failed to delete campaign'),
+    });
+}
+
+// ─── LinkedIn Account Hooks ──────────────────────────────────────────────────
+
+interface LinkedInAccount {
+    id: string;
+    unipile_account_id: string;
+    linkedin_profile_id: string | null;
+    linkedin_profile_url: string | null;
+    display_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+    status: 'active' | 'pending' | 'disconnected';
+    last_synced_at: string | null;
+    created_at: string;
+}
+
+export function useApexLinkedInAccounts() {
+    return useQuery({
+        queryKey: ['apex-linkedin-accounts'],
+        queryFn: () =>
+            apiClient.get<{ accounts: LinkedInAccount[] }>(
+                '/api/apex/linkedin',
+            ),
+    });
+}
+
+export function useDisconnectLinkedIn() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            accountId,
+            agentId,
+        }: {
+            accountId: string;
+            agentId: string;
+        }) =>
+            apiClient.delete(
+                `/api/apex/linkedin/${accountId}?agent_id=${agentId}`,
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['apex-linkedin-accounts'],
+            });
+            queryClient.invalidateQueries({ queryKey: ['agent-details'] });
+            toast.success('LinkedIn account disconnected');
+        },
+        onError: () => toast.error('Failed to disconnect LinkedIn account'),
     });
 }
 
@@ -409,6 +640,8 @@ export type {
     ApexPendingAction,
     ApexProspect,
     CampaignFormData,
+    CampaignStats,
+    LinkedInAccount,
     LinkedInChat,
     LinkedInMessage,
     PaginatedResponse,

@@ -23,6 +23,10 @@ class ActivityLogController extends Controller
             $query->where('activity_type', $request->activity_type);
         }
 
+        if ($request->has('campaign_id')) {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+
         $logs = $query->paginate($request->get('per_page', 25));
 
         return response()->json($logs);

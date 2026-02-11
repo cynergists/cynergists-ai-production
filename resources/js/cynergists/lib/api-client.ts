@@ -25,7 +25,9 @@ const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
 
     const csrfToken = getCsrfToken();
     if (csrfToken) {
+        // Laravel checks for X-XSRF-TOKEN (from cookie) or X-CSRF-TOKEN (from meta tag)
         headers['X-CSRF-TOKEN'] = csrfToken;
+        headers['X-XSRF-TOKEN'] = csrfToken;
     }
 
     // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
@@ -61,7 +63,29 @@ const request = async <T>(
     });
 
     if (!response.ok) {
-        const message = response.statusText || 'Request failed';
+        let message = response.statusText || 'Request failed';
+
+        // Try to parse error response body for detailed error message
+        try {
+            const contentType = response.headers.get('content-type') ?? '';
+            if (contentType.includes('application/json')) {
+                const errorData = await response.json();
+
+                // Check for Laravel validation errors first
+                if (errorData.errors && typeof errorData.errors === 'object') {
+                    const firstError = Object.values(errorData.errors)[0];
+                    if (Array.isArray(firstError) && firstError.length > 0) {
+                        message = firstError[0] as string;
+                    }
+                } else {
+                    // Use the message field if no validation errors
+                    message = errorData.message || errorData.error || message;
+                }
+            }
+        } catch (e) {
+            // If parsing fails, use the default message
+        }
+
         const error: ApiError = { message, status: response.status };
         throw error;
     }

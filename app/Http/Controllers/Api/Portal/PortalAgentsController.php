@@ -51,7 +51,7 @@ class PortalAgentsController extends Controller
         // Always ensure Cynessa is available to all users
         $cynessaAvailable = PortalAvailableAgent::query()
             ->where('name', 'Cynessa')
-            ->first(['name', 'avatar', 'redirect_url']);
+            ->first(['name', 'avatar', 'redirect_url', 'job_title', 'is_beta']);
 
         if ($cynessaAvailable) {
             // Check if user already has Cynessa access
@@ -83,19 +83,21 @@ class PortalAgentsController extends Controller
             }
         }
 
-        // Get avatars and redirect URLs from portal_available_agents
+        // Get avatars, redirect URLs, and job titles from portal_available_agents
         $agentNames = $agents->pluck('agent_name')->unique()->toArray();
         $availableAgents = PortalAvailableAgent::query()
             ->whereIn('name', $agentNames)
-            ->get(['name', 'avatar', 'redirect_url'])
+            ->get(['name', 'avatar', 'redirect_url', 'job_title', 'is_beta'])
             ->keyBy('name');
 
-        // Add avatar_url and redirect_url to each agent
+        // Add avatar_url, redirect_url, job_title, and is_beta to each agent
         $agents = $agents->map(function ($agent) use ($availableAgents) {
             $availableAgent = $availableAgents->get($agent->agent_name);
             $avatar = $availableAgent?->avatar;
             $agent->avatar_url = $avatar ? Storage::disk('public')->url($avatar) : null;
             $agent->redirect_url = $availableAgent?->redirect_url;
+            $agent->job_title = $availableAgent?->job_title;
+            $agent->is_beta = $availableAgent?->is_beta ?? false;
 
             return $agent;
         });
@@ -127,7 +129,7 @@ class PortalAgentsController extends Controller
             // Check if the ID matches a virtual Cynessa agent pattern or if we can find Cynessa
             $cynessaAvailable = PortalAvailableAgent::query()
                 ->where('name', 'Cynessa')
-                ->first(['name', 'avatar', 'redirect_url']);
+                ->first(['name', 'avatar', 'redirect_url', 'job_title', 'is_beta']);
 
             if ($cynessaAvailable) {
                 // Create a virtual agent access for Cynessa
@@ -147,6 +149,8 @@ class PortalAgentsController extends Controller
                     ? Storage::disk('public')->url($cynessaAvailable->avatar)
                     : null;
                 $agentAccess->redirect_url = $cynessaAvailable->redirect_url;
+                $agentAccess->job_title = $cynessaAvailable->job_title;
+                $agentAccess->is_beta = $cynessaAvailable->is_beta ?? false;
                 $agentAccess->tenant_data = $tenant;
 
                 // Include Carbon-specific SEO data for sidebar
@@ -177,15 +181,17 @@ class PortalAgentsController extends Controller
             return response()->json(['agent' => null], 404);
         }
 
-        // Get avatar and redirect URL from portal_available_agents
+        // Get avatar, redirect URL, job title, and is_beta from portal_available_agents
         $availableAgent = PortalAvailableAgent::query()
             ->where('name', $agentAccess->agent_name)
-            ->first(['avatar', 'redirect_url']);
+            ->first(['avatar', 'redirect_url', 'job_title', 'is_beta']);
 
         $agentAccess->avatar_url = $availableAgent?->avatar
             ? Storage::disk('public')->url($availableAgent->avatar)
             : null;
         $agentAccess->redirect_url = $availableAgent?->redirect_url;
+        $agentAccess->job_title = $availableAgent?->job_title;
+        $agentAccess->is_beta = $availableAgent?->is_beta ?? false;
 
         // Include tenant data for sidebar display
         $agentAccess->tenant_data = $tenant;

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
 use App\Models\UserRole;
+use App\Services\EventEmailService;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Enums\Width;
 
@@ -26,5 +27,11 @@ class CreateUser extends CreateRecord
                 'role' => $role,
             ]);
         }
+
+        // Send welcome email with password creation link
+        app(EventEmailService::class)->fire('user_created', [
+            'user' => $this->record,
+            'generate_password_reset_link' => true,
+        ]);
     }
 }

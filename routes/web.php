@@ -68,6 +68,14 @@ Route::get('/checkout', [CynergistsPageController::class, 'page'])->defaults('co
 Route::get('/cart', [CynergistsPageController::class, 'page'])->defaults('component', 'Cart');
 Route::get('/sign-agreement', [CynergistsPageController::class, 'page'])->defaults('component', 'SignAgreement');
 Route::get('/signin', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignIn');
+Route::get('/welcome', function (Illuminate\Http\Request $request) {
+    return Inertia\Inertia::render('auth/reset-password', [
+        'email' => $request->email,
+        'token' => $request->token,
+        'isNewUser' => true,
+    ]);
+})->name('welcome');
+Route::get('/change-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ChangePassword')->middleware('auth');
 Route::get('/signup/client', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpClient');
 Route::get('/signup/partner', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
 Route::get('/partner-signup', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
@@ -182,7 +190,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::put('/admin/payment-settings', [PaymentSettingsController::class, 'update']);
     Route::post('/partners/{partner}/w9', [PartnerSettingsController::class, 'uploadW9']);
     Route::post('/partner/magic-link', [PartnerSettingsController::class, 'sendMagicLink']);
-    Route::patch('/user/password', [UserPasswordController::class, 'update']);
+    Route::patch('/user/password', [UserPasswordController::class, 'update'])
+        ->middleware('throttle:5,1'); // 5 attempts per minute
     Route::get('/partner-dashboard/{partner}', [PartnerDashboardController::class, 'show']);
 
     Route::prefix('portal')->group(function () {

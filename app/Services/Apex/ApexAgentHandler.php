@@ -3,6 +3,7 @@
 namespace App\Services\Apex;
 
 use App\Ai\Agents\Apex;
+use App\Jobs\Apex\RunCampaignPipelineJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
 use App\Models\ApexUserSettings;
@@ -71,11 +72,13 @@ class ApexAgentHandler
      */
     private function extractAndSaveCampaignData(string $response, User $user): void
     {
-        if (! preg_match('/\[DATA: (.*?)\]/', $response, $matches)) {
+        if (! preg_match_all('/\[DATA: (.*?)\]/s', $response, $allMatches)) {
             return;
         }
 
-        $dataString = $matches[1];
+        $dataString = implode(' ', $allMatches[1]);
+
+        Log::info('Apex DATA markers extracted', ['raw_data' => $dataString, 'count' => count($allMatches[1])]);
         $settings = ApexUserSettings::forUser($user);
         $context = $settings->apex_context ? json_decode($settings->apex_context, true) : [];
 
@@ -145,6 +148,17 @@ class ApexAgentHandler
      */
     private function createCampaignFromContext(array $context, User $user): void
     {
+        Log::info('Creating campaign from onboarding context', [
+            'user_id' => $user->id,
+            'context_keys' => array_keys($context),
+            'job_titles' => $context['job_titles'] ?? 'NOT SET',
+            'locations' => $context['locations'] ?? 'NOT SET',
+            'keywords' => $context['keywords'] ?? 'NOT SET',
+            'industries' => $context['industries'] ?? 'NOT SET',
+            'campaign_goal' => $context['campaign_goal'] ?? 'NOT SET',
+            'campaign_type' => $context['campaign_type'] ?? 'NOT SET',
+        ]);
+
         $campaignTypeMap = [
             'connect_new' => 'connection',
             'message_existing' => 'message',
@@ -156,15 +170,29 @@ class ApexAgentHandler
         $name = $context['campaign_name']
             ?? ucfirst($context['campaign_goal'] ?? 'Campaign').' - '.now()->format('M j, Y');
 
+        $jobTitles = $this->parseToArray($context['job_titles'] ?? null);
+        $locations = $this->parseToArray($context['locations'] ?? null);
+        $keywords = $this->parseToArray($context['keywords'] ?? null);
+        $industries = $this->parseToArray($context['industries'] ?? null);
+
+        // Warn if no targeting criteria — campaign won't discover prospects
+        if (empty($jobTitles) && empty($locations) && empty($keywords) && empty($industries)) {
+            Log::warning('Campaign created without targeting criteria — DiscoverProspectsJob will skip', [
+                'user_id' => $user->id,
+                'raw_context' => $context,
+            ]);
+        }
+
         $attributes = [
             'user_id' => $user->id,
             'name' => $name,
             'campaign_type' => $campaignType,
-            'status' => 'draft',
-            'job_titles' => $this->parseToArray($context['job_titles'] ?? null),
-            'locations' => $this->parseToArray($context['locations'] ?? null),
-            'keywords' => $this->parseToArray($context['keywords'] ?? null),
-            'industries' => $this->parseToArray($context['industries'] ?? null),
+            'status' => 'active',
+            'started_at' => now(),
+            'job_titles' => $jobTitles,
+            'locations' => $locations,
+            'keywords' => $keywords,
+            'industries' => $industries,
         ];
 
         $optionalStrings = [
@@ -191,10 +219,17 @@ class ApexAgentHandler
 
         $campaign = ApexCampaign::create($attributes);
 
+        // Dispatch campaign job immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
+        }
+
         ApexActivityLog::log(
             $user,
             'campaign_created',
-            "Campaign created via voice onboarding: {$campaign->name}",
+            "Campaign created and started via onboarding: {$campaign->name}",
             $campaign
         );
     }

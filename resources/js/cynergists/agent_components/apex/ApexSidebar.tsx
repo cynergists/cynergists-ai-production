@@ -2,11 +2,13 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
     Activity,
+    AlertCircle,
     Calendar,
     CircleCheck,
     LayoutDashboard,
     Lock,
     MessageSquare,
+    Settings,
     Target,
     TrendingUp,
     Users,
@@ -36,10 +38,12 @@ export default function ApexSidebar({
     const navItems = [
         { key: 'chat', label: 'Chat', icon: MessageSquare, requiresLinkedIn: false },
         { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, requiresLinkedIn: true },
+        { key: 'pending-actions', label: 'Pending Approvals', icon: AlertCircle, requiresLinkedIn: true },
         { key: 'campaigns', label: 'Campaigns', icon: Target, requiresLinkedIn: true },
         { key: 'connections', label: 'Connections', icon: Users, requiresLinkedIn: true },
         { key: 'messages', label: 'Messages', icon: MessageSquare, requiresLinkedIn: true },
         { key: 'activity', label: 'Activity Log', icon: Activity, requiresLinkedIn: true },
+        { key: 'settings', label: 'Settings', icon: Settings, requiresLinkedIn: true },
     ];
 
     return (

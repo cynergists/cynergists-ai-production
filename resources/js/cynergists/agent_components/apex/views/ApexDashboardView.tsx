@@ -149,7 +149,7 @@ export default function ApexDashboardView({
                                 </p>
                             </div>
                             <button
-                                onClick={() => setActiveView('messages')}
+                                onClick={() => setActiveView('pending-actions')}
                                 className="rounded-lg bg-yellow-500/10 px-3 py-1.5 text-xs font-medium text-yellow-600 transition-colors hover:bg-yellow-500/20"
                             >
                                 Review

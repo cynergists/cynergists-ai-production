@@ -88,15 +88,30 @@ class UnipileService
             if ($response->successful()) {
                 $data = $response->json();
 
+                Log::info('Unipile connect response', [
+                    'http_status' => $response->status(),
+                    'response_keys' => array_keys($data),
+                    'has_checkpoint' => isset($data['checkpoint']),
+                    'has_connection_params' => isset($data['connection_params']),
+                    'has_sources' => isset($data['sources']),
+                ]);
+
                 $sourceStatus = $data['sources'][0]['status'] ?? null;
                 $status = $sourceStatus
                     ?? $data['connection_params']['status']
                     ?? $data['status']
                     ?? 'pending';
 
-                $checkpointType = $data['connection_params']['checkpoint']['type']
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
                     ?? $data['sources'][0]['checkpoint']['type']
                     ?? null;
+
+                // A 202 response indicates a checkpoint is required
+                if ($response->status() === 202 && ! $checkpointType) {
+                    $checkpointType = 'OTP';
+                    $status = 'pending';
+                }
 
                 return [
                     'account_id' => $data['account_id'] ?? $data['id'] ?? null,
@@ -174,7 +189,8 @@ class UnipileService
                     ?? $data['connection_params']['status']
                     ?? 'unknown';
 
-                $checkpointType = $data['connection_params']['checkpoint']['type']
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
                     ?? $data['sources'][0]['checkpoint']['type']
                     ?? null;
 
@@ -225,8 +241,16 @@ class UnipileService
     public function solveCheckpoint(string $accountId, string $code): bool
     {
         try {
-            $response = $this->client()->post("/accounts/{$accountId}/checkpoint", [
+            $response = $this->client()->post('/accounts/checkpoint', [
+                'provider' => 'LINKEDIN',
+                'account_id' => $accountId,
                 'code' => $code,
+            ]);
+
+            Log::info('Unipile solve checkpoint response', [
+                'account_id' => $accountId,
+                'http_status' => $response->status(),
+                'body' => $response->json(),
             ]);
 
             return $response->successful();
@@ -283,12 +307,12 @@ class UnipileService
     /**
      * Send a connection request.
      */
-    public function sendConnectionRequest(string $accountId, string $profileUrl, ?string $message = null): bool
+    public function sendConnectionRequest(string $accountId, string $providerId, ?string $message = null): bool
     {
         try {
             $payload = [
                 'account_id' => $accountId,
-                'linkedin_url' => $profileUrl,
+                'provider_id' => $providerId,
             ];
 
             if ($message) {
@@ -296,6 +320,14 @@ class UnipileService
             }
 
             $response = $this->client()->post('/users/invite', $payload);
+
+            if (! $response->successful()) {
+                Log::warning('Unipile send connection request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json() ?? $response->body(),
+                    'provider_id' => $providerId,
+                ]);
+            }
 
             return $response->successful();
         } catch (\Exception $e) {
@@ -439,20 +471,38 @@ class UnipileService
     /**
      * Search for LinkedIn profiles.
      *
+     * @param  array<string, mixed>  $filters  Unipile search body (keywords, role, etc.)
      * @return Collection<int, array>
      */
     public function searchProfiles(string $accountId, array $filters, int $limit = 25): Collection
     {
         try {
-            $response = $this->client()->post('/linkedin/search/people', [
+            $body = array_merge([
+                'api' => 'classic',
+                'category' => 'people',
+            ], $filters);
+
+            Log::info('Unipile searchProfiles request', [
                 'account_id' => $accountId,
-                'limit' => $limit,
-                ...$filters,
+                'body' => $body,
             ]);
 
+            $response = $this->client()->post(
+                "/linkedin/search?account_id={$accountId}",
+                $body
+            );
+
             if ($response->successful()) {
-                return collect($response->json('items') ?? []);
+                $items = collect($response->json('items') ?? []);
+                Log::info('Unipile searchProfiles returned', ['count' => $items->count()]);
+
+                return $items;
             }
+
+            Log::warning('Unipile search profiles failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return collect();
         } catch (\Exception $e) {
