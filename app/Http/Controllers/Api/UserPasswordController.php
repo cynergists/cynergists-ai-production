@@ -13,12 +13,16 @@ class UserPasswordController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user = $request->user();
 
-        if (! $user || ! Hash::check($data['current_password'], $user->password)) {
+        if (! $user) {
+            return response()->json(['message' => 'User not authenticated.'], 401);
+        }
+
+        if (! Hash::check($data['current_password'], $user->password)) {
             return response()->json(['message' => 'Current password is incorrect.'], 422);
         }
 

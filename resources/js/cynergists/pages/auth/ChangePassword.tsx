@@ -66,12 +66,9 @@ export default function ChangePassword() {
             router.visit('/portal');
         } catch (error: any) {
             console.error('Password change error:', error);
-            console.error('Error response:', error?.response);
 
-            const message =
-                error?.response?.data?.message ||
-                error?.message ||
-                'Failed to change password. Please try again.';
+            // API client throws errors with { message, status }
+            const message = error?.message || 'Failed to change password. Please try again.';
 
             toast({
                 title: 'Password change failed',

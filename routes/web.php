@@ -184,7 +184,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::put('/admin/payment-settings', [PaymentSettingsController::class, 'update']);
     Route::post('/partners/{partner}/w9', [PartnerSettingsController::class, 'uploadW9']);
     Route::post('/partner/magic-link', [PartnerSettingsController::class, 'sendMagicLink']);
-    Route::patch('/user/password', [UserPasswordController::class, 'update']);
+    Route::patch('/user/password', [UserPasswordController::class, 'update'])
+        ->middleware('throttle:5,1'); // 5 attempts per minute
     Route::get('/partner-dashboard/{partner}', [PartnerDashboardController::class, 'show']);
 
     Route::prefix('portal')->group(function () {
