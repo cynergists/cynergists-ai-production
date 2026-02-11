@@ -28,6 +28,9 @@ class PendingActionService
             ->where('user_id', $user->id)
             ->pending()
             ->notExpired()
+            ->whereHas('prospect', function ($query) {
+                $query->where('full_name', '!=', 'LinkedIn Member');
+            })
             ->with(['campaign', 'prospect'])
             ->orderBy('created_at', 'desc')
             ->limit($limit)

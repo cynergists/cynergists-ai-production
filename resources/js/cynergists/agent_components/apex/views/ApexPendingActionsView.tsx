@@ -184,9 +184,17 @@ export default function ApexPendingActionsView({
                                                     <p className="mt-0.5 text-sm text-muted-foreground">
                                                         To:{' '}
                                                         <span className="font-medium text-foreground">
-                                                            {action.prospect
-                                                                .full_name ||
-                                                                `${action.prospect.first_name} ${action.prospect.last_name}`}
+                                                            {(() => {
+                                                                const name = action.prospect.full_name ||
+                                                                    `${action.prospect.first_name || ''} ${action.prospect.last_name || ''}`.trim();
+                                                                
+                                                                // If name is "LinkedIn Member" or empty, show headline instead
+                                                                if (!name || name === 'LinkedIn Member') {
+                                                                    return action.prospect.headline || 'Private Profile';
+                                                                }
+                                                                
+                                                                return name;
+                                                            })()}
                                                         </span>
                                                     </p>
                                                 )}

@@ -88,7 +88,13 @@ interface ApexPendingAction {
     executed_at: string | null;
     created_at: string;
     campaign?: { id: string; name: string };
-    prospect?: { id: string; full_name: string; first_name: string; last_name: string };
+    prospect?: { 
+        id: string; 
+        full_name: string; 
+        first_name: string; 
+        last_name: string;
+        headline?: string;
+    };
 }
 
 interface ApexActivityLog {
