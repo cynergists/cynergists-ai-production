@@ -18,6 +18,13 @@ class EventEmailService
      */
     public function fire(string $slug, array $data = []): void
     {
+        Log::info('=== EventEmailService::fire START ===', [
+            'slug' => $slug,
+            'has_user' => isset($data['user']),
+            'has_password' => isset($data['password']),
+            'password_length' => isset($data['password']) ? strlen($data['password']) : 0,
+        ]);
+
         $event = SystemEvent::query()
             ->where('slug', $slug)
             ->where('is_active', true)
@@ -29,15 +36,29 @@ class EventEmailService
             return;
         }
 
+        Log::info('System event found', ['event_id' => $event->id]);
+
         $variables = $this->buildVariables($data);
+        Log::info('Variables built', [
+            'password_length' => strlen($variables['password'] ?? ''),
+            'portal_url' => $variables['portal_url'] ?? 'missing',
+        ]);
 
         $templates = $event->emailTemplates()
             ->where('is_active', true)
             ->get();
 
+        Log::info('Found templates', ['count' => $templates->count()]);
+
         foreach ($templates as $template) {
+            Log::info('Sending template', [
+                'template_id' => $template->id,
+                'recipient_type' => $template->recipient_type,
+            ]);
             $this->sendTemplate($template, $variables, $data);
         }
+
+        Log::info('=== EventEmailService::fire END ===');
     }
 
     /**
