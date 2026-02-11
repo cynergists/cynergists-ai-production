@@ -26,8 +26,9 @@ class UserPasswordController extends Controller
             return response()->json(['message' => 'Current password is incorrect.'], 422);
         }
 
+        // Update password (will be automatically hashed by the 'hashed' cast)
         $user->update([
-            'password' => Hash::make($data['password']),
+            'password' => $data['password'],
             'password_change_required' => false,
         ]);
 

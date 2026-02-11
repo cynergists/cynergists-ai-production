@@ -70,7 +70,17 @@ const request = async <T>(
             const contentType = response.headers.get('content-type') ?? '';
             if (contentType.includes('application/json')) {
                 const errorData = await response.json();
-                message = errorData.message || errorData.error || message;
+
+                // Check for Laravel validation errors first
+                if (errorData.errors && typeof errorData.errors === 'object') {
+                    const firstError = Object.values(errorData.errors)[0];
+                    if (Array.isArray(firstError) && firstError.length > 0) {
+                        message = firstError[0] as string;
+                    }
+                } else {
+                    // Use the message field if no validation errors
+                    message = errorData.message || errorData.error || message;
+                }
             }
         } catch (e) {
             // If parsing fails, use the default message
