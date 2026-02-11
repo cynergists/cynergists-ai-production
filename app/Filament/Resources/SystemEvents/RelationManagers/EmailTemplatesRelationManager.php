@@ -50,6 +50,7 @@ class EmailTemplatesRelationManager extends RelationManager
                         'app_url' => 'App URL',
                         'portal_url' => 'Portal URL',
                         'password_reset_url' => 'Password Reset URL',
+                        'password' => 'Password',
                     ]),
                 Toggle::make('is_active')
                     ->default(true),

@@ -29,7 +29,7 @@ class CreateUser extends CreateRecord
             ]);
         }
 
-        // Only send welcome email if no password was provided
+        // Send welcome email - with password or password creation link
         if (empty($this->data['password'])) {
             app(EventEmailService::class)->fire('user_created', [
                 'user' => $this->record,
@@ -38,7 +38,12 @@ class CreateUser extends CreateRecord
 
             $this->notify('success', 'User created successfully. Welcome email with password creation link has been sent to ' . $this->record->email);
         } else {
-            $this->notify('success', 'User created successfully with the provided password.');
+            app(EventEmailService::class)->fire('user_created', [
+                'user' => $this->record,
+                'password' => $this->data['password'],
+            ]);
+
+            $this->notify('success', 'User created successfully. Welcome email with password has been sent to ' . $this->record->email);
         }
     }
 }

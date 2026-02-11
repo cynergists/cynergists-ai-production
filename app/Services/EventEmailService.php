@@ -14,7 +14,7 @@ class EventEmailService
     /**
      * Fire a system event and send associated emails.
      *
-     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant, generate_password_reset_link?: bool}  $data
+     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant, generate_password_reset_link?: bool, password?: string}  $data
      */
     public function fire(string $slug, array $data = []): void
     {
@@ -52,6 +52,7 @@ class EventEmailService
         $subscription = $data['subscription'] ?? null;
         $tenant = $data['tenant'] ?? null;
         $generatePasswordResetLink = $data['generate_password_reset_link'] ?? false;
+        $password = $data['password'] ?? '';
 
         $variables = [
             'user_name' => $user?->name ?? '',
@@ -66,6 +67,7 @@ class EventEmailService
             'app_url' => config('app.url'),
             'portal_url' => config('app.url').'/portal/agents',
             'password_reset_url' => '',
+            'password' => $password,
         ];
 
         if ($generatePasswordResetLink && $user) {

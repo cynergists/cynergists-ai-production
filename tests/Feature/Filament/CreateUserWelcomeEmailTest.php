@@ -45,13 +45,13 @@ it('dispatches welcome email job when user is created without password', functio
     Bus::assertDispatched(SendEventEmail::class);
 });
 
-it('does not dispatch welcome email when user is created with password', function () {
+it('dispatches welcome email with password when user is created with password', function () {
     $event = SystemEvent::factory()->create(['slug' => 'user_created']);
 
     EventEmailTemplate::factory()->client()->create([
         'system_event_id' => $event->id,
         'subject' => 'Welcome {{ user_name }}',
-        'body' => '<p>Hello '.mt('user_name').'</p>',
+        'body' => '<p>Hello '.mt('user_name').', your password is '.mt('password').'</p>',
     ]);
 
     $this->actingAs($this->admin);
@@ -65,7 +65,10 @@ it('does not dispatch welcome email when user is created with password', functio
         ->call('create')
         ->assertHasNoErrors();
 
-    Bus::assertNotDispatched(SendEventEmail::class);
+    Bus::assertDispatched(SendEventEmail::class, function (SendEventEmail $job) {
+        return $job->recipients === ['john@example.com']
+            && str_contains($job->renderedBody, 'password123');
+    });
 });
 
 it('sends client welcome email to user email address', function () {

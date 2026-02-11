@@ -7,17 +7,16 @@ use App\Models\SystemEvent;
 use App\Models\User;
 use App\Models\UserRole;
 use Filament\Facades\Filament;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
+
+require_once __DIR__.'/../../Helpers/MergeTagHelper.php';
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Bus::fake([SendEventEmail::class]);
-    Notification::fake();
 
     // Create a sales rep user
     $this->salesRep = User::factory()->create([
@@ -47,13 +46,13 @@ it('denies non-admin and non-sales rep users from accessing Filament', function 
     expect($client->canAccessPanel(Filament::getCurrentPanel()))->toBeFalse();
 });
 
-it('sends both welcome email and password reset link when sales rep creates user', function () {
+it('sends welcome email with password reset link when sales rep creates user without password', function () {
     $event = SystemEvent::factory()->create(['slug' => 'user_created']);
 
     EventEmailTemplate::factory()->client()->create([
         'system_event_id' => $event->id,
         'subject' => 'Welcome {{ user_name }}',
-        'body' => '<p>Welcome!</p>',
+        'body' => '<p>Welcome! Reset link: '.mt('password_reset_url').'</p>',
     ]);
 
     $this->actingAs($this->salesRep);
@@ -66,12 +65,39 @@ it('sends both welcome email and password reset link when sales rep creates user
         ->call('create')
         ->assertHasNoErrors();
 
-    // Verify welcome email was dispatched
-    Bus::assertDispatched(SendEventEmail::class);
+    // Verify welcome email was dispatched with password reset link
+    Bus::assertDispatched(SendEventEmail::class, function (SendEventEmail $job) {
+        return $job->recipients === ['newuser@example.com']
+            && str_contains($job->renderedBody, 'Reset link:')
+            && str_contains($job->renderedBody, 'reset-password');
+    });
+});
 
-    // Verify password reset notification was sent
-    $newUser = User::where('email', 'newuser@example.com')->first();
-    Notification::assertSentTo($newUser, ResetPassword::class);
+it('sends welcome email with password when sales rep creates user with password', function () {
+    $event = SystemEvent::factory()->create(['slug' => 'user_created']);
+
+    EventEmailTemplate::factory()->client()->create([
+        'system_event_id' => $event->id,
+        'subject' => 'Welcome {{ user_name }}',
+        'body' => '<p>Welcome! Your password is: '.mt('password').'</p>',
+    ]);
+
+    $this->actingAs($this->salesRep);
+
+    Livewire::test(CreateUser::class)
+        ->set('data.name', 'New User')
+        ->set('data.email', 'newuser@example.com')
+        ->set('data.password', 'TempPass123')
+        ->set('data.is_active', true)
+        ->set('data.roles', ['client'])
+        ->call('create')
+        ->assertHasNoErrors();
+
+    // Verify welcome email was dispatched with password
+    Bus::assertDispatched(SendEventEmail::class, function (SendEventEmail $job) {
+        return $job->recipients === ['newuser@example.com']
+            && str_contains($job->renderedBody, 'TempPass123');
+    });
 });
 
 it('creates user without password when field is left blank', function () {
@@ -153,7 +179,7 @@ it('assigns correct roles when creating user', function () {
     expect(count($roles))->toBe(2);
 });
 
-it('sends password reset notification even if welcome email event does not exist', function () {
+it('creates user successfully even if welcome email event does not exist', function () {
     $this->actingAs($this->salesRep);
 
     Livewire::test(CreateUser::class)
@@ -166,8 +192,10 @@ it('sends password reset notification even if welcome email event does not exist
 
     $user = User::where('email', 'test@example.com')->first();
 
-    // Password reset notification should still be sent
-    Notification::assertSentTo($user, ResetPassword::class);
+    expect($user)->not->toBeNull();
+
+    // No welcome email should be dispatched when event doesn't exist
+    Bus::assertNotDispatched(SendEventEmail::class);
 });
 
 it('creates user successfully as admin role', function () {
@@ -199,7 +227,6 @@ it('creates user successfully as admin role', function () {
 
     expect($user)->not->toBeNull();
 
-    // Both notifications should be sent
+    // Welcome email should be dispatched
     Bus::assertDispatched(SendEventEmail::class);
-    Notification::assertSentTo($user, ResetPassword::class);
 });

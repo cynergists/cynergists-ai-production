@@ -159,7 +159,11 @@ class SystemEventSeeder extends Seeder
             .'<li><strong>Name:</strong> '.$this->mt('user_name').'</li>'
             .'<li><strong>Email:</strong> '.$this->mt('user_email').'</li>'
             .'</ul>'
-            .'<p><strong>Next Step:</strong> Click the button below to create your password and access your portal.</p>'
+            .'<div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">'
+            .'<p><strong>Your Temporary Password:</strong> <span style="font-family: monospace; font-size: 16px; background: white; padding: 4px 8px; border-radius: 4px;">'.$this->mt('password').'</span></p>'
+            .'<p style="font-size: 14px; color: #666; margin-top: 10px;">Please log in with this password and change it immediately for security.</p>'
+            .'</div>'
+            .'<p><strong>Alternatively:</strong> If you need to create your own password, click the button below:</p>'
             .'<p style="text-align: center; margin: 30px 0;"><a href="'.$this->mt('password_reset_url').'" style="background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Create Your Password</a></p>'
             .'<p style="font-size: 12px; color: #666;">If the button doesn\'t work, copy and paste this link into your browser:<br>'.$this->mt('password_reset_url').'</p>'
             .'<p>If you have any questions, feel free to reach out to our support team.</p>';
