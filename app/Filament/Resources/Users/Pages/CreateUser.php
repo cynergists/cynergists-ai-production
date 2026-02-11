@@ -75,8 +75,8 @@ class CreateUser extends CreateRecord
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $this->notify('danger', 'ERROR: ' . $e->getMessage());
-            throw $e;
+            // Don't re-throw - just log and notify
+            // User is already created, so let the page load successfully
         }
     }
 }

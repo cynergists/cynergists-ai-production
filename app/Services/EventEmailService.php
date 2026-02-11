@@ -112,20 +112,45 @@ class EventEmailService
         try {
             $renderedSubject = $this->renderMergeTags($template->subject, $variables);
             $bladeBody = $this->convertMergeTagsToBlade($template->body);
+
+            Log::info('About to render Blade template', [
+                'template_id' => $template->id,
+                'blade_body_length' => strlen($bladeBody),
+                'variables_keys' => array_keys($variables),
+            ]);
+
             $renderedBody = Blade::render($bladeBody, $variables);
+
+            Log::info('Blade rendered successfully', [
+                'rendered_length' => strlen($renderedBody),
+            ]);
 
             $recipients = $this->resolveRecipients($template->recipient_type, $data);
 
             if (empty($recipients)) {
+                Log::warning('No recipients found', [
+                    'recipient_type' => $template->recipient_type,
+                ]);
                 return;
             }
 
+            Log::info('Dispatching email job', [
+                'recipients' => $recipients,
+                'subject' => $renderedSubject,
+            ]);
+
             SendEventEmail::dispatch($recipients, $renderedSubject, $renderedBody);
+
+            Log::info('Email job dispatched successfully');
         } catch (\Throwable $e) {
             Log::error('Failed to send event email', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
+            // Don't re-throw - just log the error and continue
         }
     }
 
