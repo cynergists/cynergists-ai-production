@@ -31,8 +31,18 @@ class CreateUser extends CreateRecord
         }
 
         try {
+            // Debug logging
+            \Log::info('afterCreate called', [
+                'user_id' => $this->record->id,
+                'has_password' => isset($this->data['password']),
+                'password_value' => $this->data['password'] ?? 'NOT SET',
+                'password_empty' => empty($this->data['password']),
+            ]);
+
             // Send welcome email - with password or password creation link
-            if (empty($this->data['password'])) {
+            if (!isset($this->data['password']) || empty($this->data['password'])) {
+                \Log::info('Sending email with password reset link');
+
                 app(EventEmailService::class)->fire('user_created', [
                     'user' => $this->record,
                     'generate_password_reset_link' => true,
@@ -40,6 +50,10 @@ class CreateUser extends CreateRecord
 
                 $this->notify('success', 'User created successfully. Welcome email with password creation link has been sent to ' . $this->record->email);
             } else {
+                \Log::info('Sending email with password', [
+                    'password' => $this->data['password'],
+                ]);
+
                 app(EventEmailService::class)->fire('user_created', [
                     'user' => $this->record,
                     'password' => $this->data['password'],
