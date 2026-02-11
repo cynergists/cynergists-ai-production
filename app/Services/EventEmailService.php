@@ -86,7 +86,7 @@ class EventEmailService
             'company_name' => $tenant?->company_name ?? '',
             'app_name' => config('app.name'),
             'app_url' => config('app.url'),
-            'portal_url' => config('app.url').'/portal/agents',
+            'portal_url' => config('app.url').'/signin',
             'password_reset_url' => '',
             'password' => $password,
         ];
