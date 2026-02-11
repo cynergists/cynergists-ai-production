@@ -180,6 +180,10 @@ class PortalAvailableAgentForm
                                                     ->required()
                                                     ->default(false)
                                                     ->helperText('Show as popular/featured'),
+                                                Toggle::make('is_beta')
+                                                    ->required()
+                                                    ->default(false)
+                                                    ->helperText('Show beta badge in portal'),
                                             ]),
                                     ]),
                                 Section::make('Card Media')

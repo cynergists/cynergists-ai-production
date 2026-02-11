@@ -15,6 +15,7 @@ import {
     UserPlus,
     XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface ApexPendingActionsViewProps {
     agentDetails: any;
@@ -27,6 +28,7 @@ export default function ApexPendingActionsView({
     const { data: pendingData, isLoading } = useApexPendingActions();
     const approveMutation = useApprovePendingAction(agentId ?? '');
     const denyMutation = useDenyPendingAction();
+    const [processingActionId, setProcessingActionId] = useState<string | null>(null);
 
     const actions = pendingData?.actions ?? [];
 
@@ -80,13 +82,19 @@ export default function ApexPendingActionsView({
     };
 
     const handleApprove = (actionId: string) => {
-        if (!agentId) return;
-        approveMutation.mutate(actionId);
+        if (!agentId || processingActionId) return;
+        setProcessingActionId(actionId);
+        approveMutation.mutate(actionId, {
+            onSettled: () => setProcessingActionId(null),
+        });
     };
 
     const handleDeny = (actionId: string) => {
-        if (!agentId) return;
-        denyMutation.mutate(actionId);
+        if (!agentId || processingActionId) return;
+        setProcessingActionId(actionId);
+        denyMutation.mutate(actionId, {
+            onSettled: () => setProcessingActionId(null),
+        });
     };
 
     return (
@@ -129,9 +137,8 @@ export default function ApexPendingActionsView({
                     ) : (
                         actions.map((action) => {
                             const expired = isExpired(action.expires_at);
-                            const isProcessing =
-                                approveMutation.isPending ||
-                                denyMutation.isPending;
+                            const isThisActionProcessing = processingActionId === action.id;
+                            const isAnyActionProcessing = processingActionId !== null;
 
                             return (
                                 <div
@@ -141,6 +148,7 @@ export default function ApexPendingActionsView({
                                         expired
                                             ? 'border-red-500/20 bg-red-500/5'
                                             : 'border-primary/10 bg-card',
+                                        isThisActionProcessing && 'opacity-60',
                                     )}
                                 >
                                     {/* Header */}
@@ -227,11 +235,11 @@ export default function ApexPendingActionsView({
                                                 onClick={() =>
                                                     handleApprove(action.id)
                                                 }
-                                                disabled={isProcessing}
+                                                disabled={isAnyActionProcessing}
                                                 className="flex-1 gap-2 bg-green-600 text-white hover:bg-green-700"
                                                 size="sm"
                                             >
-                                                {approveMutation.isPending ? (
+                                                {isThisActionProcessing && approveMutation.isPending ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     <CheckCircle className="h-4 w-4" />
@@ -242,12 +250,12 @@ export default function ApexPendingActionsView({
                                                 onClick={() =>
                                                     handleDeny(action.id)
                                                 }
-                                                disabled={isProcessing}
+                                                disabled={isAnyActionProcessing}
                                                 variant="outline"
                                                 className="flex-1 gap-2 border-red-500/30 text-red-600 hover:bg-red-500/10 hover:text-red-700"
                                                 size="sm"
                                             >
-                                                {denyMutation.isPending ? (
+                                                {isThisActionProcessing && denyMutation.isPending ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     <XCircle className="h-4 w-4" />

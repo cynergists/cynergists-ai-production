@@ -1,4 +1,5 @@
 import { getAgentComponents } from '@/agent_components';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -52,6 +53,8 @@ interface AgentAccess {
     id: string;
     agent_type: string;
     agent_name: string;
+    job_title?: string | null;
+    is_beta?: boolean;
     configuration: Record<string, unknown> | null;
     is_active: boolean;
     usage_count: number | null;
@@ -133,7 +136,8 @@ export default function PortalWorkspace() {
         return agents.filter(
             (agent) =>
                 agent.agent_name.toLowerCase().includes(query) ||
-                agent.agent_type.toLowerCase().includes(query),
+                agent.agent_type.toLowerCase().includes(query) ||
+                (agent.job_title?.toLowerCase().includes(query) ?? false),
         );
     }, [agents, agentSearchQuery]);
 
@@ -637,11 +641,21 @@ export default function PortalWorkspace() {
                                                     )}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <h3 className="text-sm font-semibold text-foreground">
-                                                        {agent.agent_name}
-                                                    </h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-semibold text-foreground">
+                                                            {agent.agent_name}
+                                                        </h3>
+                                                        {agent.is_beta && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                                                            >
+                                                                BETA
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        {agent.agent_type}
+                                                        {agent.job_title || agent.agent_type}
                                                     </p>
                                                     {isFeatured && (
                                                         <div className="mt-1 flex items-center gap-1">

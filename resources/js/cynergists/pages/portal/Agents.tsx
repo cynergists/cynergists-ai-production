@@ -158,7 +158,7 @@ export default function PortalAgents() {
                                 <p className="text-sm font-semibold text-foreground">
                                     {latestAgent?.agent_name || '—'}
                                 </p>
-                                <p className="text-xs text-muted-foreground capitalize">
+                                <p className="text-xs text-muted-foreground">
                                     {latestAgent?.agent_type ||
                                         'No activity yet'}
                                 </p>
@@ -191,7 +191,7 @@ export default function PortalAgents() {
                                                 <CardTitle className="text-lg">
                                                     {agent.agent_name}
                                                 </CardTitle>
-                                                <CardDescription className="capitalize">
+                                                <CardDescription>
                                                     {agent.agent_type}
                                                 </CardDescription>
                                             </div>

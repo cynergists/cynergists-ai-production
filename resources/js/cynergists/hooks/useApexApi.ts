@@ -240,12 +240,37 @@ export function useApprovePendingAction(agentId: string) {
             apiClient.post(`/api/apex/pending-actions/${actionId}/approve`, {
                 agent_id: agentId,
             }),
+        onMutate: async (actionId: string) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically update by removing the action
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    actions: old.actions.filter((a: any) => a.id !== actionId),
+                    total: old.total - 1,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
             queryClient.invalidateQueries({ queryKey: ['apex-campaigns'] });
             toast.success('Action approved');
         },
-        onError: () => toast.error('Failed to approve action'),
+        onError: (_error, _actionId, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to approve action');
+        },
     });
 }
 
@@ -255,11 +280,36 @@ export function useDenyPendingAction() {
     return useMutation({
         mutationFn: (actionId: string) =>
             apiClient.post(`/api/apex/pending-actions/${actionId}/deny`),
+        onMutate: async (actionId: string) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['apex-pending-actions'] });
+            
+            // Snapshot previous value
+            const previousData = queryClient.getQueryData(['apex-pending-actions']);
+            
+            // Optimistically update by removing the action
+            queryClient.setQueryData(['apex-pending-actions'], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    actions: old.actions.filter((a: any) => a.id !== actionId),
+                    total: old.total - 1,
+                };
+            });
+            
+            return { previousData };
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['apex-pending-actions'] });
             toast.success('Action denied');
         },
-        onError: () => toast.error('Failed to deny action'),
+        onError: (_error, _actionId, context) => {
+            // Rollback on error
+            if (context?.previousData) {
+                queryClient.setQueryData(['apex-pending-actions'], context.previousData);
+            }
+            toast.error('Failed to deny action');
+        },
     });
 }
 
