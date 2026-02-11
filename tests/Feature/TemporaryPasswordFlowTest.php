@@ -9,12 +9,10 @@ it('complete temporary password flow works end-to-end', function () {
     $tempPassword = 'TempPass123';
     $user = User::factory()->create([
         'password' => $tempPassword, // Will be auto-hashed by 'hashed' cast
-        'password_change_required' => true,
     ]);
 
     // Verify password was hashed correctly
     expect(Hash::check($tempPassword, $user->password))->toBeTrue();
-    expect($user->password_change_required)->toBeTrue();
 
     // Step 2: User signs in with temporary password (simulated)
     $this->actingAs($user);
@@ -30,11 +28,10 @@ it('complete temporary password flow works end-to-end', function () {
     $response->assertSuccessful();
     $response->assertJson(['success' => true]);
 
-    // Step 4: Verify password was updated and flag was cleared
+    // Step 4: Verify password was updated
     $user->refresh();
     expect(Hash::check($newPassword, $user->password))->toBeTrue();
     expect(Hash::check($tempPassword, $user->password))->toBeFalse();
-    expect($user->password_change_required)->toBeFalse();
 
     // Step 5: User can sign in with new password
     expect(Hash::check($newPassword, $user->password))->toBeTrue();
@@ -46,7 +43,6 @@ it('user cannot use temporary password after changing it', function () {
 
     $user = User::factory()->create([
         'password' => $tempPassword,
-        'password_change_required' => true,
     ]);
 
     // Change password
@@ -91,22 +87,4 @@ it('validation errors are returned with helpful messages', function () {
     $response->assertStatus(422);
     $response->assertJsonValidationErrors(['password']);
     expect($response->json('errors.password'))->toBeArray();
-});
-
-it('clears password_change_required flag after successful change', function () {
-    $user = User::factory()->create([
-        'password' => 'temppass',
-        'password_change_required' => true,
-    ]);
-
-    expect($user->password_change_required)->toBeTrue();
-
-    $this->actingAs($user)->patchJson('/api/user/password', [
-        'current_password' => 'temppass',
-        'password' => 'newpassword123',
-        'password_confirmation' => 'newpassword123',
-    ])->assertSuccessful();
-
-    $user->refresh();
-    expect($user->password_change_required)->toBeFalse();
 });

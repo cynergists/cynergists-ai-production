@@ -10,11 +10,7 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 
 export default function Welcome() {
-    const { url, props } = usePage<{
-        auth?: {
-            user?: { id: number; password_change_required?: boolean } | null;
-        };
-    }>();
+    const { url } = usePage();
     const initialEmail =
         new URLSearchParams(url.split('?')[1] ?? '').get('email') || '';
     const [email, setEmail] = useState(initialEmail);
@@ -35,17 +31,8 @@ export default function Welcome() {
                 remember: true,
             },
             {
-                onSuccess: (page) => {
-                    // Check if user needs to change their password
-                    const user = page.props.auth?.user as {
-                        password_change_required?: boolean;
-                    };
-
-                    if (user?.password_change_required) {
-                        router.visit('/change-password');
-                    } else {
-                        router.visit('/portal');
-                    }
+                onSuccess: () => {
+                    router.visit('/portal');
                 },
                 onError: (errors) => {
                     const message =

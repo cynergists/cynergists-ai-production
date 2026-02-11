@@ -29,7 +29,6 @@ class UserPasswordController extends Controller
         // Update password (will be automatically hashed by the 'hashed' cast)
         $user->update([
             'password' => $data['password'],
-            'password_change_required' => false,
         ]);
 
         return response()->json(['success' => true]);

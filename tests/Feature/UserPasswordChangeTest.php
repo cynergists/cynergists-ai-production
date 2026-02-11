@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Hash;
 it('can change password with correct current password', function () {
     $user = User::factory()->create([
         'password' => Hash::make('oldpassword123'),
-        'password_change_required' => true,
     ]);
 
     $response = $this->actingAs($user)->patchJson('/api/user/password', [
@@ -20,7 +19,6 @@ it('can change password with correct current password', function () {
 
     $user->refresh();
     expect(Hash::check('newpassword123', $user->password))->toBeTrue();
-    expect($user->password_change_required)->toBeFalse();
 });
 
 it('fails with incorrect current password', function () {
