@@ -8,6 +8,7 @@ use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
@@ -146,6 +147,14 @@ class VoiceController extends Controller
                     maxTokens: 128
                 ),
                 'apex' => app(ApexAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory,
+                    maxTokens: 128
+                ),
+                'briggs' => app(BriggsAgentHandler::class)->handle(
                     message: $voiceMessage,
                     user: $user,
                     agent: $agentAccess->availableAgent,
