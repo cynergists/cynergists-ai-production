@@ -22,7 +22,10 @@ class UserPasswordController extends Controller
             return response()->json(['message' => 'Current password is incorrect.'], 422);
         }
 
-        $user->update(['password' => Hash::make($data['password'])]);
+        $user->update([
+            'password' => Hash::make($data['password']),
+            'password_change_required' => false,
+        ]);
 
         return response()->json(['success' => true]);
     }

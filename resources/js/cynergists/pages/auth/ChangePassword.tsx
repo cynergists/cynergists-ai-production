@@ -1,59 +1,74 @@
 import cynergistsLogo from '@/assets/cynergists-logo-new.png';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Loader2, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 
-export default function Welcome() {
-    const { url, props } = usePage<{
-        auth?: {
-            user?: { id: number; password_change_required?: boolean } | null;
+export default function ChangePassword() {
+    const { props } = usePage<{
+        auth: {
+            user: { id: number; name: string } | null;
         };
     }>();
-    const initialEmail =
-        new URLSearchParams(url.split('?')[1] ?? '').get('email') || '';
-    const [email, setEmail] = useState(initialEmail);
-    const [password, setPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [darkMode, setDarkMode] = useState(true);
     const { toast } = useToast();
 
-    const handleSignIn = async (e: React.FormEvent) => {
+    const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        router.post(
-            '/signin',
+        if (newPassword !== confirmPassword) {
+            toast({
+                title: 'Passwords do not match',
+                description: 'Please make sure your new passwords match.',
+                variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            toast({
+                title: 'Password too short',
+                description: 'Password must be at least 8 characters.',
+                variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+        }
+
+        router.patch(
+            '/api/user/password',
             {
-                email,
-                password,
-                remember: true,
+                current_password: currentPassword,
+                password: newPassword,
+                password_confirmation: confirmPassword,
             },
             {
-                onSuccess: (page) => {
-                    // Check if user needs to change their password
-                    const user = page.props.auth?.user as {
-                        password_change_required?: boolean;
-                    };
-
-                    if (user?.password_change_required) {
-                        router.visit('/change-password');
-                    } else {
-                        router.visit('/portal');
-                    }
+                onSuccess: () => {
+                    toast({
+                        title: 'Password changed!',
+                        description:
+                            'Your password has been updated successfully.',
+                    });
+                    // Redirect to portal after successful password change
+                    router.visit('/portal');
                 },
                 onError: (errors) => {
                     const message =
                         Object.values(errors)[0] ||
-                        'Please check your credentials and try again.';
+                        'Failed to change password. Please try again.';
 
                     toast({
-                        title: 'Sign in failed',
+                        title: 'Password change failed',
                         description: message,
                         variant: 'destructive',
                     });
@@ -63,15 +78,21 @@ export default function Welcome() {
         );
     };
 
+    // If not authenticated, redirect to sign in
+    if (!props.auth?.user) {
+        router.visit('/signin');
+        return null;
+    }
+
     return (
         <>
             <Helmet>
-                <title>Welcome to Cynergists | Sign In</title>
+                <title>Change Your Password | Cynergists</title>
                 <meta
                     name="description"
-                    content="Welcome to Cynergists! Sign in to access your AI agent dashboard and start transforming your business."
+                    content="Change your temporary password to secure your Cynergists account."
                 />
-                <link rel="canonical" href="/welcome" />
+                <link rel="canonical" href="/change-password" />
                 <meta name="robots" content="noindex, nofollow" />
             </Helmet>
 
@@ -108,37 +129,38 @@ export default function Welcome() {
                         <h1
                             className={`mb-2 text-2xl font-bold ${darkMode ? 'text-foreground' : 'text-slate-900'}`}
                         >
-                            Welcome to Cynergists!
+                            Change Your Password
                         </h1>
                         <p
                             className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}
                         >
-                            Your account is ready. Sign in with the temporary
-                            password from your welcome email.
+                            Welcome, {props.auth.user.name}! Please create a
+                            secure password to continue.
                         </p>
                     </header>
 
                     {/* Form */}
-                    <form onSubmit={handleSignIn} className="space-y-5">
+                    <form onSubmit={handleChangePassword} className="space-y-5">
                         <div className="space-y-2">
                             <Label
-                                htmlFor="email"
+                                htmlFor="current-password"
                                 className={
                                     darkMode
                                         ? 'text-foreground'
                                         : 'text-slate-700'
                                 }
                             >
-                                Email
+                                Current (Temporary) Password
                             </Label>
-                            <Input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@company.com"
+                            <PasswordInput
+                                id="current-password"
+                                name="current_password"
+                                autoComplete="current-password"
+                                value={currentPassword}
+                                onChange={(e) =>
+                                    setCurrentPassword(e.target.value)
+                                }
+                                placeholder="From your welcome email"
                                 required
                                 className={
                                     darkMode
@@ -150,22 +172,22 @@ export default function Welcome() {
 
                         <div className="space-y-2">
                             <Label
-                                htmlFor="password"
+                                htmlFor="new-password"
                                 className={
                                     darkMode
                                         ? 'text-foreground'
                                         : 'text-slate-700'
                                 }
                             >
-                                Temporary Password
+                                New Password
                             </Label>
                             <PasswordInput
-                                id="password"
+                                id="new-password"
                                 name="password"
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="From your welcome email"
+                                autoComplete="new-password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="At least 8 characters"
                                 required
                                 className={
                                     darkMode
@@ -173,12 +195,35 @@ export default function Welcome() {
                                         : 'border-slate-300 bg-white text-slate-900'
                                 }
                             />
-                            <p
-                                className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="confirm-password"
+                                className={
+                                    darkMode
+                                        ? 'text-foreground'
+                                        : 'text-slate-700'
+                                }
                             >
-                                Check your email for the temporary password sent
-                                when your account was created.
-                            </p>
+                                Confirm New Password
+                            </Label>
+                            <PasswordInput
+                                id="confirm-password"
+                                name="password_confirmation"
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                    setConfirmPassword(e.target.value)
+                                }
+                                placeholder="Repeat your new password"
+                                required
+                                className={
+                                    darkMode
+                                        ? 'border-border bg-input text-foreground'
+                                        : 'border-slate-300 bg-white text-slate-900'
+                                }
+                            />
                         </div>
 
                         <Button
@@ -189,20 +234,10 @@ export default function Welcome() {
                             {loading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                'Sign In'
+                                'Change Password'
                             )}
                         </Button>
                     </form>
-
-                    {/* Links */}
-                    <div className="mt-6 space-y-3 text-center text-sm">
-                        <Link
-                            href="/forgot-password"
-                            className={`block ${darkMode ? 'text-muted-foreground hover:text-foreground' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            Forgot password?
-                        </Link>
-                    </div>
 
                     {/* Help section */}
                     <div
@@ -212,10 +247,10 @@ export default function Welcome() {
                             className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}
                         >
                             <strong className="text-foreground">
-                                Need help?
+                                Password requirements:
                             </strong>{' '}
-                            After signing in, we recommend changing your
-                            temporary password in your account settings.
+                            At least 8 characters. Choose a strong, unique
+                            password you don't use elsewhere.
                         </p>
                     </div>
                 </div>

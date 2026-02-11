@@ -29,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'is_active',
+        'password_change_required',
     ];
 
     /**
@@ -54,6 +55,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'is_active' => 'boolean',
             'password' => 'hashed',
+            'password_change_required' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }

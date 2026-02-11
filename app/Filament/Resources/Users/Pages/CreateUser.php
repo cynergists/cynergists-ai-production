@@ -51,9 +51,12 @@ class CreateUser extends CreateRecord
                 $password = \Str::password(12);
                 \Log::info('Generated temporary password', ['length' => strlen($password)]);
 
-                // Save the password to the user
-                $this->record->update(['password' => $password]);
-                \Log::info('Password saved to user');
+                // Save the password and mark that they need to change it
+                $this->record->update([
+                    'password' => $password,
+                    'password_change_required' => true,
+                ]);
+                \Log::info('Password saved to user with change required flag');
             }
 
             // Send welcome email with the password
