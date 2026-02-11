@@ -25,7 +25,9 @@ const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
 
     const csrfToken = getCsrfToken();
     if (csrfToken) {
+        // Laravel checks for X-XSRF-TOKEN (from cookie) or X-CSRF-TOKEN (from meta tag)
         headers['X-CSRF-TOKEN'] = csrfToken;
+        headers['X-XSRF-TOKEN'] = csrfToken;
     }
 
     // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
