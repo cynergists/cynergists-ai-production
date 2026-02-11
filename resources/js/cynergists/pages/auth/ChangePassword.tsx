@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api-client';
 import { router, usePage } from '@inertiajs/react';
 import { Loader2, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
@@ -45,37 +46,37 @@ export default function ChangePassword() {
             return;
         }
 
-        router.patch(
-            '/api/user/password',
-            {
-                current_password: currentPassword,
-                password: newPassword,
-                password_confirmation: confirmPassword,
-            },
-            {
-                onSuccess: () => {
-                    toast({
-                        title: 'Password changed!',
-                        description:
-                            'Your password has been updated successfully.',
-                    });
-                    // Redirect to portal after successful password change
-                    router.visit('/portal');
+        try {
+            await apiClient.patch<{ success: boolean }>(
+                '/api/user/password',
+                {
+                    current_password: currentPassword,
+                    password: newPassword,
+                    password_confirmation: confirmPassword,
                 },
-                onError: (errors) => {
-                    const message =
-                        Object.values(errors)[0] ||
-                        'Failed to change password. Please try again.';
+            );
 
-                    toast({
-                        title: 'Password change failed',
-                        description: message,
-                        variant: 'destructive',
-                    });
-                },
-                onFinish: () => setLoading(false),
-            },
-        );
+            toast({
+                title: 'Password changed!',
+                description:
+                    'Your password has been updated successfully.',
+            });
+
+            // Redirect to portal after successful password change
+            router.visit('/portal');
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                'Failed to change password. Please try again.';
+
+            toast({
+                title: 'Password change failed',
+                description: message,
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     // If not authenticated, redirect to sign in
