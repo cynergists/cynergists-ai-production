@@ -8,6 +8,7 @@ use App\Models\CustomerSubscription;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\UserRole;
+use App\Services\EventEmailService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -28,6 +29,25 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('sendWelcomeEmail')
+                ->label('Send Welcome Email')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Send Welcome Email')
+                ->modalDescription(fn (): string => "Send a welcome email with password creation link to {$this->record->email}?")
+                ->action(function (): void {
+                    app(EventEmailService::class)->fire('user_created', [
+                        'user' => $this->record,
+                        'generate_password_reset_link' => true,
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Welcome email sent')
+                        ->body("Welcome email with password creation link sent to {$this->record->email}.")
+                        ->send();
+                }),
             Action::make('sendPasswordReset')
                 ->label('Send Password Reset')
                 ->icon('heroicon-o-envelope')

@@ -9,6 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 
+require_once __DIR__.'/../../Helpers/MergeTagHelper.php';
+
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
@@ -21,11 +23,6 @@ beforeEach(function () {
         'email' => 'test@example.com',
     ]);
 });
-
-function mt(string $name): string
-{
-    return '<span data-type="mergeTag" data-id="'.$name.'">{{ '.$name.' }}</span>';
-}
 
 it('dispatches jobs for active templates when event fires', function () {
     $event = SystemEvent::factory()->create(['slug' => 'subscription_started']);

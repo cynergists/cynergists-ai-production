@@ -29,8 +29,9 @@ class CreateUser extends CreateRecord
             ]);
         }
 
-        app(EventEmailService::class)->fire('user_created', ['user' => $this->record]);
-
-        Password::sendResetLink(['email' => $this->record->email]);
+        app(EventEmailService::class)->fire('user_created', [
+            'user' => $this->record,
+            'generate_password_reset_link' => true,
+        ]);
     }
 }

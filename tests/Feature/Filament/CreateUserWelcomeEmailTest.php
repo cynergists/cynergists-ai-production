@@ -10,6 +10,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Livewire\Livewire;
 
+require_once __DIR__.'/../../Helpers/MergeTagHelper.php';
+
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
@@ -20,11 +22,6 @@ beforeEach(function () {
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 });
-
-function mt(string $name): string
-{
-    return '<span data-type="mergeTag" data-id="'.$name.'">{{ '.$name.' }}</span>';
-}
 
 it('dispatches welcome email job when user is created in Filament', function () {
     $event = SystemEvent::factory()->create(['slug' => 'user_created']);
