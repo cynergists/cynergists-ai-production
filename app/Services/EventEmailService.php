@@ -14,17 +14,10 @@ class EventEmailService
     /**
      * Fire a system event and send associated emails.
      *
-     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant, generate_password_reset_link?: bool, password?: string}  $data
+     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant, generate_password_reset_link?: bool}  $data
      */
     public function fire(string $slug, array $data = []): void
     {
-        Log::info('=== EventEmailService::fire START ===', [
-            'slug' => $slug,
-            'has_user' => isset($data['user']),
-            'has_password' => isset($data['password']),
-            'password_length' => isset($data['password']) ? strlen($data['password']) : 0,
-        ]);
-
         $event = SystemEvent::query()
             ->where('slug', $slug)
             ->where('is_active', true)
@@ -36,29 +29,15 @@ class EventEmailService
             return;
         }
 
-        Log::info('System event found', ['event_id' => $event->id]);
-
         $variables = $this->buildVariables($data);
-        Log::info('Variables built', [
-            'password_length' => strlen($variables['password'] ?? ''),
-            'portal_url' => $variables['portal_url'] ?? 'missing',
-        ]);
 
         $templates = $event->emailTemplates()
             ->where('is_active', true)
             ->get();
 
-        Log::info('Found templates', ['count' => $templates->count()]);
-
         foreach ($templates as $template) {
-            Log::info('Sending template', [
-                'template_id' => $template->id,
-                'recipient_type' => $template->recipient_type,
-            ]);
             $this->sendTemplate($template, $variables, $data);
         }
-
-        Log::info('=== EventEmailService::fire END ===');
     }
 
     /**
@@ -73,7 +52,6 @@ class EventEmailService
         $subscription = $data['subscription'] ?? null;
         $tenant = $data['tenant'] ?? null;
         $generatePasswordResetLink = $data['generate_password_reset_link'] ?? false;
-        $password = $data['password'] ?? '';
 
         $variables = [
             'user_name' => $user?->name ?? '',
@@ -86,17 +64,16 @@ class EventEmailService
             'company_name' => $tenant?->company_name ?? '',
             'app_name' => config('app.name'),
             'app_url' => config('app.url'),
-            'portal_url' => config('app.url').'/welcome',
+            'portal_url' => config('app.url').'/portal/agents',
             'password_reset_url' => '',
-            'password' => $password,
         ];
 
         if ($generatePasswordResetLink && $user) {
             $token = Password::createToken($user);
-            $variables['password_reset_url'] = route('password.reset', [
+            $variables['password_reset_url'] = url('/welcome?'.http_build_query([
                 'token' => $token,
                 'email' => $user->email,
-            ]);
+            ]));
         }
 
         return $variables;
@@ -112,45 +89,20 @@ class EventEmailService
         try {
             $renderedSubject = $this->renderMergeTags($template->subject, $variables);
             $bladeBody = $this->convertMergeTagsToBlade($template->body);
-
-            Log::info('About to render Blade template', [
-                'template_id' => $template->id,
-                'blade_body_length' => strlen($bladeBody),
-                'variables_keys' => array_keys($variables),
-            ]);
-
             $renderedBody = Blade::render($bladeBody, $variables);
-
-            Log::info('Blade rendered successfully', [
-                'rendered_length' => strlen($renderedBody),
-            ]);
 
             $recipients = $this->resolveRecipients($template->recipient_type, $data);
 
             if (empty($recipients)) {
-                Log::warning('No recipients found', [
-                    'recipient_type' => $template->recipient_type,
-                ]);
                 return;
             }
 
-            Log::info('Dispatching email job', [
-                'recipients' => $recipients,
-                'subject' => $renderedSubject,
-            ]);
-
             SendEventEmail::dispatch($recipients, $renderedSubject, $renderedBody);
-
-            Log::info('Email job dispatched successfully');
         } catch (\Throwable $e) {
             Log::error('Failed to send event email', [
                 'template_id' => $template->id,
                 'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
             ]);
-            // Don't re-throw - just log the error and continue
         }
     }
 

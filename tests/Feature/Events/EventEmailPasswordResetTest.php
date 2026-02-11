@@ -40,7 +40,8 @@ it('includes password reset URL when generate_password_reset_link is true', func
     Bus::assertDispatched(SendEventEmail::class);
 
     $job = Bus::dispatched(SendEventEmail::class)->first();
-    expect($job->renderedBody)->toContain('reset-password');
+    expect($job->renderedBody)->toContain('/welcome');
+    expect($job->renderedBody)->toContain('token=');
     expect($job->renderedBody)->toContain('email=');
 });
 
@@ -62,7 +63,7 @@ it('does not include password reset URL when generate_password_reset_link is fal
 
     $job = Bus::dispatched(SendEventEmail::class)->first();
     expect($job->renderedBody)->toContain('URL:');
-    expect($job->renderedBody)->not->toContain('reset-password');
+    expect($job->renderedBody)->not->toContain('/welcome?token=');
 });
 
 it('does not include password reset URL when flag is not provided', function () {
@@ -82,7 +83,7 @@ it('does not include password reset URL when flag is not provided', function () 
 
     $job = Bus::dispatched(SendEventEmail::class)->first();
     expect($job->renderedBody)->toContain('URL:');
-    expect($job->renderedBody)->not->toContain('reset-password');
+    expect($job->renderedBody)->not->toContain('/welcome?token=');
 });
 
 it('generates valid password reset token', function () {
@@ -102,7 +103,7 @@ it('generates valid password reset token', function () {
     Bus::assertDispatched(SendEventEmail::class);
 
     $job = Bus::dispatched(SendEventEmail::class)->first();
-    preg_match('/reset-password\/([a-f0-9]+)/', $job->renderedBody, $matches);
+    preg_match('/welcome\?token=([a-f0-9]+)&amp;email=/', $job->renderedBody, $matches);
     expect($matches)->toHaveKey(1);
     expect(strlen($matches[1]))->toBeGreaterThan(20);
 });

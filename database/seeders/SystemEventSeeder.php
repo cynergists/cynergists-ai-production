@@ -153,15 +153,14 @@ class SystemEventSeeder extends Seeder
     private function userCreatedClientBody(): string
     {
         return '<h2>Welcome to '.$this->mt('app_name').', '.$this->mt('user_name').'!</h2>'
-            .'<p>Your account has been successfully created. We\'re excited to have you on board!</p>'
-            .'<p><strong>Your Login Details:</strong></p>'
-            .'<ul>'
-            .'<li><strong>Email:</strong> '.$this->mt('user_email').'</li>'
-            .'<li><strong>Temporary Password:</strong> <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">'.$this->mt('password').'</span></li>'
-            .'</ul>'
-            .'<p style="margin-top: 30px; text-align: center;"><a href="'.$this->mt('portal_url').'" style="background-color: #22c55e; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">Sign In to Portal</a></p>'
-            .'<p style="font-size: 14px; color: #666; margin-top: 20px;"><strong>Important:</strong> Please change your password after your first login for security.</p>'
-            .'<p style="font-size: 12px; color: #999; margin-top: 30px;">If you have any questions, feel free to reach out to our support team.</p>';
+            .'<p>Your account has been successfully created, and we\'re thrilled to have you join us!</p>'
+            .'<p>To get started, you\'ll need to create your password and access your portal.</p>'
+            .'<p style="margin: 40px 0; text-align: center;">'
+            .'<a href="'.$this->mt('password_reset_url').'" style="background-color: #22c55e; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Create Your Password</a>'
+            .'</p>'
+            .'<p style="font-size: 14px; color: #666;"><strong>Your login email:</strong> '.$this->mt('user_email').'</p>'
+            .'<p style="font-size: 13px; color: #999; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">If the button above doesn\'t work, copy and paste this link into your browser:<br><span style="color: #3b82f6; word-break: break-all;">'.$this->mt('password_reset_url').'</span></p>'
+            .'<p style="font-size: 12px; color: #999; margin-top: 20px;">If you have any questions or need assistance, feel free to reach out to our support team.</p>';
     }
 
     private function userCreatedAdminBody(): string

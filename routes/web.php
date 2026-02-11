@@ -68,7 +68,13 @@ Route::get('/checkout', [CynergistsPageController::class, 'page'])->defaults('co
 Route::get('/cart', [CynergistsPageController::class, 'page'])->defaults('component', 'Cart');
 Route::get('/sign-agreement', [CynergistsPageController::class, 'page'])->defaults('component', 'SignAgreement');
 Route::get('/signin', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignIn');
-Route::get('/welcome', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/Welcome');
+Route::get('/welcome', function (Illuminate\Http\Request $request) {
+    return Inertia\Inertia::render('auth/reset-password', [
+        'email' => $request->email,
+        'token' => $request->token,
+        'isNewUser' => true,
+    ]);
+})->name('welcome');
 Route::get('/change-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ChangePassword')->middleware('auth');
 Route::get('/signup/client', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpClient');
 Route::get('/signup/partner', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
