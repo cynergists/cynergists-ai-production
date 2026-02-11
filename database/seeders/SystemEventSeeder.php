@@ -159,8 +159,7 @@ class SystemEventSeeder extends Seeder
             .'<li><strong>Name:</strong> '.$this->mt('user_name').'</li>'
             .'<li><strong>Email:</strong> '.$this->mt('user_email').'</li>'
             .'</ul>'
-            .'<p>You can now access your portal and start exploring the platform.</p>'
-            .'<p><a href="'.$this->mt('portal_url').'" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 16px;">Go to Portal</a></p>'
+            .'<p><strong>Next Step:</strong> You will receive a separate email with a link to create your password and access your portal.</p>'
             .'<p>If you have any questions, feel free to reach out to our support team.</p>';
     }
 

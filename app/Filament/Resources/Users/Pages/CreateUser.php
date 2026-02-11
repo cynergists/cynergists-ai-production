@@ -7,6 +7,7 @@ use App\Models\UserRole;
 use App\Services\EventEmailService;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Enums\Width;
+use Illuminate\Support\Facades\Password;
 
 class CreateUser extends CreateRecord
 {
@@ -29,5 +30,7 @@ class CreateUser extends CreateRecord
         }
 
         app(EventEmailService::class)->fire('user_created', ['user' => $this->record]);
+
+        Password::sendResetLink(['email' => $this->record->email]);
     }
 }
