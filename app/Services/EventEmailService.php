@@ -76,18 +76,7 @@ class EventEmailService
                 'token' => $token,
                 'email' => $user->email,
             ]);
-
-            Log::info('Generated password reset URL', [
-                'user_id' => $user->id,
-                'url' => $variables['password_reset_url'],
-            ]);
         }
-
-        Log::info('Built email variables', [
-            'generate_password_reset_link' => $generatePasswordResetLink,
-            'has_password' => !empty($password),
-            'password_reset_url_empty' => empty($variables['password_reset_url']),
-        ]);
 
         return $variables;
     }
