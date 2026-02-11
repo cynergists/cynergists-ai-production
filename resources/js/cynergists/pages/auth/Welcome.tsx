@@ -29,8 +29,12 @@ export default function Welcome() {
                 email,
                 password,
                 remember: true,
+                redirect: '/portal',
             },
             {
+                onSuccess: () => {
+                    router.visit('/portal');
+                },
                 onError: (errors) => {
                     const message =
                         Object.values(errors)[0] ||
