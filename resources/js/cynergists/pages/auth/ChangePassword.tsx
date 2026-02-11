@@ -65,8 +65,12 @@ export default function ChangePassword() {
             // Redirect to portal after successful password change
             router.visit('/portal');
         } catch (error: any) {
+            console.error('Password change error:', error);
+            console.error('Error response:', error?.response);
+
             const message =
                 error?.response?.data?.message ||
+                error?.message ||
                 'Failed to change password. Please try again.';
 
             toast({

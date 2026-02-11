@@ -61,7 +61,19 @@ const request = async <T>(
     });
 
     if (!response.ok) {
-        const message = response.statusText || 'Request failed';
+        let message = response.statusText || 'Request failed';
+
+        // Try to parse error response body for detailed error message
+        try {
+            const contentType = response.headers.get('content-type') ?? '';
+            if (contentType.includes('application/json')) {
+                const errorData = await response.json();
+                message = errorData.message || errorData.error || message;
+            }
+        } catch (e) {
+            // If parsing fails, use the default message
+        }
+
         const error: ApiError = { message, status: response.status };
         throw error;
     }
