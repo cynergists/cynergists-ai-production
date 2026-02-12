@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import type { AIAgent, AgentTier } from '@/components/ui/AIAgentCard';
 import { Link } from '@inertiajs/react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Circle } from 'lucide-react';
 import { useState } from 'react';
 
 const stripHtmlTags = (html: string | null): string => {
@@ -159,6 +159,33 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                                         }
                                         className="w-full"
                                     />
+                                    {/* Dot Indicators */}
+                                    <div className="flex justify-between px-1">
+                                        {tiers.map((tier, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() =>
+                                                    setSelectedTierIndex(index)
+                                                }
+                                                className={`rounded-full p-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-lime-500/50 ${
+                                                    index === selectedTierIndex
+                                                        ? 'text-accent dark:text-lime-400'
+                                                        : 'text-muted-foreground/50 hover:text-muted-foreground'
+                                                }`}
+                                                aria-label={`Select tier ${index + 1}`}
+                                                title={tier.description}
+                                            >
+                                                <Circle
+                                                    className={`h-3 w-3 transition-all ${
+                                                        index ===
+                                                        selectedTierIndex
+                                                            ? 'fill-accent dark:fill-lime-400'
+                                                            : ''
+                                                    }`}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
                                     <p className="line-clamp-1 text-center text-xs text-muted-foreground">
                                         {selectedTier?.description ||
                                             `Tier ${selectedTierIndex + 1}`}
