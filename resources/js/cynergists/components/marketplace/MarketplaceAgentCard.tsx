@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import type { AIAgent, AgentTier } from '@/components/ui/AIAgentCard';
 import { Link } from '@inertiajs/react';
@@ -34,6 +35,7 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
     const tiers = agent.tiers || [];
     const hasTiers = tiers.length > 0;
     const [selectedTierIndex, setSelectedTierIndex] = useState(0);
+    const [mediaLoaded, setMediaLoaded] = useState(false);
 
     const selectedTier = hasTiers ? tiers[selectedTierIndex] : null;
     const displayPrice = selectedTier
@@ -48,6 +50,14 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
             <Card className="group relative flex h-auto flex-col overflow-hidden rounded-xl border-0 transition-all duration-300 sm:h-[464px] sm:flex-row">
                 {/* Media Section - Responsive */}
                 <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden bg-muted/30 sm:aspect-auto sm:h-full sm:w-[280px]">
+                    {/* Skeleton Loading State */}
+                    {hasMedia && currentMedia && !mediaLoaded && (
+                        <div className="absolute inset-0 z-10">
+                            <Skeleton className="h-full w-full" />
+                        </div>
+                    )}
+
+                    {/* Media Content */}
                     {hasMedia && currentMedia ? (
                         currentMedia.type === 'video' ? (
                             <video
@@ -56,14 +66,20 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                                 muted
                                 loop
                                 playsInline
-                                className="absolute inset-0 h-full w-full object-cover"
+                                onLoadedData={() => setMediaLoaded(true)}
+                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+                                    mediaLoaded ? 'opacity-100' : 'opacity-0'
+                                }`}
                                 style={{ objectPosition: 'center 15%' }}
                             />
                         ) : (
                             <img
                                 src={getMediaUrl(currentMedia)}
                                 alt={agent.name}
-                                className="absolute inset-0 h-full w-full object-cover object-top"
+                                onLoad={() => setMediaLoaded(true)}
+                                className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-300 ${
+                                    mediaLoaded ? 'opacity-100' : 'opacity-0'
+                                }`}
                             />
                         )
                     ) : (
@@ -73,7 +89,7 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                     {/* Category Badge */}
                     <Badge
                         variant="outline"
-                        className="absolute top-4 left-4 border-white/30 bg-black/50 text-xs capitalize text-white backdrop-blur-sm"
+                        className="absolute top-4 left-4 z-20 border-white/30 bg-black/50 text-xs capitalize text-white backdrop-blur-sm"
                     >
                         {agent.category}
                     </Badge>
