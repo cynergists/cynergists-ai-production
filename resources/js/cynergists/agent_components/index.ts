@@ -1,4 +1,7 @@
 import React from 'react';
+import { AetherChat } from './aether/AetherChat';
+import { AetherConfig } from './aether/AetherConfig';
+import AetherSidebar from './aether/AetherSidebar';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
@@ -13,9 +16,18 @@ import CarbonSidebar from './carbon/CarbonSidebar';
 import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
+import { KinetixChat } from './kinetix/KinetixChat';
+import { KinetixConfig } from './kinetix/KinetixConfig';
+import KinetixSidebar from './kinetix/KinetixSidebar';
 import { LunaChat } from './luna/LunaChat';
 import { LunaConfig } from './luna/LunaConfig';
 import LunaSidebar from './luna/LunaSidebar';
+import { OptixChat } from './optix/OptixChat';
+import { OptixConfig } from './optix/OptixConfig';
+import OptixSidebar from './optix/OptixSidebar';
+import { VectorChat } from './vector/VectorChat';
+import { VectorConfig } from './vector/VectorConfig';
+import VectorSidebar from './vector/VectorSidebar';
 
 interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
@@ -52,6 +64,26 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: LunaConfig,
         SidebarComponent: LunaSidebar,
     },
+    aether: {
+        ChatComponent: AetherChat,
+        ConfigComponent: AetherConfig,
+        SidebarComponent: AetherSidebar,
+    },
+    kinetix: {
+        ChatComponent: KinetixChat,
+        ConfigComponent: KinetixConfig,
+        SidebarComponent: KinetixSidebar,
+    },
+    optix: {
+        ChatComponent: OptixChat,
+        ConfigComponent: OptixConfig,
+        SidebarComponent: OptixSidebar,
+    },
+    vector: {
+        ChatComponent: VectorChat,
+        ConfigComponent: VectorConfig,
+        SidebarComponent: VectorSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -60,6 +92,9 @@ export function getAgentComponents(agentName: string): AgentComponents | null {
 }
 
 export {
+    AetherChat,
+    AetherConfig,
+    AetherSidebar,
     ApexChat,
     ApexConfig,
     ApexSidebar,
@@ -72,7 +107,16 @@ export {
     CynessaChat,
     CynessaConfig,
     CynessaSidebar,
+    KinetixChat,
+    KinetixConfig,
+    KinetixSidebar,
     LunaChat,
     LunaConfig,
     LunaSidebar,
+    OptixChat,
+    OptixConfig,
+    OptixSidebar,
+    VectorChat,
+    VectorConfig,
+    VectorSidebar,
 };

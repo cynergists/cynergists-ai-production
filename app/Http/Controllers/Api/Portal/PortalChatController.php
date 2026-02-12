@@ -10,12 +10,16 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Optix\OptixAgentHandler;
+use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,11 +28,15 @@ use Illuminate\Support\Str;
 class PortalChatController extends Controller
 {
     public function __construct(
+        private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
+        private OptixAgentHandler $optixAgentHandler,
+        private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService
     ) {}
 
@@ -236,6 +244,50 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->briggsAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Aether agent
+        if (strtolower($agentAccess->agent_name) === 'aether') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->aetherAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Kinetix agent
+        if (strtolower($agentAccess->agent_name) === 'kinetix') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->kinetixAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Optix agent
+        if (strtolower($agentAccess->agent_name) === 'optix') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->optixAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Vector agent
+        if (strtolower($agentAccess->agent_name) === 'vector') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->vectorAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
