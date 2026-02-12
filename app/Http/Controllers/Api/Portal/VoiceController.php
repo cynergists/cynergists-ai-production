@@ -13,6 +13,7 @@ use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\ElevenLabsService;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -155,6 +156,14 @@ class VoiceController extends Controller
                     maxTokens: 128
                 ),
                 'briggs' => app(BriggsAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory,
+                    maxTokens: 128
+                ),
+                'vector' => app(VectorAgentHandler::class)->handle(
                     message: $voiceMessage,
                     user: $user,
                     agent: $agentAccess->availableAgent,

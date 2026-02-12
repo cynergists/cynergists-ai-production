@@ -16,6 +16,7 @@ use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +30,7 @@ class PortalChatController extends Controller
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
+        private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService
     ) {}
 
@@ -236,6 +238,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->briggsAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Vector agent
+        if (strtolower($agentAccess->agent_name) === 'vector') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->vectorAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
