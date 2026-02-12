@@ -2,6 +2,9 @@ import React from 'react';
 import { AetherChat } from './aether/AetherChat';
 import { AetherConfig } from './aether/AetherConfig';
 import AetherSidebar from './aether/AetherSidebar';
+import { BeaconChat } from './beacon/BeaconChat';
+import { BeaconConfig } from './beacon/BeaconConfig';
+import BeaconSidebar from './beacon/BeaconSidebar';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
@@ -84,6 +87,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: VectorConfig,
         SidebarComponent: VectorSidebar,
     },
+    beacon: {
+        ChatComponent: BeaconChat,
+        ConfigComponent: BeaconConfig,
+        SidebarComponent: BeaconSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -95,6 +103,9 @@ export {
     AetherChat,
     AetherConfig,
     AetherSidebar,
+    BeaconChat,
+    BeaconConfig,
+    BeaconSidebar,
     ApexChat,
     ApexConfig,
     ApexSidebar,
