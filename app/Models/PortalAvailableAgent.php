@@ -26,36 +26,7 @@ class PortalAvailableAgent extends Model
                     $agent->price = $lowestPrice;
                 }
             }
-
-            // Process card_media: convert file paths to full URLs
-            if (! empty($agent->card_media) && is_array($agent->card_media)) {
-                $agent->card_media = self::processMediaArray($agent->card_media);
-            }
-
-            // Process product_media: convert file paths to full URLs
-            if (! empty($agent->product_media) && is_array($agent->product_media)) {
-                $agent->product_media = self::processMediaArray($agent->product_media);
-            }
         });
-    }
-
-    /**
-     * Process media array to convert file uploads to storage URLs.
-     * Keeps both url and file fields separate.
-     *
-     * @param  array<int, array<string, mixed>>  $mediaArray
-     * @return array<int, array<string, mixed>>
-     */
-    private static function processMediaArray(array $mediaArray): array
-    {
-        return array_map(function ($item) {
-            // Convert file path to full storage URL if uploaded
-            if (! empty($item['file'])) {
-                $item['file'] = '/storage/'.$item['file'];
-            }
-
-            return $item;
-        }, $mediaArray);
     }
 
     /**

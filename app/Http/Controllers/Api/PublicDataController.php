@@ -207,10 +207,32 @@ class PublicDataController extends Controller
             }
         }
 
+        // Convert storage paths to full URLs for media fields
+        $data['card_media'] = $this->processMediaForApi($data['card_media'] ?? []);
+        $data['product_media'] = $this->processMediaForApi($data['product_media'] ?? []);
+
         $data['category'] = $data['category'] ?? 'General';
         $data['slug'] = $data['slug'] ?? null;
         $data['slug'] = $data['slug'] ?: Str::slug((string) ($data['name'] ?? 'agent'));
 
         return $data;
+    }
+
+    /**
+     * Process media array to convert storage paths to full URLs for API response.
+     *
+     * @param  array<int, array<string, mixed>>  $mediaArray
+     * @return array<int, array<string, mixed>>
+     */
+    private function processMediaForApi(array $mediaArray): array
+    {
+        return array_map(function ($item) {
+            // Convert relative storage path to full URL if it's a file upload
+            if (! empty($item['file']) && ! str_starts_with($item['file'], '/storage/') && ! str_starts_with($item['file'], 'http')) {
+                $item['file'] = '/storage/'.$item['file'];
+            }
+
+            return $item;
+        }, $mediaArray);
     }
 }
