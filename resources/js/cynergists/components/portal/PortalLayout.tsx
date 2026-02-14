@@ -95,7 +95,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <title>{portalTitle} | Cynergists</title>
                 </Helmet>
 
-                <div className="flex min-h-screen flex-col bg-background md:h-screen md:max-h-screen md:min-h-0 md:overflow-hidden">
+                <div className="flex h-dvh flex-col overflow-hidden bg-background">
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
                         <div className="min-w-0">
                             <p className="text-xs tracking-wide text-muted-foreground uppercase">
@@ -224,7 +224,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                         </SheetContent>
                     </Sheet>
 
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-hidden">
+                    <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
                         {children}
                     </main>
                 </div>
