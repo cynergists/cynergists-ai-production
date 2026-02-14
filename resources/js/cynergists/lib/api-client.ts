@@ -63,6 +63,12 @@ const request = async <T>(
     });
 
     if (!response.ok) {
+        // Session expired or CSRF token mismatch — redirect to login
+        if (response.status === 419) {
+            window.location.href = '/login';
+            throw { message: 'Session expired. Redirecting to login...', status: 419 } as ApiError;
+        }
+
         let message = response.statusText || 'Request failed';
 
         // Try to parse error response body for detailed error message
