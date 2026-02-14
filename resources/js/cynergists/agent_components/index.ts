@@ -28,6 +28,9 @@ import OptixSidebar from './optix/OptixSidebar';
 import { VectorChat } from './vector/VectorChat';
 import { VectorConfig } from './vector/VectorConfig';
 import VectorSidebar from './vector/VectorSidebar';
+import { ArsenalChat } from './arsenal/ArsenalChat';
+import { ArsenalConfig } from './arsenal/ArsenalConfig';
+import ArsenalSidebar from './arsenal/ArsenalSidebar';
 
 interface AgentComponents {
     ChatComponent: React.ComponentType<any>;
@@ -84,6 +87,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: VectorConfig,
         SidebarComponent: VectorSidebar,
     },
+    arsenal: {
+        ChatComponent: ArsenalChat,
+        ConfigComponent: ArsenalConfig,
+        SidebarComponent: ArsenalSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -119,4 +127,7 @@ export {
     VectorChat,
     VectorConfig,
     VectorSidebar,
+    ArsenalChat,
+    ArsenalConfig,
+    ArsenalSidebar,
 };

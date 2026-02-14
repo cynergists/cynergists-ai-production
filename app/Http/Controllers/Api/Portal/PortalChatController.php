@@ -12,6 +12,7 @@ use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
+
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
@@ -30,6 +31,7 @@ class PortalChatController extends Controller
     public function __construct(
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
+
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
@@ -288,6 +290,25 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->vectorAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Arsenal agent
+        if (strtolower($agentAccess->agent_name) === 'arsenal') {
+            if ($tenant) {
+                $arsenalAgent = new \App\Ai\Agents\Arsenal(
+                    user: $user,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory
+                );
+
+                try {
+                    $response = $arsenalAgent->prompt($message);
+                    return (string) $response;
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: ' . $e->getMessage());
+                    return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
+                }
             }
         }
 
