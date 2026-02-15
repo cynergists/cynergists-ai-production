@@ -1,62 +1,21 @@
 <?php
 
-namespace App\Jobs\Apex;
+namespace App\Services\Apex;
 
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
 use App\Models\ApexCampaignProspect;
 use App\Models\ApexLinkedInAccount;
 use App\Models\ApexProspect;
-use App\Models\PortalAvailableAgent;
-use App\Services\Apex\UnipileService;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-class DiscoverProspectsJob implements ShouldQueue
+class ProspectDiscoveryService
 {
-    use Queueable;
-
-    public int $tries = 3;
-
-    public int $backoff = 60;
-
-    public function __construct(
-        public ApexCampaign $campaign,
-        public PortalAvailableAgent $agent
-    ) {}
-
-    public function handle(UnipileService $unipileService): void
+    /**
+     * Discover new prospects for a campaign via LinkedIn search.
+     */
+    public function discover(UnipileService $unipileService, ApexLinkedInAccount $linkedInAccount, ApexCampaign $campaign): void
     {
-        $campaign = $this->campaign->fresh();
-
-        if ($campaign->status !== 'active') {
-            Log::info("Campaign {$campaign->id} is no longer active, skipping discovery.");
-
-            return;
-        }
-
-        $user = $campaign->user;
-
-        $linkedInAccount = ApexLinkedInAccount::query()
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->first();
-
-        if (! $linkedInAccount) {
-            Log::warning("No active LinkedIn account for user {$user->id}, skipping discovery for campaign {$campaign->id}");
-
-            return;
-        }
-
-        $unipileService->forAgent($this->agent);
-
-        if (! $unipileService->isConfigured()) {
-            Log::warning("UnipileService not configured for agent {$this->agent->id}");
-
-            return;
-        }
-
         $filters = $this->buildSearchFilters($campaign);
 
         if (empty($filters)) {
@@ -74,6 +33,7 @@ class DiscoverProspectsJob implements ShouldQueue
         );
 
         $discovered = 0;
+        $user = $campaign->user;
 
         foreach ($results as $profile) {
             $profileId = $profile['provider_id'] ?? $profile['id'] ?? null;
@@ -83,7 +43,6 @@ class DiscoverProspectsJob implements ShouldQueue
                 continue;
             }
 
-            // Split the full name into first/last if individual fields aren't provided
             $fullName = $profile['name'] ?? null;
             $firstName = $profile['first_name'] ?? null;
             $lastName = $profile['last_name'] ?? null;
@@ -94,7 +53,6 @@ class DiscoverProspectsJob implements ShouldQueue
                 $lastName = $parts[1] ?? null;
             }
 
-            // Upsert the prospect (unique on user_id + linkedin_profile_id)
             $prospect = ApexProspect::query()
                 ->where('user_id', $user->id)
                 ->where('linkedin_profile_id', $profileId)
@@ -119,7 +77,6 @@ class DiscoverProspectsJob implements ShouldQueue
                 ]);
             }
 
-            // Skip if already in this campaign
             $exists = ApexCampaignProspect::query()
                 ->where('campaign_id', $campaign->id)
                 ->where('prospect_id', $prospect->id)
@@ -151,7 +108,7 @@ class DiscoverProspectsJob implements ShouldQueue
             );
         }
 
-        Log::info("Discovery for campaign {$campaign->id} completed. Found {$discovered} new prospects from {$results->count()} results.");
+        Log::info("Pipeline: Discovery for campaign {$campaign->id} completed. Found {$discovered} new prospects from {$results->count()} results.");
     }
 
     /**
@@ -166,7 +123,6 @@ class DiscoverProspectsJob implements ShouldQueue
         $industries = $this->filterMeaningfulValues($campaign->industries);
         $keywords = $this->filterMeaningfulValues($campaign->keywords);
 
-        // Build the keywords search string (like LinkedIn's search bar)
         $searchParts = [];
 
         if (! empty($jobTitles)) {
@@ -195,8 +151,7 @@ class DiscoverProspectsJob implements ShouldQueue
     }
 
     /**
-     * Filter out non-meaningful placeholder values the AI may store
-     * when the user skips or declines an optional targeting field.
+     * Filter out non-meaningful placeholder values the AI may store.
      *
      * @param  list<string>|null  $values
      * @return list<string>

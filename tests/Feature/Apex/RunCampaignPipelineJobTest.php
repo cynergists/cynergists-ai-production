@@ -797,6 +797,54 @@ it('logs activity when follow-up is sent', function () {
     ]);
 });
 
+// ─── Auto-Complete Tests ──────────────────────────────────────────
+
+it('does not auto-complete campaigns with zero prospects', function () {
+    $campaign = ApexCampaign::factory()->active()->create([
+        'user_id' => $this->user->id,
+        'job_titles' => ['Engineer'],
+    ]);
+
+    $unipileService = $this->mock(UnipileService::class);
+    $unipileService->shouldReceive('forAgent')->andReturnSelf();
+    $unipileService->shouldReceive('isConfigured')->andReturn(true);
+    $unipileService->shouldReceive('getChats')->andReturn(collect([]));
+    $unipileService->shouldReceive('getChatMessages')->andReturn(collect([]));
+    $unipileService->shouldReceive('searchProfiles')->andReturn(collect([]));
+
+    RunCampaignPipelineJob::dispatchSync($campaign, $this->agent);
+
+    expect($campaign->fresh()->status)->toBe('active');
+});
+
+it('auto-completes when all prospects have terminal status', function () {
+    $campaign = ApexCampaign::factory()->active()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $prospect = ApexProspect::factory()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    ApexCampaignProspect::factory()->create([
+        'campaign_id' => $campaign->id,
+        'prospect_id' => $prospect->id,
+        'status' => 'replied',
+        'next_follow_up_at' => null,
+    ]);
+
+    $unipileService = $this->mock(UnipileService::class);
+    $unipileService->shouldReceive('forAgent')->andReturnSelf();
+    $unipileService->shouldReceive('isConfigured')->andReturn(true);
+    $unipileService->shouldReceive('getChats')->andReturn(collect([]));
+    $unipileService->shouldReceive('getChatMessages')->andReturn(collect([]));
+    $unipileService->shouldReceive('searchProfiles')->andReturn(collect([]));
+
+    RunCampaignPipelineJob::dispatchSync($campaign, $this->agent);
+
+    expect($campaign->fresh()->status)->toBe('completed');
+});
+
 // ─── Integration Tests ─────────────────────────────────────────────
 
 it('completes full pipeline: discover, connect, and follow-up', function () {
