@@ -1,8 +1,12 @@
+
 <?php
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
+
+uses(RefreshDatabase::class);
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -13,13 +17,17 @@ test('login screen can be rendered', function () {
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
 
+    // Get the login page first to establish session and CSRF token
+    $loginPage = $this->get(route('login'));
+    $loginPage->assertOk();
+
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect('/portal');
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {
@@ -40,7 +48,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $response = $this->post(route('login'), [
+    $response = $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
     ]);
