@@ -225,9 +225,17 @@ class ArsenalSeverityService
 
         $missingCount = 0;
         foreach ($nonCriticalFields as $field) {
-            if (empty($productData[$field]) || trim($productData[$field]) === '') {
+            $fieldValue = $productData[$field] ?? null;
+            
+            // Handle different field types
+            if ($fieldValue === null || $fieldValue === '') {
+                $missingCount++;
+            } elseif (is_string($fieldValue) && trim($fieldValue) === '') {
+                $missingCount++;
+            } elseif (is_array($fieldValue) && empty($fieldValue)) {
                 $missingCount++;
             }
+            // Arrays with content and non-empty strings are considered valid
         }
 
         $missingPercentage = round(($missingCount / count($nonCriticalFields)) * 100);

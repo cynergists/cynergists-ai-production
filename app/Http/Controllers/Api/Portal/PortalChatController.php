@@ -10,6 +10,7 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
 
@@ -39,7 +40,8 @@ class PortalChatController extends Controller
         private LunaAgentHandler $lunaAgentHandler,
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private ConversationHistoryWindow $conversationHistoryWindow
     ) {}
 
     /**
@@ -152,9 +154,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        $promptHistory = $this->conversationHistoryWindow->trim($messages);
 
         // Generate the assistant response with conversation history (before adding current message)
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $promptHistory);
 
         $messages[] = [
             'role' => 'user',
@@ -381,7 +384,9 @@ class PortalChatController extends Controller
 
             if ($availableAgent) {
                 // Pass the conversation history (before adding the new upload message)
-                $historyBeforeUpload = array_slice($messages, 0, -1);
+                $historyBeforeUpload = $this->conversationHistoryWindow->trim(
+                    array_slice($messages, 0, -1)
+                );
 
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,

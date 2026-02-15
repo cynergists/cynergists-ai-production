@@ -49,6 +49,11 @@ class ProcessProductDataTool implements Tool
             $processingHalted = false;
 
             foreach ($rawData as $index => $product) {
+                // Skip invalid product entries
+                if (!is_array($product) || $product === null) {
+                    continue;
+                }
+                
                 // Analyze severity for each product
                 $severityAnalysis = $severityService->analyzeProductSeverity($product, $clientConfig);
                 $severityResults[] = $severityAnalysis;
