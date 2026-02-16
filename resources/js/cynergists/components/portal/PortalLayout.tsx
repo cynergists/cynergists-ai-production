@@ -8,6 +8,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Loader2, LogOut, Shield, UserCircle } from 'lucide-react';
 import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet';
+import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
 
 export function PortalLayout({ children }: { children: ReactNode }) {
     const { props } = usePage<{
@@ -90,26 +91,13 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 <div className="flex min-h-screen flex-col bg-background md:h-screen md:max-h-screen md:min-h-0 md:overflow-hidden">
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
                         <div>
-                            <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                Customer Portal
-                            </p>
-                            <h1 className="text-lg font-semibold text-foreground">
-                                {activeTenant?.company_name ||
-                                    'Customer Portal'}
-                            </h1>
-                            <p className="text-xs text-muted-foreground">
-                                {userEmail}
-                            </p>
+                            <img 
+                                src={cynergistsLogo} 
+                                alt="Company Logo"
+                                className="h-12 object-contain"
+                            />
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="text-sm font-medium text-foreground">
-                                    {userDisplayName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {userEmail}
-                                </p>
-                            </div>
                             <Button
                                 variant="outline"
                                 size="sm"

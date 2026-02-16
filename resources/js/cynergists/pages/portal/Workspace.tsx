@@ -761,18 +761,6 @@ export default function PortalWorkspace() {
                             />
                         ) : (
                             <>
-                        {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
-                        {selectedAgentId &&
-                            agentComponents?.ConfigComponent && (
-                                <div className="mx-4 mt-3 mb-2">
-                                    <agentComponents.ConfigComponent
-                                        setupProgress={setupProgress}
-                                        seoStats={seoStats}
-                                        agentDetails={agentDetails}
-                                    />
-                                </div>
-                            )}
-
                         {/* Agent-Specific Chat Component */}
                         {agentComponents?.ChatComponent ? (
                             <agentComponents.ChatComponent
