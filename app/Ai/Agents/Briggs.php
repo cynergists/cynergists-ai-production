@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Concerns\BoundsConversationHistory;
 use App\Ai\Tools\GetSessionHistoryTool;
 use App\Ai\Tools\ListTrainingScenariosTool;
 use App\Ai\Tools\ScoreTrainingSessionTool;
@@ -27,7 +28,7 @@ use Stringable;
 #[Timeout(120)]
 class Briggs implements Agent, Conversational, HasTools
 {
-    use Promptable;
+    use Promptable, BoundsConversationHistory;
 
     public function __construct(
         public User $user,
@@ -237,7 +238,7 @@ PROMPT;
     {
         return array_map(
             fn (array $msg) => new Message($msg['role'], $msg['content']),
-            $this->conversationHistory
+            $this->boundedConversationHistory($this->conversationHistory)
         );
     }
 

@@ -21,6 +21,8 @@ return [
     'default_for_transcription' => 'openai',
     'default_for_embeddings' => 'openai',
     'default_for_reranking' => 'cohere',
+    'anthropic_default_max_tokens' => env('AI_ANTHROPIC_DEFAULT_MAX_TOKENS', 2048),
+    'anthropic_max_tokens_cap' => env('AI_ANTHROPIC_MAX_TOKENS_CAP', 4096),
 
     /*
     |--------------------------------------------------------------------------

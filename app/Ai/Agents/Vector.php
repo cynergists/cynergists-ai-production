@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Concerns\BoundsConversationHistory;
 use App\Models\PortalTenant;
 use App\Models\User;
 use Laravel\Ai\Attributes\MaxTokens;
@@ -21,7 +22,7 @@ use Stringable;
 #[Timeout(120)]
 class Vector implements Agent, Conversational, HasTools
 {
-    use Promptable;
+    use Promptable, BoundsConversationHistory;
 
     public function __construct(
         public User $user,
@@ -130,7 +131,7 @@ PROMPT;
     {
         return array_map(
             fn (array $msg) => new Message($msg['role'], $msg['content']),
-            $this->conversationHistory
+            $this->boundedConversationHistory($this->conversationHistory)
         );
     }
 }
