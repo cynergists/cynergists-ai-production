@@ -14,6 +14,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Loader2, LogOut, Menu, Shield, UserCircle } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
 
 export function PortalLayout({ children }: { children: ReactNode }) {
     const { props } = usePage<{
@@ -97,29 +98,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
                 <div className="flex h-dvh flex-col overflow-hidden bg-background">
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
-                        <div className="min-w-0">
-                            <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                Customer Portal
-                            </p>
-                            <h1 className="truncate text-lg font-semibold text-foreground">
-                                {activeTenant?.company_name ||
-                                    'Customer Portal'}
-                            </h1>
-                            <p className="truncate text-xs text-muted-foreground">
-                                {userEmail}
-                            </p>
+                        <div>
+                            <img 
+                                src={cynergistsLogo} 
+                                alt="Company Logo"
+                                className="h-12 object-contain"
+                            />
                         </div>
 
                         {/* Desktop nav */}
                         <div className="hidden items-center gap-3 md:flex">
-                            <div className="text-right">
-                                <p className="text-sm font-medium text-foreground">
-                                    {userDisplayName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {userEmail}
-                                </p>
-                            </div>
                             <Button
                                 variant="outline"
                                 size="sm"
