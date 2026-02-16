@@ -16,6 +16,7 @@ use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Impulse\ImpulseAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Optix\OptixAgentHandler;
@@ -33,6 +34,7 @@ class PortalChatController extends Controller
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private ImpulseAgentHandler $impulseAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
         private OptixAgentHandler $optixAgentHandler,
@@ -255,6 +257,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->aetherAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Impulse agent
+        if (strtolower($agentAccess->agent_name) === 'impulse') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->impulseAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
