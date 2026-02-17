@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AgentAccess;
+use App\Models\PortalTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +58,22 @@ class SessionController extends Controller
             }
 
             return redirect()->to($redirect);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if ($tenant) {
+            $cynessa = AgentAccess::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'agent_name' => 'Cynessa'],
+                [
+                    'id' => (string) Str::uuid(),
+                    'agent_type' => 'assistant',
+                    'is_active' => true,
+                    'usage_count' => 0,
+                    'customer_id' => $tenant->square_customer_id,
+                ],
+            );
+
+            return redirect()->to("/portal/agents/{$cynessa->id}/chat");
         }
 
         return redirect()->to('/portal');

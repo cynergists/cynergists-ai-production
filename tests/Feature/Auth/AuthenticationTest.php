@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\AgentAccess;
+use App\Models\PortalTenant;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -10,7 +12,26 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
+test('users with a portal tenant are redirected to cynessa chat on login', function () {
+    $this->withoutExceptionHandling();
+
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+
+    $location = $response->headers->get('Location') ?? 'no-location-header';
+    $cynessa = AgentAccess::where('tenant_id', $tenant->id)->where('agent_name', 'Cynessa')->first();
+    expect($cynessa)->not->toBeNull("Redirect was to: {$location}, tenant_id: {$tenant->id}");
+    $response->assertRedirect("/portal/agents/{$cynessa->id}/chat");
+});
+
+test('users without a portal tenant are redirected to portal on login', function () {
     $user = User::factory()->create();
 
     $response = $this->post(route('login.store'), [
