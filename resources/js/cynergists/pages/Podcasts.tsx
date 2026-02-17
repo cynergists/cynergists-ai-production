@@ -126,11 +126,15 @@ const Podcasts = () => {
                     <div className="mx-auto max-w-4xl">
                         <div className="card-glass">
                             <div className="mb-6 flex items-center gap-6">
-                                <img
-                                    src={scalingUpSuccessLogo}
-                                    alt="Scaling Up Success Podcast Logo"
-                                    className="h-24 w-24 rounded-xl object-contain"
-                                />
+                                <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                    <div className="rounded-lg md:rounded-xl bg-card p-2">
+                                        <img
+                                            src={scalingUpSuccessLogo}
+                                            alt="Scaling Up Success Podcast Logo"
+                                            className="h-20 w-20 object-contain"
+                                        />
+                                    </div>
+                                </div>
                                 <div>
                                     <h2 className="font-display text-3xl font-bold text-foreground">
                                         Scaling Up Success
@@ -213,11 +217,15 @@ const Podcasts = () => {
                     <div className="mx-auto max-w-4xl">
                         <div className="card-glass">
                             <div className="mb-6 flex items-center gap-6">
-                                <img
-                                    src={milpreneurLogo}
-                                    alt="Milpreneur Podcast Logo"
-                                    className="h-24 w-24 rounded-xl object-contain"
-                                />
+                                <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                    <div className="rounded-lg md:rounded-xl bg-card p-2">
+                                        <img
+                                            src={milpreneurLogo}
+                                            alt="Milpreneur Podcast Logo"
+                                            className="h-20 w-20 object-contain"
+                                        />
+                                    </div>
+                                </div>
                                 <div>
                                     <h2 className="font-display text-3xl font-bold text-foreground">
                                         Milpreneur

@@ -406,16 +406,18 @@ const SampleWork = () => {
                                 onClick={() => setSelectedPostIndex(index)}
                                 className="card-glass group cursor-pointer overflow-hidden p-3 transition-all hover:ring-2 hover:ring-primary/50"
                             >
-                                <div className="relative aspect-square overflow-hidden rounded-lg">
-                                    <img
+                                <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                    <div className="relative aspect-square overflow-hidden rounded-lg md:rounded-xl bg-card">
+                                        <img
                                         src={post.image}
                                         alt={post.title}
-                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                                         <span className="text-lg font-semibold text-primary transition-all duration-300 group-hover:scale-110 group-hover:text-xl">
-                                            View Post
-                                        </span>
+                                                View Post
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <h3 className="mt-3 text-center text-sm font-medium text-foreground/80">

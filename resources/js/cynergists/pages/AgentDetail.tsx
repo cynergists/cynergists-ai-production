@@ -220,8 +220,8 @@ export default function AgentDetail({ slug }: { slug: string }) {
                     <div className="grid gap-12 lg:grid-cols-2">
                         {/* Left column - Media */}
                         <div>
-                            <div className="relative rounded-2xl bg-gradient-to-br from-[#81CA16] to-[#26908B] p-[15px]">
-                                <div className="relative aspect-[2/3] overflow-hidden rounded-xl">
+                            <div className="relative p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                <div className="relative aspect-[2/3] overflow-hidden rounded-lg md:rounded-xl bg-card">
                                     {/* Category Badge */}
                                     <Badge
                                         variant="outline"
@@ -320,7 +320,7 @@ export default function AgentDetail({ slug }: { slug: string }) {
                                 {/* Price Display */}
                                 <div className="rounded-lg border border-border/50 bg-muted/50 px-5 py-4">
                                     <p className="text-2xl font-bold text-white">
-                                        Price: ${displayPrice} /mo
+                                        Price: ${Math.floor(displayPrice)} /mo
                                     </p>
                                     {selectedTier && (
                                         <p className="mt-1 text-lg text-lime-400">
@@ -382,7 +382,7 @@ export default function AgentDetail({ slug }: { slug: string }) {
                                     className="h-11 w-full rounded-md bg-lime-500 px-8 font-medium text-black hover:bg-lime-600"
                                 >
                                     <ShoppingCart className="mr-2 h-4 w-4" />
-                                    Add to Cart - ${displayPrice}/mo
+                                    Add to Cart - ${Math.floor(displayPrice)}/mo
                                 </Button>
                             </div>
 
