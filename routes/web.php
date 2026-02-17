@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDataController;
+use App\Http\Controllers\Api\AgentSuggestionController;
 use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\Carbon\CarbonController;
 use App\Http\Controllers\Api\Carbon\CarbonPixelController;
@@ -33,8 +34,9 @@ Route::get('/', [CynergistsPageController::class, 'page'])
     ->defaults('component', 'Index')
     ->name('home');
 
-Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
-Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
+// Permanent redirects: /marketplace now serves at /
+Route::permanentRedirect('/marketplace', '/');
+Route::get('/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail')->where('slug', '[a-z0-9\-]+');
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
 Route::get('/team', [CynergistsPageController::class, 'page'])->defaults('component', 'Team');
@@ -176,6 +178,7 @@ Route::prefix('api')->group(function () {
     Route::post('/public/products/categories', [PublicDataController::class, 'productsByCategories']);
     Route::get('/public/agents', [PublicDataController::class, 'activeAgents']);
     Route::get('/public/agents/{slug}', [PublicDataController::class, 'agentBySlug']);
+    Route::post('/public/suggest-agent', [AgentSuggestionController::class, 'store']);
 });
 
 Route::middleware('auth')->prefix('api')->group(function () {

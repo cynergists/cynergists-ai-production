@@ -46,8 +46,8 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
     const isCustomPricing = displayPrice <= 0;
 
     return (
-        <div className="h-auto w-full shrink-0 rounded-2xl bg-gradient-to-br from-[#81CA16] to-[#26908B] p-[8px] [box-shadow:0_0_15px_rgba(132,204,22,0.15)] transition-all duration-300 hover:scale-[1.02] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)]">
-            <Card className="group relative flex h-auto flex-col overflow-hidden rounded-xl border-0 transition-all duration-300 sm:h-[464px] sm:flex-row">
+        <div className="h-auto w-full shrink-0 p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+            <Card className="group relative flex h-auto flex-col overflow-hidden rounded-lg md:rounded-xl border-0 transition-all duration-300 sm:h-[464px] sm:flex-row">
                 {/* Media Section - Responsive */}
                 <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden bg-muted/30 sm:aspect-auto sm:h-full sm:w-[280px]">
                     {/* Skeleton Loading State */}
@@ -207,7 +207,7 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                                 ) : (
                                     <div className="flex items-baseline justify-center gap-1">
                                         <span className="text-2xl font-bold text-foreground sm:text-3xl">
-                                            ${displayPrice}
+                                            ${Math.floor(displayPrice)}
                                         </span>
                                         <span className="text-base text-muted-foreground">
                                             /mo
@@ -219,11 +219,11 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                             {/* CTA Button */}
                             <Button
                                 asChild
-                                className="w-full bg-lime-500 font-medium text-black hover:bg-lime-600"
+                                className="orbiting-button w-full bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:text-sm"
                             >
-                                <Link href={`/marketplace/${agent.slug}`}>
+                                <Link href={`/marketplace/${agent.slug}`} className="inline-flex h-10 items-center justify-center gap-1.5 px-4 py-2 sm:gap-2 sm:px-8">
                                     Learn More
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                    <ArrowRight className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                                 </Link>
                             </Button>
                         </div>

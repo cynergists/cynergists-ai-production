@@ -229,9 +229,25 @@ const CaseStudies = () => {
                                             href={study.link}
                                             className="block"
                                         >
-                                            <div className="flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 transition-all duration-300 hover:from-primary/30 hover:to-secondary/30">
+                                            <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                                <div className="flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-lg md:rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20">
+                                                    {study.logo && (
+                                                        <div className="rounded-xl bg-white p-8 transition-transform duration-300 hover:scale-105">
+                                                        <img
+                                                            src={study.logo}
+                                                            alt={`${study.title} logo`}
+                                                            className="h-40 w-auto object-contain"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ) : (
+                                        <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                            <div className="flex aspect-video items-center justify-center overflow-hidden rounded-lg md:rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20">
                                                 {study.logo && (
-                                                    <div className="rounded-xl bg-white p-8 transition-transform duration-300 hover:scale-105">
+                                                    <div className="rounded-xl bg-white p-8">
                                                         <img
                                                             src={study.logo}
                                                             alt={`${study.title} logo`}
@@ -240,18 +256,6 @@ const CaseStudies = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                        </Link>
-                                    ) : (
-                                        <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20">
-                                            {study.logo && (
-                                                <div className="rounded-xl bg-white p-8">
-                                                    <img
-                                                        src={study.logo}
-                                                        alt={`${study.title} logo`}
-                                                        className="h-40 w-auto object-contain"
-                                                    />
-                                                </div>
-                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -18,7 +18,7 @@
                 color-scheme: light;
             }
             body {
-                font-family: "Space Grotesk", "IBM Plex Sans", "Helvetica Neue", sans-serif;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
                 margin: 0;
                 background: #f5f5f7;
                 color: #111827;

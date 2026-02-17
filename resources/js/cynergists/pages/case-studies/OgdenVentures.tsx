@@ -158,8 +158,9 @@ const OgdenVentures = () => {
 
                         {/* Video Player */}
                         <div className="w-full flex-shrink-0 lg:-ml-8 lg:w-auto">
-                            <div className="relative mx-auto aspect-[9/16] w-full max-w-[340px] overflow-hidden rounded-2xl shadow-2xl lg:mx-0">
-                                <video
+                            <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300 mx-auto w-full max-w-[340px] lg:mx-0">
+                                <div className="relative aspect-[9/16] overflow-hidden rounded-lg md:rounded-xl bg-card">
+                                    <video
                                     ref={videoRef}
                                     src="/videos/ogden-ventures-case-study.mp4"
                                     className="h-full w-full object-cover"
@@ -168,10 +169,10 @@ const OgdenVentures = () => {
                                     loop={!hasUnmuted}
                                     playsInline
                                     onEnded={handleVideoEnded}
-                                />
+                                    />
 
-                                {/* Video Controls */}
-                                <div className="absolute right-4 bottom-4 left-4 z-10 flex items-center justify-between">
+                                    {/* Video Controls */}
+                                    <div className="absolute right-4 bottom-4 left-4 z-10 flex items-center justify-between">
                                     <button
                                         onClick={togglePlay}
                                         className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 transition-colors hover:bg-background"

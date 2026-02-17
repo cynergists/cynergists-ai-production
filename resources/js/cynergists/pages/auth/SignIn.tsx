@@ -77,7 +77,7 @@ export default function SignIn() {
         if (roles.includes('employee')) return '/employee';
         if (roles.includes('partner') && !roles.includes('client'))
             return '/partner';
-        return '/';
+        return '/portal';
     };
 
     const handleSignIn = async (e: React.FormEvent) => {
