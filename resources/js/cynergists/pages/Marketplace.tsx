@@ -114,18 +114,6 @@ export default function Marketplace() {
             displayName: 'In Progress',
             description: 'Agents currently being built and tested.',
         },
-        Communication: {
-            order: 4,
-            description: 'Connect and engage with your audience.',
-        },
-        Operations: {
-            order: 5,
-            description: 'Streamline your workflows and processes.',
-        },
-        Marketing: {
-            order: 6,
-            description: 'Attract and convert more customers.',
-        },
     };
 
     // Sort categories by config order
