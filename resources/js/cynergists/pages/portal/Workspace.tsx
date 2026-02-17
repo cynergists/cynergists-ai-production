@@ -207,7 +207,7 @@ export default function PortalWorkspace() {
                 typeof conversation.messages === 'string'
                     ? JSON.parse(conversation.messages)
                     : conversation.messages;
-            setMessages(parsed);
+            setMessages(Array.isArray(parsed) ? parsed : []);
         } catch (error) {
             console.error('Error parsing messages:', error);
             setMessages([]);
@@ -280,7 +280,7 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            setMessages(response.messages);
+            setMessages(Array.isArray(response.messages) ? response.messages : []);
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -329,7 +329,7 @@ export default function PortalWorkspace() {
             toast.success(`File uploaded: ${response.file.filename}`);
 
             // Update conversation with full message history if provided
-            if (response.messages) {
+            if (Array.isArray(response.messages)) {
                 setMessages(response.messages);
             } else if (response.message) {
                 // Fallback: just add assistant message
@@ -501,11 +501,11 @@ export default function PortalWorkspace() {
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
         ? {
-              completed: portalStats.onboardingProgress.steps.filter(
+              completed: (portalStats.onboardingProgress.steps ?? []).filter(
                   (s) => s.completed,
               ).length,
-              total: portalStats.onboardingProgress.steps.length,
-              steps: portalStats.onboardingProgress.steps,
+              total: (portalStats.onboardingProgress.steps ?? []).length,
+              steps: portalStats.onboardingProgress.steps ?? [],
           }
         : {
               completed: 0,
