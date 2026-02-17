@@ -67,10 +67,9 @@ export function MarketplaceAgentCard({ agent }: MarketplaceAgentCardProps) {
                                 loop
                                 playsInline
                                 onLoadedData={() => setMediaLoaded(true)}
-                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+                                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ${
                                     mediaLoaded ? 'opacity-100' : 'opacity-0'
                                 }`}
-                                style={{ objectPosition: 'center 15%' }}
                             />
                         ) : (
                             <img
