@@ -58,18 +58,7 @@ class SessionController extends Controller
             return redirect()->to($redirect);
         }
 
-        if ($user) {
-            $targetUrl = $this->resolveRedirectForUser($user->roleNames());
-
-            // Admins go to Filament which requires a full page refresh
-            if (in_array('admin', $user->roleNames(), true)) {
-                return Inertia::location($targetUrl);
-            }
-
-            return redirect()->to($targetUrl);
-        }
-
-        return redirect()->intended('/');
+        return redirect()->to('/portal');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -80,34 +69,6 @@ class SessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->to('/');
-    }
-
-    /**
-     * @param  list<string>  $roles
-     */
-    private function resolveRedirectForUser(array $roles): string
-    {
-        if (in_array('admin', $roles, true)) {
-            return '/filament';
-        }
-
-        if (in_array('sales_rep', $roles, true)) {
-            return '/sales-rep';
-        }
-
-        if (in_array('employee', $roles, true)) {
-            return '/employee';
-        }
-
-        if (in_array('client', $roles, true)) {
-            return '/portal';
-        }
-
-        if (in_array('partner', $roles, true) && ! in_array('client', $roles, true)) {
-            return '/partner';
-        }
-
-        return '/';
     }
 
     private function isSafeRedirect(string $redirect): bool
