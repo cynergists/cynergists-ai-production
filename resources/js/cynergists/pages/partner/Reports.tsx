@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePartnerContext } from '@/contexts/PartnerContext';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import {
     Calendar,

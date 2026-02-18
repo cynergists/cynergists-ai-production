@@ -37,7 +37,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { usePartnerContext } from '@/contexts/PartnerContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import {
     AlertCircle,
     CheckCircle2,
@@ -137,13 +137,7 @@ export default function PartnerReferrals() {
         if (!partner?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('referrals')
-                .select('*')
-                .eq('partner_id', partner.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await apiClient.get<Referral[]>('/partner/referrals');
             setReferrals(data || []);
         } catch (error) {
             console.error('Error fetching referrals:', error);
@@ -169,8 +163,7 @@ export default function PartnerReferrals() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.from('referrals').insert({
-                partner_id: partner.id,
+            await apiClient.post('/partner/referrals', {
                 lead_name: formData.lead_name || null,
                 lead_email: formData.lead_email,
                 lead_phone: formData.lead_phone || null,
@@ -180,8 +173,6 @@ export default function PartnerReferrals() {
                 attribution_type: 'deal_registration',
                 status: 'new',
             });
-
-            if (error) throw error;
 
             toast({
                 title: 'Referral submitted!',

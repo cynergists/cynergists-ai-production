@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePartnerContext } from '@/contexts/PartnerContext';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, Percent, Search } from 'lucide-react';
 import { useState } from 'react';
@@ -19,13 +19,8 @@ export default function PartnerMarketplace() {
     const { data: agents, isLoading: agentsLoading } = useQuery({
         queryKey: ['partner-marketplace-agents'],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('portal_available_agents')
-                .select('*')
-                .eq('is_active', true)
-                .order('sort_order', { ascending: true });
-            if (error) throw error;
-            return data as unknown as AIAgent[];
+            const data = await apiClient.get<AIAgent[]>('/public/agents');
+            return data;
         },
     });
 
@@ -33,12 +28,7 @@ export default function PartnerMarketplace() {
     const { data: settings, isLoading: settingsLoading } = useQuery({
         queryKey: ['partner-settings'],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('partner_settings')
-                .select('global_discount_percent')
-                .limit(1)
-                .single();
-            if (error) throw error;
+            const data = await apiClient.get<any>('/partner/settings');
             return data;
         },
     });

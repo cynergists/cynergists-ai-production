@@ -9,7 +9,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePartnerContext } from '@/contexts/PartnerContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Check, Copy, FileText, Image, Megaphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -37,12 +37,8 @@ export default function PartnerMarketing() {
     }, []);
 
     const fetchAssets = async () => {
-        const { data } = await supabase
-            .from('partner_assets')
-            .select('*')
-            .eq('is_active', true)
-            .order('display_order');
-        setAssets(data || []);
+        const data = await apiClient.get<any>('/partner/marketing-assets');
+        setAssets(data?.assets || []);
     };
 
     const copyContent = (asset: Asset) => {
