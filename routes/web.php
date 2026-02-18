@@ -219,6 +219,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/profile', [PortalProfileController::class, 'show']);
         Route::put('/profile', [PortalProfileController::class, 'update']);
         Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
+        Route::get('/support/agent-names', [PortalSupportController::class, 'agentNames']);
         Route::post('/support', [PortalSupportController::class, 'store']);
         Route::get('/account', [PortalAccountController::class, 'index']);
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);
