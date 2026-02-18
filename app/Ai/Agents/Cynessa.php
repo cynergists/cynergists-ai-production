@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Concerns\BoundsConversationHistory;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\Cynessa\OnboardingService;
@@ -21,7 +22,7 @@ use Stringable;
 #[Timeout(120)]
 class Cynessa implements Agent, Conversational
 {
-    use Promptable;
+    use Promptable, BoundsConversationHistory;
 
     private const KNOWLEDGE_BASE_MAX_CHARACTERS = 120_000;
 
@@ -68,7 +69,7 @@ class Cynessa implements Agent, Conversational
     {
         return array_map(
             fn (array $msg) => new Message($msg['role'], $msg['content']),
-            $this->conversationHistory
+            $this->boundedConversationHistory($this->conversationHistory)
         );
     }
 

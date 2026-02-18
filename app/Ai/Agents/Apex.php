@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Concerns\BoundsConversationHistory;
 use App\Ai\Tools\GetCampaignStatsTool;
 use App\Ai\Tools\ListCampaignsTool;
 use App\Ai\Tools\ListPendingActionsTool;
@@ -29,7 +30,7 @@ use Stringable;
 #[Timeout(120)]
 class Apex implements Agent, Conversational, HasTools
 {
-    use Promptable;
+    use Promptable, BoundsConversationHistory;
 
     public function __construct(
         public User $user,
@@ -291,7 +292,7 @@ PROMPT;
     {
         return array_map(
             fn (array $msg) => new Message($msg['role'], $msg['content']),
-            $this->conversationHistory
+            $this->boundedConversationHistory($this->conversationHistory)
         );
     }
 
