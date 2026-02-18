@@ -62,6 +62,12 @@ const Chatbot = () => {
     const { url } = usePage();
     const pathname = url.split('?')[0];
     const isCheckoutPage = pathname === '/checkout';
+    const isPortalPage = pathname.startsWith('/portal');
+
+    // Don't show public chatbot on portal pages (portal has its own chat)
+    if (isPortalPage) {
+        return null;
+    }
 
     // Initialize hidden state from localStorage or default to hidden on checkout
     const [isOpen, setIsOpen] = useState(false);
