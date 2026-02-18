@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { usePartnerContext } from '@/contexts/PartnerContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import {
     AlertTriangle,
@@ -125,24 +125,13 @@ export default function PartnerCommissions() {
         if (!partner?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('partner_commissions')
-                .select(
-                    `
-          *,
-          customer:clients!partner_commissions_customer_id_fkey(name, company)
-        `,
-                )
-                .eq('partner_id', partner.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setCommissions((data as unknown as Commission[]) || []);
-        } catch (error) {
+            const data = await apiClient.get<Commission[]>('/partner/commissions');
+            setCommissions(data || []);
+        } catch (error: any) {
             console.error('Error fetching commissions:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to load commissions',
+                description: error.message || 'Failed to load commissions',
                 variant: 'destructive',
             });
         } finally {

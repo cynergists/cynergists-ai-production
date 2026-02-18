@@ -17,7 +17,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { usePartnerContext } from '@/contexts/PartnerContext';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import {
     AlertCircle,
@@ -74,28 +74,12 @@ export default function PartnerPayouts() {
 
     const fetchPayouts = async () => {
         try {
-            const { data, error } = await supabase
-                .from('partner_payouts')
-                .select(
-                    'id, batch_date, total_amount, commission_count, status, paid_at',
-                )
-                .eq('partner_id', partner.id)
-                .order('batch_date', { ascending: false });
+            const data = await apiClient.get<Payout[]>('/partner/payouts');
 
-            if (error) throw error;
-
-            // Map to Payout interface - payout_date may not exist yet in types
-            const payoutData: Payout[] = (data || []).map((p) => ({
-                ...p,
-                payout_date:
-                    (p as unknown as { payout_date?: string }).payout_date ||
-                    null,
-            }));
-
-            setPayouts(payoutData);
+            setPayouts(data || []);
 
             // Find next upcoming payout
-            const upcoming = payoutData.find((p) =>
+            const upcoming = (data || []).find((p) =>
                 ['scheduled', 'ready'].includes(p.status),
             );
             setUpcomingPayout(upcoming || null);
