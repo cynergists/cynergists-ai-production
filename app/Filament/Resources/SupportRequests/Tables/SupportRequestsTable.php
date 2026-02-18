@@ -34,16 +34,23 @@ class SupportRequestsTable
                 TextColumn::make('category')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'general' => 'info',
-                        'technical' => 'warning',
+                        'agent_issue' => 'danger',
                         'billing' => 'success',
                         'feature_request' => 'primary',
+                        'general' => 'info',
+                        'portal_issue' => 'warning',
+                        'technical' => 'warning',
                         'other' => 'gray',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title())
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('agent_name')
+                    ->label('AI Agent')
+                    ->placeholder('--')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('subject')
                     ->searchable()
                     ->sortable()
@@ -99,10 +106,12 @@ class SupportRequestsTable
                     ->default('open'),
                 SelectFilter::make('category')
                     ->options([
-                        'general' => 'General Question',
-                        'technical' => 'Technical Issue',
+                        'agent_issue' => 'Agent Issue',
                         'billing' => 'Billing & Account',
                         'feature_request' => 'Feature Request',
+                        'general' => 'General Question',
+                        'portal_issue' => 'Portal Issue',
+                        'technical' => 'Technical Issue',
                         'other' => 'Other',
                     ]),
             ])

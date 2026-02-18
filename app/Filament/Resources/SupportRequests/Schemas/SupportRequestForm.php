@@ -28,15 +28,23 @@ class SupportRequestForm
                             ->dehydrated(),
                         Select::make('category')
                             ->options([
-                                'general' => 'General Question',
-                                'technical' => 'Technical Issue',
+                                'agent_issue' => 'Agent Issue',
                                 'billing' => 'Billing & Account',
                                 'feature_request' => 'Feature Request',
+                                'general' => 'General Question',
+                                'portal_issue' => 'Portal Issue',
+                                'technical' => 'Technical Issue',
                                 'other' => 'Other',
                             ])
                             ->required()
                             ->disabled()
                             ->dehydrated(),
+                        TextInput::make('agent_name')
+                            ->label('AI Agent')
+                            ->disabled()
+                            ->dehydrated()
+                            ->placeholder('N/A')
+                            ->visible(fn ($record) => $record?->agent_name !== null),
                         TextInput::make('subject')
                             ->required()
                             ->maxLength(200)
