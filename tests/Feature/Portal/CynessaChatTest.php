@@ -2,12 +2,12 @@
 
 use App\Ai\Agents\Cynessa;
 use App\Models\AgentAccess;
+use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
 use Illuminate\Support\Str;
-
-use function Pest\Laravel\actingAs;
+use Laravel\Sanctum\Sanctum;
 
 it('handles cynessa greeting message', function () {
     Cynessa::fake(['Hi John! I\'m Cynessa, your AI assistant. How can I help you today?']);
@@ -39,7 +39,8 @@ it('handles cynessa greeting message', function () {
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'Hello',
     ]);
 
@@ -80,7 +81,8 @@ it('handles cynessa onboarding start', function () {
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'I want to get started',
     ]);
 
@@ -119,7 +121,8 @@ it('handles cynessa help request', function () {
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'help',
     ]);
 
@@ -159,7 +162,8 @@ it('detects completed onboarding', function () {
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'I want to get started',
     ]);
 
@@ -202,7 +206,8 @@ it('extracts company information from message', function () {
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'My company is Acme Corp and we are in the technology industry',
     ]);
 
@@ -256,7 +261,8 @@ it('resets onboarding when user explicitly requests to start onboarding', functi
         'is_active' => true,
     ]);
 
-    $response = actingAs($user)->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
         'message' => 'I want to start onboarding',
     ]);
 
@@ -271,4 +277,72 @@ it('resets onboarding when user explicitly requests to start onboarding', functi
     expect($response->json('assistantMessage'))->toBe("No problem! Let's start fresh. What is your company name?");
 
     Cynessa::assertPrompted('I want to start onboarding');
+});
+
+it('bounds conversation history before prompting cynessa', function () {
+    Cynessa::fake(['History bounded successfully.']);
+
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+    ]);
+
+    PortalAvailableAgent::create([
+        'id' => (string) Str::uuid(),
+        'name' => 'Cynessa',
+        'description' => 'Onboarding Agent',
+        'agent_type' => 'bot',
+        'features' => [],
+        'is_active' => true,
+        'portal_available' => true,
+    ]);
+
+    $agentAccess = AgentAccess::create([
+        'id' => (string) Str::uuid(),
+        'subscription_id' => (string) Str::uuid(),
+        'customer_id' => (string) Str::uuid(),
+        'tenant_id' => $tenant->id,
+        'agent_type' => 'onboarding',
+        'agent_name' => 'Cynessa',
+        'is_active' => true,
+    ]);
+
+    $messages = [];
+
+    for ($i = 0; $i < 40; $i++) {
+        $messages[] = [
+            'role' => $i % 2 === 0 ? 'user' : 'assistant',
+            'content' => "history-{$i} ".str_repeat('x', 1200),
+        ];
+    }
+
+    AgentConversation::query()->create([
+        'id' => (string) Str::uuid(),
+        'agent_access_id' => $agentAccess->id,
+        'customer_id' => (string) $tenant->id,
+        'title' => 'Existing Conversation',
+        'messages' => $messages,
+        'status' => 'active',
+        'tenant_id' => $tenant->id,
+    ]);
+
+    Sanctum::actingAs($user);
+    $response = $this->postJson("/api/portal/agents/{$agentAccess->id}/message", [
+        'message' => 'New prompt',
+    ]);
+
+    $response->assertSuccessful();
+    expect($response->json('assistantMessage'))->toBe('History bounded successfully.');
+
+    Cynessa::assertPrompted(function ($prompt) {
+        $history = $prompt->agent->conversationHistory;
+        $totalCharacters = array_sum(array_map(
+            fn (array $message): int => strlen($message['content']),
+            $history
+        ));
+
+        return count($history) <= 24
+            && $totalCharacters <= 24000
+            && str_contains($history[array_key_last($history)]['content'], 'history-39');
+    });
 });

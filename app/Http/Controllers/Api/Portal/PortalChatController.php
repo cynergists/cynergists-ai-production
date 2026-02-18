@@ -11,6 +11,7 @@ use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Aether\AetherAgentHandler;
+use App\Services\AiConversationHistoryLimiter;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
@@ -37,7 +38,8 @@ class PortalChatController extends Controller
         private LunaAgentHandler $lunaAgentHandler,
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private AiConversationHistoryLimiter $conversationHistoryLimiter
     ) {}
 
     /**
@@ -150,9 +152,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        $boundedHistory = $this->conversationHistoryLimiter->limit($messages);
 
         // Generate the assistant response with conversation history (before adding current message)
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $boundedHistory);
 
         $messages[] = [
             'role' => 'user',
@@ -360,7 +363,9 @@ class PortalChatController extends Controller
 
             if ($availableAgent) {
                 // Pass the conversation history (before adding the new upload message)
-                $historyBeforeUpload = array_slice($messages, 0, -1);
+                $historyBeforeUpload = $this->conversationHistoryLimiter->limit(
+                    array_slice($messages, 0, -1)
+                );
 
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,

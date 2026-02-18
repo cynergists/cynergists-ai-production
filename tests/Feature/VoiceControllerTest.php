@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AgentAccess;
+use App\Models\AgentConversation;
 use App\Models\CustomerSubscription;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
@@ -11,6 +12,7 @@ use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\EventEmailService;
 use App\Services\Luna\LunaAgentHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -158,4 +160,58 @@ it('does not require message when initiating voice conversation', function () {
 
     $response->assertSuccessful()
         ->assertJsonPath('success', true);
+});
+
+it('bounds voice conversation history before invoking the agent handler', function () {
+    $agent = createAgentWithAccess('Apex', $this);
+
+    $messages = [];
+
+    for ($i = 0; $i < 45; $i++) {
+        $messages[] = [
+            'role' => $i % 2 === 0 ? 'user' : 'assistant',
+            'content' => "history-{$i} ".str_repeat('x', 1200),
+        ];
+    }
+
+    AgentConversation::query()->create([
+        'id' => (string) Str::uuid(),
+        'agent_access_id' => $agent->id,
+        'customer_id' => (string) $this->tenant->id,
+        'title' => 'Voice Conversation',
+        'messages' => $messages,
+        'status' => 'active',
+        'tenant_id' => $this->tenant->id,
+    ]);
+
+    $this->mock(ApexAgentHandler::class)
+        ->shouldReceive('handle')
+        ->once()
+        ->withArgs(function (
+            string $message,
+            User $user,
+            PortalAvailableAgent $availableAgent,
+            PortalTenant $tenant,
+            array $conversationHistory,
+            int $maxTokens
+        ) {
+            $totalCharacters = array_sum(array_map(
+                fn (array $entry): int => strlen($entry['content']),
+                $conversationHistory
+            ));
+
+            return $maxTokens === 128
+                && count($conversationHistory) <= 24
+                && $totalCharacters <= 24000
+                && str_contains($conversationHistory[array_key_last($conversationHistory)]['content'], 'history-44');
+        })
+        ->andReturn('Bounded voice response');
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/portal/voice/{$agent->id}", [
+            'message' => 'How are my campaigns doing?',
+        ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('text', 'Bounded voice response');
 });
