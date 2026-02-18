@@ -5,6 +5,7 @@ namespace App\Services\Apex;
 use App\Models\PortalAvailableAgent;
 use App\Models\User;
 use App\Services\ApiKeyService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -25,11 +26,18 @@ class UnipileService
      */
     public function forAgent(PortalAvailableAgent $agent): self
     {
-        $apiKey = $this->apiKeyService->getKeyWithMetadata($agent, 'unipile');
+        try {
+            $apiKey = $this->apiKeyService->getKeyWithMetadata($agent, 'unipile');
 
-        if ($apiKey) {
-            $this->apiKey = $apiKey->key;
-            $this->domain = $apiKey->metadata['domain'] ?? 'api1.unipile.com';
+            if ($apiKey) {
+                $this->apiKey = $apiKey->key;
+                $this->domain = $apiKey->metadata['domain'] ?? 'api1.unipile.com';
+            }
+        } catch (DecryptException $e) {
+            Log::error('Failed to decrypt Unipile API key for agent '.$agent->id.'. The stored key may have been encrypted with a different APP_KEY.', [
+                'agent_id' => $agent->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $this;
@@ -72,6 +80,76 @@ class UnipileService
     }
 
     /**
+     * Connect a LinkedIn account using credentials.
+     *
+     * @return array{account_id: string, status: string, checkpoint_type: string|null}|null
+     */
+    public function connectWithCredentials(string $username, string $password): ?array
+    {
+        try {
+            $response = $this->client()->post('/accounts', [
+                'provider' => 'LINKEDIN',
+                'username' => $username,
+                'password' => $password,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('Unipile connect response', [
+                    'http_status' => $response->status(),
+                    'response_keys' => array_keys($data),
+                    'has_checkpoint' => isset($data['checkpoint']),
+                    'has_connection_params' => isset($data['connection_params']),
+                    'has_sources' => isset($data['sources']),
+                ]);
+
+                $sourceStatus = $data['sources'][0]['status'] ?? null;
+                $status = $sourceStatus
+                    ?? $data['connection_params']['status']
+                    ?? $data['status']
+                    ?? 'pending';
+
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
+                    ?? $data['sources'][0]['checkpoint']['type']
+                    ?? null;
+
+                // A 202 response indicates a checkpoint is required
+                if ($response->status() === 202 && ! $checkpointType) {
+                    $checkpointType = 'OTP';
+                    $status = 'pending';
+                }
+
+                return [
+                    'account_id' => $data['account_id'] ?? $data['id'] ?? null,
+                    'status' => $status,
+                    'checkpoint_type' => $checkpointType,
+                ];
+            }
+
+            $errorBody = $response->json();
+            $errorDetail = $errorBody['detail'] ?? $errorBody['title'] ?? null;
+
+            Log::error('Unipile connect with credentials failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return [
+                'account_id' => null,
+                'status' => 'failed',
+                'checkpoint_type' => null,
+                'error' => $errorDetail,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Unipile connect with credentials exception', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
      * Get the hosted auth URL for LinkedIn connection.
      *
      * @return array{url: string, account_id: string}|null
@@ -80,9 +158,11 @@ class UnipileService
     {
         try {
             $response = $this->client()->post('/hosted/accounts/link', [
-                'type' => 'LINKEDIN',
-                'api_url' => $redirectUrl,
-                'expiresOn' => now()->addHour()->toIso8601String(),
+                'type' => 'create',
+                'providers' => ['LINKEDIN'],
+                'api_url' => "https://{$this->domain}/api/v1",
+                'success_redirect_url' => $redirectUrl,
+                'expiresOn' => now()->addHour()->format('Y-m-d\TH:i:s.v\Z'),
             ]);
 
             if ($response->successful()) {
@@ -118,17 +198,50 @@ class UnipileService
             if ($response->successful()) {
                 $data = $response->json();
 
+                // Status lives in sources[].status (e.g., "OK", "ERROR")
+                $sourceStatus = $data['sources'][0]['status'] ?? null;
+                // Fallback to legacy path
+                $status = $sourceStatus
+                    ?? $data['connection_params']['status']
+                    ?? 'unknown';
+
+                $checkpointType = $data['checkpoint']['type']
+                    ?? $data['connection_params']['checkpoint']['type']
+                    ?? $data['sources'][0]['checkpoint']['type']
+                    ?? null;
+
+                // Profile info lives in connection_params.im for LinkedIn
+                $im = $data['connection_params']['im'] ?? [];
+                $publicId = $im['publicIdentifier'] ?? null;
+
                 return [
-                    'status' => $data['connection_params']['status'] ?? 'unknown',
-                    'checkpoint_type' => $data['connection_params']['checkpoint']['type'] ?? null,
+                    'status' => $status,
+                    'checkpoint_type' => $checkpointType,
                     'profile' => [
                         'id' => $data['id'] ?? null,
                         'name' => $data['name'] ?? null,
                         'email' => $data['email'] ?? null,
-                        'profile_url' => $data['linkedin_profile_url'] ?? null,
+                        'profile_url' => $publicId ? "https://www.linkedin.com/in/{$publicId}" : null,
                     ],
                 ];
             }
+
+            // Account no longer exists on Unipile — return a failed status so the caller can clean up
+            if ($response->status() === 404) {
+                Log::warning('Unipile account not found', ['account_id' => $accountId]);
+
+                return [
+                    'status' => 'not_found',
+                    'checkpoint_type' => null,
+                    'profile' => [],
+                ];
+            }
+
+            Log::error('Unipile get account status failed', [
+                'account_id' => $accountId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return null;
         } catch (\Exception $e) {
@@ -144,8 +257,16 @@ class UnipileService
     public function solveCheckpoint(string $accountId, string $code): bool
     {
         try {
-            $response = $this->client()->post("/accounts/{$accountId}/checkpoint", [
+            $response = $this->client()->post('/accounts/checkpoint', [
+                'provider' => 'LINKEDIN',
+                'account_id' => $accountId,
                 'code' => $code,
+            ]);
+
+            Log::info('Unipile solve checkpoint response', [
+                'account_id' => $accountId,
+                'http_status' => $response->status(),
+                'body' => $response->json(),
             ]);
 
             return $response->successful();
@@ -202,12 +323,12 @@ class UnipileService
     /**
      * Send a connection request.
      */
-    public function sendConnectionRequest(string $accountId, string $profileUrl, ?string $message = null): bool
+    public function sendConnectionRequest(string $accountId, string $providerId, ?string $message = null): bool
     {
         try {
             $payload = [
                 'account_id' => $accountId,
-                'linkedin_url' => $profileUrl,
+                'provider_id' => $providerId,
             ];
 
             if ($message) {
@@ -215,6 +336,14 @@ class UnipileService
             }
 
             $response = $this->client()->post('/users/invite', $payload);
+
+            if (! $response->successful()) {
+                Log::warning('Unipile send connection request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json() ?? $response->body(),
+                    'provider_id' => $providerId,
+                ]);
+            }
 
             return $response->successful();
         } catch (\Exception $e) {
@@ -326,22 +455,70 @@ class UnipileService
     }
 
     /**
+     * Get all chat attendees for an account.
+     *
+     * @return Collection<int, array>
+     */
+    public function getChatAttendees(string $accountId, int $limit = 100, ?string $cursor = null): Collection
+    {
+        try {
+            $params = [
+                'account_id' => $accountId,
+                'limit' => $limit,
+            ];
+            if ($cursor) {
+                $params['cursor'] = $cursor;
+            }
+
+            $response = $this->client()->get('/chat_attendees', $params);
+
+            if ($response->successful()) {
+                return collect($response->json('items') ?? []);
+            }
+
+            return collect();
+        } catch (\Exception $e) {
+            Log::error('Unipile get chat attendees exception', ['error' => $e->getMessage()]);
+
+            return collect();
+        }
+    }
+
+    /**
      * Search for LinkedIn profiles.
      *
+     * @param  array<string, mixed>  $filters  Unipile search body (keywords, role, etc.)
      * @return Collection<int, array>
      */
     public function searchProfiles(string $accountId, array $filters, int $limit = 25): Collection
     {
         try {
-            $response = $this->client()->post('/linkedin/search/people', [
+            $body = array_merge([
+                'api' => 'classic',
+                'category' => 'people',
+            ], $filters);
+
+            Log::info('Unipile searchProfiles request', [
                 'account_id' => $accountId,
-                'limit' => $limit,
-                ...$filters,
+                'body' => $body,
             ]);
 
+            $response = $this->client()->post(
+                "/linkedin/search?account_id={$accountId}",
+                $body
+            );
+
             if ($response->successful()) {
-                return collect($response->json('items') ?? []);
+                $items = collect($response->json('items') ?? []);
+                Log::info('Unipile searchProfiles returned', ['count' => $items->count()]);
+
+                return $items;
             }
+
+            Log::warning('Unipile search profiles failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return collect();
         } catch (\Exception $e) {

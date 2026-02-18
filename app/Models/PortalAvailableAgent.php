@@ -12,6 +12,23 @@ class PortalAvailableAgent extends Model
     /** @use HasFactory<\Database\Factories\PortalAvailableAgentFactory> */
     use HasFactory, HasUuids;
 
+    protected static function booted(): void
+    {
+        static::saving(function (PortalAvailableAgent $agent) {
+            // Automatically set base price from lowest tier when saving
+            if (! empty($agent->tiers) && is_array($agent->tiers)) {
+                $prices = array_map(
+                    fn ($tier) => is_numeric($tier['price'] ?? null) ? (float) $tier['price'] : PHP_FLOAT_MAX,
+                    $agent->tiers
+                );
+                $lowestPrice = min($prices);
+                if ($lowestPrice < PHP_FLOAT_MAX) {
+                    $agent->price = $lowestPrice;
+                }
+            }
+        });
+    }
+
     /**
      * @var list<string>
      */
@@ -30,6 +47,7 @@ class PortalAvailableAgent extends Model
         'icon',
         'features',
         'is_popular',
+        'is_beta',
         'is_active',
         'sort_order',
         'section_order',
@@ -51,6 +69,7 @@ class PortalAvailableAgent extends Model
             'price' => 'decimal:2',
             'features' => 'array',
             'is_popular' => 'boolean',
+            'is_beta' => 'boolean',
             'is_active' => 'boolean',
             'perfect_for' => 'array',
             'integrations' => 'array',

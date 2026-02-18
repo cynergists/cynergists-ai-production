@@ -64,6 +64,68 @@ class LinkedInController extends Controller
     }
 
     /**
+     * Connect a LinkedIn account using credentials.
+     */
+    public function connectWithCredentials(Request $request): JsonResponse
+    {
+        $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+            'agent_id' => ['required', 'string', 'exists:portal_available_agents,id'],
+        ]);
+
+        $agent = PortalAvailableAgent::findOrFail($request->agent_id);
+        $this->unipileService->forAgent($agent);
+
+        if (! $this->unipileService->isConfigured()) {
+            return response()->json([
+                'error' => 'LinkedIn integration is not configured for this agent.',
+            ], 422);
+        }
+
+        $result = $this->unipileService->connectWithCredentials(
+            $request->username,
+            $request->password
+        );
+
+        if (! $result || ! $result['account_id']) {
+            $error = $result['error'] ?? 'Failed to connect LinkedIn account. Please check your credentials.';
+
+            return response()->json([
+                'error' => $error,
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Create or update the LinkedIn account record
+        $linkedInAccount = ApexLinkedInAccount::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'unipile_account_id' => $result['account_id'],
+            ],
+            [
+                'status' => $this->mapUnipileStatus($result['status']),
+                'checkpoint_type' => $result['checkpoint_type'],
+                'last_synced_at' => now(),
+            ]
+        );
+
+        // Log the activity
+        ApexActivityLog::log(
+            $user,
+            'linkedin_connected',
+            'LinkedIn account connection initiated'
+        );
+
+        return response()->json([
+            'account' => $linkedInAccount,
+            'requires_checkpoint' => $linkedInAccount->requiresCheckpoint(),
+            'checkpoint_type' => $result['checkpoint_type'],
+        ]);
+    }
+
+    /**
      * Handle the callback after LinkedIn auth completes.
      */
     public function callback(Request $request): JsonResponse
@@ -146,6 +208,17 @@ class LinkedInController extends Controller
         }
 
         $status = $this->unipileService->getAccountStatus($linkedInAccount->unipile_account_id);
+
+        // Account no longer exists on Unipile — clean up the orphaned record
+        if ($status && $status['status'] === 'not_found') {
+            $linkedInAccount->delete();
+
+            return response()->json([
+                'account' => null,
+                'unipile_status' => $status,
+                'deleted' => true,
+            ]);
+        }
 
         if ($status) {
             $linkedInAccount->update([
@@ -241,6 +314,168 @@ class LinkedInController extends Controller
         );
 
         $linkedInAccount->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get LinkedIn chats for the user's connected account.
+     */
+    public function chats(Request $request): JsonResponse
+    {
+        $request->validate([
+            'agent_id' => ['required', 'string', 'exists:portal_available_agents,id'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'cursor' => ['sometimes', 'string'],
+        ]);
+
+        $linkedInAccount = ApexLinkedInAccount::query()
+            ->where('user_id', $request->user()->id)
+            ->active()
+            ->latest()
+            ->first();
+
+        if (! $linkedInAccount) {
+            return response()->json([
+                'error' => 'No active LinkedIn account found.',
+            ], 422);
+        }
+
+        $agent = PortalAvailableAgent::findOrFail($request->agent_id);
+        $this->unipileService->forAgent($agent);
+
+        if (! $this->unipileService->isConfigured()) {
+            return response()->json([
+                'error' => 'LinkedIn integration is not configured.',
+            ], 422);
+        }
+
+        $chats = $this->unipileService->getChats(
+            $linkedInAccount->unipile_account_id,
+            $request->get('limit', 50),
+            $request->get('cursor')
+        );
+
+        // Fetch attendees to enrich chats with names and pictures
+        $attendees = $this->unipileService->getChatAttendees(
+            $linkedInAccount->unipile_account_id,
+            100
+        );
+
+        // Build lookup: provider_id → attendee
+        $attendeeMap = $attendees->keyBy('provider_id');
+
+        // Transform chats into a clean, enriched format
+        $enrichedChats = $chats->map(function (array $chat) use ($attendeeMap) {
+            $attendee = $attendeeMap->get($chat['attendee_provider_id'] ?? '');
+
+            return [
+                'id' => $chat['id'],
+                'name' => $attendee['name'] ?? $chat['name'] ?? null,
+                'picture_url' => $attendee['picture_url'] ?? null,
+                'profile_url' => $attendee['profile_url'] ?? null,
+                'occupation' => $attendee['specifics']['occupation'] ?? null,
+                'timestamp' => $chat['timestamp'] ?? null,
+                'unread_count' => $chat['unread_count'] ?? 0,
+                'content_type' => $chat['content_type'] ?? null,
+                'read_only' => (bool) ($chat['read_only'] ?? false),
+                'subject' => $chat['subject'] ?? null,
+            ];
+        });
+
+        return response()->json(['chats' => $enrichedChats->values()]);
+    }
+
+    /**
+     * Get messages for a specific LinkedIn chat.
+     */
+    public function chatMessages(Request $request, string $chatId): JsonResponse
+    {
+        $request->validate([
+            'agent_id' => ['required', 'string', 'exists:portal_available_agents,id'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'cursor' => ['sometimes', 'string'],
+        ]);
+
+        $linkedInAccount = ApexLinkedInAccount::query()
+            ->where('user_id', $request->user()->id)
+            ->active()
+            ->latest()
+            ->first();
+
+        if (! $linkedInAccount) {
+            return response()->json([
+                'error' => 'No active LinkedIn account found.',
+            ], 422);
+        }
+
+        $agent = PortalAvailableAgent::findOrFail($request->agent_id);
+        $this->unipileService->forAgent($agent);
+
+        if (! $this->unipileService->isConfigured()) {
+            return response()->json([
+                'error' => 'LinkedIn integration is not configured.',
+            ], 422);
+        }
+
+        $messages = $this->unipileService->getChatMessages(
+            $chatId,
+            $request->get('limit', 50),
+            $request->get('cursor')
+        );
+
+        // Transform messages into a clean format
+        $cleanMessages = $messages->map(fn (array $msg) => [
+            'id' => $msg['id'],
+            'chat_id' => $msg['chat_id'],
+            'sender_id' => $msg['sender_id'] ?? null,
+            'text' => $msg['text'] ?? '',
+            'timestamp' => $msg['timestamp'] ?? null,
+            'is_sender' => (bool) ($msg['is_sender'] ?? false),
+            'attachments' => $msg['attachments'] ?? [],
+        ]);
+
+        return response()->json(['messages' => $cleanMessages->values()]);
+    }
+
+    /**
+     * Send a message to a LinkedIn chat.
+     */
+    public function sendChatMessage(Request $request, string $chatId): JsonResponse
+    {
+        $request->validate([
+            'agent_id' => ['required', 'string', 'exists:portal_available_agents,id'],
+            'text' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $linkedInAccount = ApexLinkedInAccount::query()
+            ->where('user_id', $request->user()->id)
+            ->active()
+            ->latest()
+            ->first();
+
+        if (! $linkedInAccount) {
+            return response()->json([
+                'error' => 'No active LinkedIn account found.',
+            ], 422);
+        }
+
+        $agent = PortalAvailableAgent::findOrFail($request->agent_id);
+        $this->unipileService->forAgent($agent);
+
+        if (! $this->unipileService->isConfigured()) {
+            return response()->json([
+                'error' => 'LinkedIn integration is not configured.',
+            ], 422);
+        }
+
+        $success = $this->unipileService->sendMessage($chatId, $request->text);
+
+        if (! $success) {
+            return response()->json([
+                'error' => 'Failed to send message.',
+            ], 500);
+        }
 
         return response()->json(['success' => true]);
     }

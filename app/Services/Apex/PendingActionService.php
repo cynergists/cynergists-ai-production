@@ -28,6 +28,9 @@ class PendingActionService
             ->where('user_id', $user->id)
             ->pending()
             ->notExpired()
+            ->whereHas('prospect', function ($query) {
+                $query->where('full_name', '!=', 'LinkedIn Member');
+            })
             ->with(['campaign', 'prospect'])
             ->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -178,13 +181,13 @@ class PendingActionService
     {
         $prospect = $action->prospect;
 
-        if (! $prospect || ! $prospect->linkedin_profile_url) {
+        if (! $prospect || ! $prospect->linkedin_profile_id) {
             return false;
         }
 
         $success = $this->unipileService->sendConnectionRequest(
             $linkedInAccount->unipile_account_id,
-            $prospect->linkedin_profile_url,
+            $prospect->linkedin_profile_id,
             $action->message_content
         );
 

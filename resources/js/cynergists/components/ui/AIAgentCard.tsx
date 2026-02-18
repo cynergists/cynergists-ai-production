@@ -23,8 +23,21 @@ const stripHtmlTags = (html: string | null): string => {
 };
 
 interface MediaItem {
-    url: string;
+    url?: string;
+    file?: string;
     type: 'image' | 'video';
+}
+
+/**
+ * Get the URL for a media item (prefers file upload over external URL)
+ */
+function getMediaUrl(media: MediaItem): string {
+    return media.file || media.url || '';
+}
+
+export interface AgentTier {
+    price: number | string;
+    description: string;
 }
 
 export interface AIAgent {
@@ -41,6 +54,28 @@ export interface AIAgent {
     is_popular: boolean;
     is_active: boolean;
     card_media?: MediaItem[];
+    tiers?: AgentTier[];
+}
+
+/**
+ * Get the display price for an agent.
+ * Returns the lowest tier price if tiers exist, otherwise returns base price.
+ */
+function getDisplayPrice(agent: AIAgent): number {
+    if (agent.tiers && agent.tiers.length > 0) {
+        const prices = agent.tiers.map((t) =>
+            typeof t.price === 'string' ? parseFloat(t.price) : t.price,
+        );
+        return Math.min(...prices);
+    }
+    return agent.price;
+}
+
+/**
+ * Check if an agent has multiple tiers (for "Starting at" label)
+ */
+function hasMultipleTiers(agent: AIAgent): boolean {
+    return agent.tiers !== undefined && agent.tiers.length > 1;
 }
 
 interface AIAgentCardProps {
@@ -84,11 +119,13 @@ export function AIAgentCard({
     discountPercent = 0,
 }: AIAgentCardProps) {
     const Icon = getAgentIcon(agent.category);
-    const isCustomPricing = agent.price <= 0;
+    const displayPrice = getDisplayPrice(agent);
+    const hasTiers = hasMultipleTiers(agent);
+    const isCustomPricing = displayPrice <= 0;
     const discountedPrice =
         showDiscount && discountPercent > 0 && !isCustomPricing
-            ? agent.price * (1 - discountPercent / 100)
-            : agent.price;
+            ? displayPrice * (1 - discountPercent / 100)
+            : displayPrice;
 
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const cardMedia = agent.card_media || [];
@@ -196,25 +233,39 @@ export function AIAgentCard({
                                         </span>
                                     </div>
                                 ) : showDiscount && discountPercent > 0 ? (
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-3xl font-bold text-white">
-                                            ${discountedPrice.toFixed(0)}
-                                        </span>
-                                        <span className="text-sm text-slate-500 line-through">
-                                            ${agent.price}
-                                        </span>
-                                        <span className="text-base text-slate-400">
-                                            /mo
-                                        </span>
+                                    <div className="flex flex-col">
+                                        {hasTiers && (
+                                            <span className="text-xs text-slate-400">
+                                                Starting at
+                                            </span>
+                                        )}
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-3xl font-bold text-white">
+                                                ${discountedPrice.toFixed(0)}
+                                            </span>
+                                            <span className="text-sm text-slate-500 line-through">
+                                                ${displayPrice}
+                                            </span>
+                                            <span className="text-base text-slate-400">
+                                                /mo
+                                            </span>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-3xl font-bold text-white">
-                                            ${agent.price}
-                                        </span>
-                                        <span className="text-base text-slate-400">
-                                            /mo
-                                        </span>
+                                    <div className="flex flex-col">
+                                        {hasTiers && (
+                                            <span className="text-xs text-slate-400">
+                                                Starting at
+                                            </span>
+                                        )}
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-bold text-white">
+                                                ${displayPrice}
+                                            </span>
+                                            <span className="text-base text-slate-400">
+                                                /mo
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -240,11 +291,11 @@ export function AIAgentCard({
             <Card className="group relative flex h-full w-full flex-row overflow-hidden rounded-xl border-0 transition-all duration-300">
                 {/* Left Side - Media - Fixed size container */}
                 <div className="relative h-full w-[280px] shrink-0 overflow-hidden bg-muted/30">
-                    {hasMedia ? (
+                    {hasMedia && currentMedia ? (
                         <>
-                            {currentMedia?.type === 'video' ? (
+                            {currentMedia.type === 'video' ? (
                                 <video
-                                    src={currentMedia.url}
+                                    src={getMediaUrl(currentMedia)}
                                     autoPlay
                                     muted
                                     loop
@@ -253,7 +304,7 @@ export function AIAgentCard({
                                 />
                             ) : (
                                 <img
-                                    src={currentMedia?.url}
+                                    src={getMediaUrl(currentMedia)}
                                     alt={agent.name}
                                     className="absolute inset-0 h-full w-full object-cover"
                                 />
@@ -382,25 +433,39 @@ export function AIAgentCard({
                                         </span>
                                     </div>
                                 ) : showDiscount && discountPercent > 0 ? (
-                                    <div className="flex items-baseline justify-center gap-2">
-                                        <span className="text-3xl font-bold text-foreground">
-                                            ${discountedPrice.toFixed(0)}
-                                        </span>
-                                        <span className="text-sm text-muted-foreground line-through">
-                                            ${agent.price}
-                                        </span>
-                                        <span className="text-base text-muted-foreground">
-                                            /mo
-                                        </span>
+                                    <div className="flex flex-col items-center">
+                                        {hasTiers && (
+                                            <span className="text-xs text-muted-foreground">
+                                                Starting at
+                                            </span>
+                                        )}
+                                        <div className="flex items-baseline justify-center gap-2">
+                                            <span className="text-3xl font-bold text-foreground">
+                                                ${discountedPrice.toFixed(0)}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground line-through">
+                                                ${displayPrice}
+                                            </span>
+                                            <span className="text-base text-muted-foreground">
+                                                /mo
+                                            </span>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-3xl font-bold text-foreground">
-                                            ${agent.price}
-                                        </span>
-                                        <span className="text-base text-muted-foreground">
-                                            /mo
-                                        </span>
+                                    <div className="flex flex-col items-center">
+                                        {hasTiers && (
+                                            <span className="text-xs text-muted-foreground">
+                                                Starting at
+                                            </span>
+                                        )}
+                                        <div className="flex items-baseline justify-center gap-1">
+                                            <span className="text-3xl font-bold text-foreground">
+                                                ${displayPrice}
+                                            </span>
+                                            <span className="text-base text-muted-foreground">
+                                                /mo
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>

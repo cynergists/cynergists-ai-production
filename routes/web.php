@@ -30,10 +30,10 @@ use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
-    ->defaults('component', 'Index')
+    ->defaults('component', 'Marketplace')
     ->name('home');
 
-Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
+Route::redirect('/marketplace', '/');
 Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
@@ -68,13 +68,20 @@ Route::get('/checkout', [CynergistsPageController::class, 'page'])->defaults('co
 Route::get('/cart', [CynergistsPageController::class, 'page'])->defaults('component', 'Cart');
 Route::get('/sign-agreement', [CynergistsPageController::class, 'page'])->defaults('component', 'SignAgreement');
 Route::get('/signin', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignIn');
+Route::get('/welcome', function (Illuminate\Http\Request $request) {
+    return Inertia\Inertia::render('auth/reset-password', [
+        'email' => $request->email,
+        'token' => $request->token,
+        'isNewUser' => true,
+    ]);
+})->name('welcome');
+Route::get('/change-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ChangePassword')->middleware('auth');
 Route::get('/signup/client', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpClient');
 Route::get('/signup/partner', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
 Route::get('/partner-signup', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignUpPartner');
 Route::get('/signup/partner/apply', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/PartnerApplication');
 Route::get('/signup/partner/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/PartnerApplicationThankYou');
-Route::get('/forgot-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ForgotPassword');
-Route::get('/reset-password', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/ResetPassword');
+Route::redirect('/dashboard', '/portal');
 Route::post('/signin', [SessionController::class, 'store'])->name('signin');
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
@@ -183,7 +190,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::put('/admin/payment-settings', [PaymentSettingsController::class, 'update']);
     Route::post('/partners/{partner}/w9', [PartnerSettingsController::class, 'uploadW9']);
     Route::post('/partner/magic-link', [PartnerSettingsController::class, 'sendMagicLink']);
-    Route::patch('/user/password', [UserPasswordController::class, 'update']);
+    Route::patch('/user/password', [UserPasswordController::class, 'update'])
+        ->middleware('throttle:5,1'); // 5 attempts per minute
     Route::get('/partner-dashboard/{partner}', [PartnerDashboardController::class, 'show']);
 
     Route::prefix('portal')->group(function () {
@@ -211,6 +219,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/profile', [PortalProfileController::class, 'show']);
         Route::put('/profile', [PortalProfileController::class, 'update']);
         Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
+        Route::get('/support/agent-names', [PortalSupportController::class, 'agentNames']);
         Route::post('/support', [PortalSupportController::class, 'store']);
         Route::get('/account', [PortalAccountController::class, 'index']);
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);

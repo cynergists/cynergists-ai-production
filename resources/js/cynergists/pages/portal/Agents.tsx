@@ -68,8 +68,8 @@ export default function PortalAgents() {
     const latestAgent = agents?.[0];
 
     return (
-        <div className="p-8">
-            <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="p-4 md:p-8">
+            <div className="mb-6 flex flex-col gap-3 md:mb-8 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold text-foreground">
                         My AI Agents
@@ -158,7 +158,7 @@ export default function PortalAgents() {
                                 <p className="text-sm font-semibold text-foreground">
                                     {latestAgent?.agent_name || '—'}
                                 </p>
-                                <p className="text-xs text-muted-foreground capitalize">
+                                <p className="text-xs text-muted-foreground">
                                     {latestAgent?.agent_type ||
                                         'No activity yet'}
                                 </p>
@@ -191,7 +191,7 @@ export default function PortalAgents() {
                                                 <CardTitle className="text-lg">
                                                     {agent.agent_name}
                                                 </CardTitle>
-                                                <CardDescription className="capitalize">
+                                                <CardDescription>
                                                     {agent.agent_type}
                                                 </CardDescription>
                                             </div>

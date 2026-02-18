@@ -34,7 +34,8 @@ class UserForm
                                 TextInput::make('password')
                                     ->password()
                                     ->dehydrated(fn (?string $state): bool => filled($state))
-                                    ->required(fn (string $operation): bool => $operation === 'create'),
+                                    ->required(false)
+                                    ->helperText('Leave blank to send user a password creation link via email.'),
                                 Toggle::make('is_active')
                                     ->default(true),
                             ])

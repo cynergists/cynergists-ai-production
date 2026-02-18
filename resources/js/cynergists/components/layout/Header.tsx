@@ -55,6 +55,7 @@ const Header = ({
     const isClient = Boolean(props.auth?.roles?.includes('client'));
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    const isHomepage = pathname === '/';
     const isMarketplace = pathname === '/marketplace';
 
     // Handle search drawer animation
@@ -131,8 +132,8 @@ const Header = ({
 
                         {/* Desktop Navigation - Right aligned */}
                         <div className="hidden items-center gap-2 lg:flex">
-                            {/* Agent Marketplace button - only show when NOT on marketplace */}
-                            {!isMarketplace && (
+                            {/* Agent Marketplace button - hide on homepage and marketplace */}
+                            {!isHomepage && !isMarketplace && (
                                 <Link href="/marketplace" onClick={scrollToTop}>
                                     <Button className="btn-primary gap-2">
                                         <Sparkles className="h-4 w-4" />
@@ -293,7 +294,7 @@ const Header = ({
                                 className="overflow-hidden lg:hidden"
                             >
                                 <nav className="flex flex-col gap-2 border-t border-border/40 py-4">
-                                    {!isMarketplace && (
+                                    {!isHomepage && !isMarketplace && (
                                         <Link
                                             href="/marketplace"
                                             onClick={() => {

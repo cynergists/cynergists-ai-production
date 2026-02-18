@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePortalContext } from '@/contexts/PortalContext';
 import { apiClient } from '@/lib/api-client';
@@ -27,6 +28,7 @@ import {
     AlertCircle,
     Bot,
     Check,
+    Key,
     Loader2,
     Pencil,
     UserCircle,
@@ -75,6 +77,10 @@ export default function PortalAccount() {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [companyName, setCompanyName] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const { data, isLoading } = useQuery({
         queryKey: ['portal-account', user?.id],
@@ -119,6 +125,42 @@ export default function PortalAccount() {
         setLastName(data?.profile?.last_name || '');
         setCompanyName(data?.profile?.company_name || '');
         setIsEditing(false);
+    };
+
+    const changePassword = useMutation({
+        mutationFn: async () => {
+            if (newPassword !== confirmPassword) {
+                throw new Error('Passwords do not match');
+            }
+            if (newPassword.length < 8) {
+                throw new Error('Password must be at least 8 characters');
+            }
+            return apiClient.patch<{ success: boolean }>(
+                '/api/user/password',
+                {
+                    current_password: currentPassword,
+                    password: newPassword,
+                    password_confirmation: confirmPassword,
+                },
+            );
+        },
+        onSuccess: () => {
+            toast.success('Password changed successfully');
+            setIsChangingPassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to change password');
+        },
+    });
+
+    const handleCancelPasswordChange = () => {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setIsChangingPassword(false);
     };
 
     const unsubscribeMutation = useMutation({
@@ -318,6 +360,136 @@ export default function PortalAccount() {
                                                 </p>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Password Change */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <Key className="h-4 w-4" />
+                                        Password
+                                    </CardTitle>
+                                    {!isChangingPassword && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0"
+                                            onClick={() =>
+                                                setIsChangingPassword(true)
+                                            }
+                                        >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {isChangingPassword ? (
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            changePassword.mutate();
+                                        }}
+                                        className="space-y-4"
+                                    >
+                                        <div className="space-y-2">
+                                            <Label htmlFor="current_password">
+                                                Current Password
+                                            </Label>
+                                            <PasswordInput
+                                                id="current_password"
+                                                value={currentPassword}
+                                                onChange={(e) =>
+                                                    setCurrentPassword(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Current password"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="new_password">
+                                                New Password
+                                            </Label>
+                                            <PasswordInput
+                                                id="new_password"
+                                                value={newPassword}
+                                                onChange={(e) =>
+                                                    setNewPassword(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="At least 8 characters"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="confirm_password">
+                                                Confirm Password
+                                            </Label>
+                                            <PasswordInput
+                                                id="confirm_password"
+                                                value={confirmPassword}
+                                                onChange={(e) =>
+                                                    setConfirmPassword(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Repeat new password"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                className="flex-1"
+                                                disabled={
+                                                    changePassword.isPending
+                                                }
+                                            >
+                                                {changePassword.isPending ? (
+                                                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <Check className="mr-2 h-3.5 w-3.5" />
+                                                )}
+                                                Change Password
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={
+                                                    handleCancelPasswordChange
+                                                }
+                                                disabled={
+                                                    changePassword.isPending
+                                                }
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Change your password to keep your
+                                            account secure.
+                                        </p>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setIsChangingPassword(true)
+                                            }
+                                        >
+                                            Change Password
+                                        </Button>
                                     </div>
                                 )}
                             </CardContent>

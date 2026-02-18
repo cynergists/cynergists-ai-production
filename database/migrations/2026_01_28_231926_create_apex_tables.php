@@ -128,6 +128,7 @@ return new class extends Migration
                 'meeting_scheduled',
                 'not_interested',
                 'skipped',
+                'failed',
             ])->default('queued');
             $table->timestamp('connection_sent_at')->nullable();
             $table->timestamp('connection_accepted_at')->nullable();

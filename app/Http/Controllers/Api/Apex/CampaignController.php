@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api\Apex;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\Apex\RunCampaignPipelineJob;
+use App\Jobs\Apex\SyncLinkedInMessagesJob;
 use App\Models\ApexActivityLog;
 use App\Models\ApexCampaign;
+use App\Models\PortalAvailableAgent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class CampaignController extends Controller
@@ -56,21 +60,29 @@ class CampaignController extends Controller
         ]);
 
         $campaign = ApexCampaign::create([
-            ...$validated,
+            ...array_filter($validated, fn ($value) => ! is_null($value)),
             'user_id' => $request->user()->id,
-            'status' => 'draft',
+            'status' => 'active',
+            'started_at' => now(),
         ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
+        }
 
         ApexActivityLog::log(
             $request->user(),
             'campaign_created',
-            "Campaign created: {$campaign->name}",
+            "Campaign created and started: {$campaign->name}",
             $campaign
         );
 
         return response()->json([
             'campaign' => $campaign,
-            'message' => 'Campaign created successfully.',
+            'message' => 'Campaign created and started successfully.',
         ], 201);
     }
 
@@ -166,9 +178,9 @@ class CampaignController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        if (! in_array($campaign->status, ['draft', 'paused'])) {
+        if (! in_array($campaign->status, ['draft', 'paused', 'completed'])) {
             return response()->json([
-                'error' => 'Campaign cannot be started. It must be in draft or paused status.',
+                'error' => 'Campaign cannot be started from its current status.',
             ], 422);
         }
 
@@ -176,7 +188,15 @@ class CampaignController extends Controller
             'status' => 'active',
             'started_at' => $campaign->started_at ?? now(),
             'paused_at' => null,
+            'completed_at' => null,
         ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
+        }
 
         ApexActivityLog::log(
             $request->user(),
@@ -188,6 +208,47 @@ class CampaignController extends Controller
         return response()->json([
             'campaign' => $campaign->fresh(),
             'message' => 'Campaign started successfully.',
+        ]);
+    }
+
+    /**
+     * Restart a completed campaign.
+     */
+    public function restart(Request $request, string $id): JsonResponse
+    {
+        $campaign = ApexCampaign::query()
+            ->where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if ($campaign->status !== 'completed') {
+            return response()->json([
+                'error' => 'Only completed campaigns can be restarted.',
+            ], 422);
+        }
+
+        $campaign->update([
+            'status' => 'active',
+            'completed_at' => null,
+        ]);
+
+        // Dispatch campaign jobs immediately
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if ($agent) {
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
+        }
+
+        ApexActivityLog::log(
+            $request->user(),
+            'campaign_restarted',
+            "Campaign restarted: {$campaign->name}",
+            $campaign
+        );
+
+        return response()->json([
+            'campaign' => $campaign->fresh(),
+            'message' => 'Campaign restarted successfully.',
         ]);
     }
 
@@ -257,6 +318,32 @@ class CampaignController extends Controller
             'campaign' => $campaign->fresh(),
             'message' => 'Campaign marked as completed.',
         ]);
+    }
+
+    /**
+     * Trigger a LinkedIn sync for the authenticated user.
+     * Throttled to once per 4 minutes per user.
+     */
+    public function sync(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $cacheKey = "apex_sync_throttle:{$user->id}";
+
+        if (Cache::has($cacheKey)) {
+            return response()->json(['message' => 'Sync already scheduled recently.']);
+        }
+
+        $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
+
+        if (! $agent) {
+            return response()->json(['error' => 'Apex agent not found.'], 422);
+        }
+
+        SyncLinkedInMessagesJob::dispatch($user, $agent);
+
+        Cache::put($cacheKey, true, now()->addMinutes(4));
+
+        return response()->json(['message' => 'Sync triggered.']);
     }
 
     /**

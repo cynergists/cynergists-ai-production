@@ -1,4 +1,5 @@
 import { getAgentComponents } from '@/agent_components';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -18,6 +19,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { usePortalContext } from '@/contexts/PortalContext';
 import { apiClient } from '@/lib/api-client';
@@ -28,6 +35,7 @@ import {
     Activity,
     Bot,
     Calendar,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     CircleCheck,
@@ -52,6 +60,8 @@ interface AgentAccess {
     id: string;
     agent_type: string;
     agent_name: string;
+    job_title?: string | null;
+    is_beta?: boolean;
     configuration: Record<string, unknown> | null;
     is_active: boolean;
     usage_count: number | null;
@@ -92,10 +102,12 @@ export default function PortalWorkspace() {
         | 'add-site'
     >('chat');
     const [supportDialogOpen, setSupportDialogOpen] = useState(false);
-    const [supportCategory, setSupportCategory] = useState('general');
+    const [supportCategory, setSupportCategory] = useState('agent_issue');
+    const [supportAgentName, setSupportAgentName] = useState('');
     const [supportSubject, setSupportSubject] = useState('');
     const [supportMessage, setSupportMessage] = useState('');
     const [agentSearchQuery, setAgentSearchQuery] = useState('');
+    const [mobileAgentSheetOpen, setMobileAgentSheetOpen] = useState(false);
     const [addSiteDialogOpen, setAddSiteDialogOpen] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteUrl, setNewSiteUrl] = useState('');
@@ -118,6 +130,18 @@ export default function PortalWorkspace() {
         staleTime: 0,
     });
 
+    const { data: availableAgentNames } = useQuery({
+        queryKey: ['support-agent-names'],
+        queryFn: async () => {
+            const response = await apiClient.get<{ agents: string[] }>(
+                '/api/portal/support/agent-names',
+            );
+            return response.agents;
+        },
+        enabled: supportCategory === 'agent_issue',
+        staleTime: 5 * 60 * 1000,
+    });
+
     // Auto-select first agent (Cynessa) if no agent is selected
     useEffect(() => {
         if (!selectedAgentId && agents && agents.length > 0) {
@@ -133,7 +157,8 @@ export default function PortalWorkspace() {
         return agents.filter(
             (agent) =>
                 agent.agent_name.toLowerCase().includes(query) ||
-                agent.agent_type.toLowerCase().includes(query),
+                agent.agent_type.toLowerCase().includes(query) ||
+                (agent.job_title?.toLowerCase().includes(query) ?? false),
         );
     }, [agents, agentSearchQuery]);
 
@@ -179,19 +204,9 @@ export default function PortalWorkspace() {
     // Get agent-specific components dynamically
     const agentComponents = useMemo(() => {
         if (!agentDetails?.agent_name) {
-            console.log('[Workspace] No agent name, agentComponents = null');
             return null;
         }
-        const components = getAgentComponents(
-            agentDetails.agent_name.toLowerCase(),
-        );
-        console.log(
-            '[Workspace] Agent:',
-            agentDetails.agent_name,
-            'Components:',
-            components,
-        );
-        return components;
+        return getAgentComponents(agentDetails.agent_name.toLowerCase());
     }, [agentDetails?.agent_name]);
 
     useEffect(() => {
@@ -205,7 +220,7 @@ export default function PortalWorkspace() {
                 typeof conversation.messages === 'string'
                     ? JSON.parse(conversation.messages)
                     : conversation.messages;
-            setMessages(parsed);
+            setMessages(Array.isArray(parsed) ? parsed : []);
         } catch (error) {
             console.error('Error parsing messages:', error);
             setMessages([]);
@@ -278,7 +293,7 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            setMessages(response.messages);
+            setMessages(Array.isArray(response.messages) ? response.messages : []);
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -327,7 +342,7 @@ export default function PortalWorkspace() {
             toast.success(`File uploaded: ${response.file.filename}`);
 
             // Update conversation with full message history if provided
-            if (response.messages) {
+            if (Array.isArray(response.messages)) {
                 setMessages(response.messages);
             } else if (response.message) {
                 // Fallback: just add assistant message
@@ -405,6 +420,7 @@ export default function PortalWorkspace() {
                 '/api/portal/support',
                 {
                     category: supportCategory,
+                    agent_name: supportCategory === 'agent_issue' ? supportAgentName : null,
                     subject: supportSubject,
                     message: supportMessage,
                 },
@@ -415,7 +431,8 @@ export default function PortalWorkspace() {
                 response.message || 'Support request submitted successfully',
             );
             setSupportDialogOpen(false);
-            setSupportCategory('general');
+            setSupportCategory('agent_issue');
+            setSupportAgentName('');
             setSupportSubject('');
             setSupportMessage('');
         },
@@ -423,6 +440,13 @@ export default function PortalWorkspace() {
             toast.error(error.message || 'Failed to submit support request');
         },
     });
+
+    const handleCategoryChange = (value: string) => {
+        setSupportCategory(value);
+        if (value !== 'agent_issue') {
+            setSupportAgentName('');
+        }
+    };
 
     const handleSupportSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -499,11 +523,11 @@ export default function PortalWorkspace() {
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
         ? {
-              completed: portalStats.onboardingProgress.steps.filter(
+              completed: (portalStats.onboardingProgress.steps ?? []).filter(
                   (s) => s.completed,
               ).length,
-              total: portalStats.onboardingProgress.steps.length,
-              steps: portalStats.onboardingProgress.steps,
+              total: (portalStats.onboardingProgress.steps ?? []).length,
+              steps: portalStats.onboardingProgress.steps ?? [],
           }
         : {
               completed: 0,
@@ -530,13 +554,13 @@ export default function PortalWorkspace() {
     // Carbon SEO stats from agent details
     const seoStats = agentDetails?.seo_data
         ? {
-              healthScore: agentDetails.seo_data.seo_stats.health_score || 0,
+              healthScore: agentDetails.seo_data.seo_stats.health_score ?? null,
               totalSites: agentDetails.seo_data.seo_stats.total_sites || 0,
               activeAudits: agentDetails.seo_data.seo_stats.active_audits || 0,
               metrics: agentDetails.seo_data.seo_stats.metrics || [],
           }
         : {
-              healthScore: 0,
+              healthScore: null,
               totalSites: 0,
               activeAudits: 0,
               metrics: [],
@@ -551,7 +575,7 @@ export default function PortalWorkspace() {
     };
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-background">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-3 lg:flex-row lg:gap-6 lg:p-6">
                 {/* Agents list */}
                 <div className="hidden min-h-0 w-80 shrink-0 flex-col lg:flex">
@@ -647,11 +671,21 @@ export default function PortalWorkspace() {
                                                     )}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <h3 className="text-sm font-semibold text-foreground">
-                                                        {agent.agent_name}
-                                                    </h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-semibold text-foreground">
+                                                            {agent.agent_name}
+                                                        </h3>
+                                                        {agent.is_beta && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                                                            >
+                                                                BETA
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        {agent.agent_type}
+                                                        {agent.job_title || agent.agent_type}
                                                     </p>
                                                     {isFeatured && (
                                                         <div className="mt-1 flex items-center gap-1">
@@ -667,6 +701,16 @@ export default function PortalWorkspace() {
                                     })}
                                 </div>
                             )}
+                        </div>
+                        <div className="shrink-0 border-t border-primary/20 pt-3">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start gap-2 text-sm"
+                                onClick={() => setSupportDialogOpen(true)}
+                            >
+                                <Headphones className="h-4 w-4" />
+                                Get Support
+                            </Button>
                         </div>
                     </div>
                     {totalPages > 1 && (
@@ -703,6 +747,130 @@ export default function PortalWorkspace() {
                         </div>
                     )}
                 </div>
+
+                {/* Mobile agent picker bar */}
+                <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-xl border border-primary/20 bg-card px-3 py-2 lg:hidden"
+                    onClick={() => setMobileAgentSheetOpen(true)}
+                >
+                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+                        {agentDetails?.avatar_url ? (
+                            <img
+                                src={agentDetails.avatar_url}
+                                alt={agentDetails.agent_name}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                                <Bot className="h-4 w-4 text-primary" />
+                            </div>
+                        )}
+                    </div>
+                    <span className="flex-1 truncate text-left text-sm font-medium text-foreground">
+                        {agentDetails?.agent_name ?? 'Select an agent'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+
+                {/* Mobile agent picker Sheet */}
+                <Sheet
+                    open={mobileAgentSheetOpen}
+                    onOpenChange={setMobileAgentSheetOpen}
+                >
+                    <SheetContent side="left" className="w-80 p-0">
+                        <SheetHeader className="px-4 pt-4">
+                            <SheetTitle>Your AI Agents</SheetTitle>
+                        </SheetHeader>
+                        <div className="flex flex-1 flex-col overflow-hidden px-4 pb-4">
+                            <div className="relative mb-3">
+                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search agents..."
+                                    value={agentSearchQuery}
+                                    onChange={(e) =>
+                                        setAgentSearchQuery(e.target.value)
+                                    }
+                                    className="h-9 border-primary/15 bg-background pl-9 text-sm focus:border-primary/40"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-2 overflow-y-auto">
+                                {paginatedAgents.map((agent) => {
+                                    const isSelected =
+                                        selectedAgentId === agent.id;
+                                    return (
+                                        <button
+                                            key={agent.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (agent.redirect_url) {
+                                                    window.location.href =
+                                                        agent.redirect_url;
+                                                } else {
+                                                    setSelectedAgentId(
+                                                        agent.id,
+                                                    );
+                                                    router.visit(
+                                                        `/portal/agents/${agent.id}/chat`,
+                                                        {
+                                                            preserveState: true,
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }
+                                                setMobileAgentSheetOpen(false);
+                                            }}
+                                            className={cn(
+                                                'flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all',
+                                                isSelected &&
+                                                    'border-2 border-primary/40 bg-primary/10',
+                                                !isSelected &&
+                                                    'border-2 border-transparent hover:bg-accent',
+                                            )}
+                                        >
+                                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                                                {agent.avatar_url ? (
+                                                    <img
+                                                        src={agent.avatar_url}
+                                                        alt={agent.agent_name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                                                        <Bot className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-sm font-semibold text-foreground">
+                                                    {agent.agent_name}
+                                                </h3>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {agent.job_title ||
+                                                        agent.agent_type}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="shrink-0 border-t border-primary/20 pt-3">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start gap-2 text-sm"
+                                    onClick={() => {
+                                        setMobileAgentSheetOpen(false);
+                                        setSupportDialogOpen(true);
+                                    }}
+                                >
+                                    <Headphones className="h-4 w-4" />
+                                    Get Support
+                                </Button>
+                            </div>
+                        </div>
+                    </SheetContent>
+                </Sheet>
 
                 {/* Chat */}
                 <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card">
@@ -747,18 +915,16 @@ export default function PortalWorkspace() {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
-                        {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
-                        {selectedAgentId &&
-                            agentComponents?.ConfigComponent && (
-                                <div className="mx-4 mt-3 mb-2">
-                                    <agentComponents.ConfigComponent
-                                        setupProgress={setupProgress}
-                                        seoStats={seoStats}
-                                        agentDetails={agentDetails}
-                                    />
-                                </div>
-                            )}
-
+                        {/* Agent-Specific View Component (non-chat views) */}
+                        {agentComponents?.ViewComponent &&
+                        activeView !== 'chat' ? (
+                            <agentComponents.ViewComponent
+                                activeView={activeView}
+                                setActiveView={setActiveView}
+                                agentDetails={agentDetails}
+                            />
+                        ) : (
+                            <>
                         {/* Agent-Specific Chat Component */}
                         {agentComponents?.ChatComponent ? (
                             <agentComponents.ChatComponent
@@ -984,6 +1150,8 @@ export default function PortalWorkspace() {
                                 </div>
                             </>
                         )}
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -1141,16 +1309,6 @@ export default function PortalWorkspace() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="shrink-0 border-t border-primary/20 pt-4">
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start gap-2 text-sm"
-                                    onClick={() => setSupportDialogOpen(true)}
-                                >
-                                    <Headphones className="h-4 w-4" />
-                                    Get Support
-                                </Button>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -1180,17 +1338,14 @@ export default function PortalWorkspace() {
                             <Label htmlFor="support-category">Category</Label>
                             <Select
                                 value={supportCategory}
-                                onValueChange={setSupportCategory}
+                                onValueChange={handleCategoryChange}
                             >
                                 <SelectTrigger id="support-category">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="general">
-                                        General Question
-                                    </SelectItem>
-                                    <SelectItem value="technical">
-                                        Technical Issue
+                                    <SelectItem value="agent_issue">
+                                        Agent Issue
                                     </SelectItem>
                                     <SelectItem value="billing">
                                         Billing & Account
@@ -1198,10 +1353,42 @@ export default function PortalWorkspace() {
                                     <SelectItem value="feature_request">
                                         Feature Request
                                     </SelectItem>
+                                    <SelectItem value="general">
+                                        General Question
+                                    </SelectItem>
+                                    <SelectItem value="portal_issue">
+                                        Portal Issue
+                                    </SelectItem>
                                     <SelectItem value="other">Other</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
+                        {supportCategory === 'agent_issue' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="support-agent-name">
+                                    AI Agent{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <Select
+                                    value={supportAgentName}
+                                    onValueChange={setSupportAgentName}
+                                >
+                                    <SelectTrigger id="support-agent-name">
+                                        <SelectValue placeholder="Select an agent..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableAgentNames?.map((name) => (
+                                            <SelectItem
+                                                key={name}
+                                                value={name}
+                                            >
+                                                {name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="support-subject">
                                 Subject{' '}
@@ -1249,7 +1436,9 @@ export default function PortalWorkspace() {
                                 disabled={
                                     submitSupportRequest.isPending ||
                                     !supportSubject.trim() ||
-                                    !supportMessage.trim()
+                                    !supportMessage.trim() ||
+                                    (supportCategory === 'agent_issue' &&
+                                        !supportAgentName)
                                 }
                             >
                                 {submitSupportRequest.isPending ? (

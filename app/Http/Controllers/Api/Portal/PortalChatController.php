@@ -10,13 +10,22 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Ai\ConversationHistoryWindow;
+use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Beacon\BeaconAgentHandler;
+
+use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Impulse\ImpulseAgentHandler;
+use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Mosaic\MosaicAgentHandler;
 use App\Services\Mosaic\MosaicMediaService;
+use App\Services\Optix\OptixAgentHandler;
+use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -25,13 +34,22 @@ use Illuminate\Support\Str;
 class PortalChatController extends Controller
 {
     public function __construct(
+        private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
+        private BeaconAgentHandler $beaconAgentHandler,
+
+        private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private ImpulseAgentHandler $impulseAgentHandler,
+        private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
         private MosaicAgentHandler $mosaicAgentHandler,
         private MosaicMediaService $mosaicMediaService,
-        private OnboardingService $onboardingService
+        private OptixAgentHandler $optixAgentHandler,
+        private VectorAgentHandler $vectorAgentHandler,
+        private OnboardingService $onboardingService,
+        private ConversationHistoryWindow $conversationHistoryWindow
     ) {}
 
     /**
@@ -144,9 +162,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        $promptHistory = $this->conversationHistoryWindow->trim($messages);
 
         // Generate the assistant response with conversation history (before adding current message)
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $promptHistory);
 
         $messages[] = [
             'role' => 'user',
@@ -192,8 +211,8 @@ class PortalChatController extends Controller
                 ->where('name', $agentAccess->agent_name)
                 ->first();
 
-            if ($availableAgent) {
-                return $this->apexAgentHandler->handle($message, $user, $availableAgent);
+            if ($availableAgent && $tenant) {
+                return $this->apexAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -238,6 +257,102 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->mosaicAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Briggs agent
+        if (strtolower($agentAccess->agent_name) === 'briggs') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->briggsAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Aether agent
+        if (strtolower($agentAccess->agent_name) === 'aether') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->aetherAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Impulse agent
+        if (strtolower($agentAccess->agent_name) === 'impulse') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->impulseAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Kinetix agent
+        if (strtolower($agentAccess->agent_name) === 'kinetix') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->kinetixAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Optix agent
+        if (strtolower($agentAccess->agent_name) === 'optix') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->optixAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Vector agent
+        if (strtolower($agentAccess->agent_name) === 'vector') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->vectorAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Beacon agent
+        if (strtolower($agentAccess->agent_name) === 'beacon') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->beaconAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Arsenal agent
+        if (strtolower($agentAccess->agent_name) === 'arsenal') {
+            if ($tenant) {
+                $arsenalAgent = new \App\Ai\Agents\Arsenal(
+                    user: $user,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory
+                );
+
+                try {
+                    $response = $arsenalAgent->prompt($message);
+                    return (string) $response;
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: '.$e->getMessage());
+                    return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
+                }
             }
         }
 
@@ -341,7 +456,9 @@ class PortalChatController extends Controller
 
             if ($availableAgent) {
                 // Pass the conversation history (before adding the new upload message)
-                $historyBeforeUpload = array_slice($messages, 0, -1);
+                $historyBeforeUpload = $this->conversationHistoryWindow->trim(
+                    array_slice($messages, 0, -1)
+                );
 
                 if (strtolower($agentAccess->agent_name) === 'cynessa') {
                     $confirmationMessage = $this->cynessaAgentHandler->handle(

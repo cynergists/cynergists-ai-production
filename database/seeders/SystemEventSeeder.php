@@ -11,6 +11,7 @@ class SystemEventSeeder extends Seeder
     {
         $this->seedSubscriptionStarted();
         $this->seedSubscriptionCancelled();
+        $this->seedUserCreated();
     }
 
     private function seedSubscriptionStarted(): void
@@ -115,6 +116,64 @@ class SystemEventSeeder extends Seeder
             .'<strong>Company:</strong> '.$this->mt('company_name').'<br>'
             .'<strong>Agent:</strong> '.$this->mt('agent_name').'<br>'
             .'<strong>Tier:</strong> '.$this->mt('tier').'</p>';
+    }
+
+    private function seedUserCreated(): void
+    {
+        $event = SystemEvent::query()->updateOrCreate(
+            ['slug' => 'user_created'],
+            [
+                'name' => 'User Created',
+                'description' => 'Fired when a new user account is created in the admin panel.',
+                'is_active' => true,
+            ]
+        );
+
+        $event->emailTemplates()->updateOrCreate(
+            ['recipient_type' => 'client'],
+            [
+                'name' => 'Welcome Email',
+                'subject' => 'Welcome to {{ app_name }}, {{ user_name }}!',
+                'body' => $this->userCreatedClientBody(),
+                'is_active' => true,
+            ]
+        );
+
+        $event->emailTemplates()->updateOrCreate(
+            ['recipient_type' => 'admin'],
+            [
+                'name' => 'New User Admin Notification',
+                'subject' => 'New user created: {{ user_name }}',
+                'body' => $this->userCreatedAdminBody(),
+                'is_active' => true,
+            ]
+        );
+    }
+
+    private function userCreatedClientBody(): string
+    {
+        return '<h2>Welcome to '.$this->mt('app_name').', '.$this->mt('user_name').'!</h2>'
+            .'<p>Your account has been successfully created, and we\'re thrilled to have you join us!</p>'
+            .'<p>To get started, you\'ll need to create your password and access your portal.</p>'
+            .'<p style="margin: 40px 0; text-align: center;">'
+            .'<a href="'.$this->mt('password_reset_url').'" style="background-color: #22c55e; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Create Your Password</a>'
+            .'</p>'
+            .'<p style="font-size: 14px; color: #666;"><strong>Your login email:</strong> '.$this->mt('user_email').'</p>'
+            .'<p style="font-size: 13px; color: #999; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">If the button above doesn\'t work, copy and paste this link into your browser:<br><span style="color: #3b82f6; word-break: break-all;">'.$this->mt('password_reset_url').'</span></p>'
+            .'<p style="font-size: 12px; color: #999; margin-top: 20px;">If you have any questions or need assistance, feel free to reach out to our support team.</p>';
+    }
+
+    private function userCreatedAdminBody(): string
+    {
+        return '<h2>New User Created</h2>'
+            .'<p>A new user account has been created in the admin panel.</p>'
+            .'<p><strong>User Details:</strong></p>'
+            .'<ul>'
+            .'<li><strong>Name:</strong> '.$this->mt('user_name').'</li>'
+            .'<li><strong>Email:</strong> '.$this->mt('user_email').'</li>'
+            .'<li><strong>Company:</strong> '.$this->mt('company_name').'</li>'
+            .'</ul>'
+            .'<p>This user can now access the platform.</p>';
     }
 
     /**

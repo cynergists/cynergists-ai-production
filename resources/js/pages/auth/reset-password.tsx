@@ -10,15 +10,19 @@ import { Form, Head } from '@inertiajs/react';
 type Props = {
     token: string;
     email: string;
+    isNewUser?: boolean;
 };
 
-export default function ResetPassword({ token, email }: Props) {
+export default function ResetPassword({ token, email, isNewUser = false }: Props) {
+    const title = isNewUser ? 'Welcome! Create your password' : 'Reset password';
+    const description = isNewUser
+        ? "Let's get you set up with a secure password"
+        : 'Please enter your new password below';
+    const buttonText = isNewUser ? 'Create password & sign in' : 'Reset password';
+
     return (
-        <AuthLayout
-            title="Reset password"
-            description="Please enter your new password below"
-        >
-            <Head title="Reset password" />
+        <AuthLayout title={title} description={description}>
+            <Head title={title} />
 
             <Form
                 {...update.form()}
@@ -83,7 +87,7 @@ export default function ResetPassword({ token, email }: Props) {
                             data-test="reset-password-button"
                         >
                             {processing && <Spinner />}
-                            Reset password
+                            {buttonText}
                         </Button>
                     </div>
                 )}

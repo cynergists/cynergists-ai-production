@@ -7,13 +7,14 @@ use App\Models\EventEmailTemplate;
 use App\Models\SystemEvent;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 
 class EventEmailService
 {
     /**
      * Fire a system event and send associated emails.
      *
-     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant}  $data
+     * @param  array{user?: \App\Models\User, agent?: \App\Models\PortalAvailableAgent, subscription?: \App\Models\CustomerSubscription, tenant?: \App\Models\PortalTenant, generate_password_reset_link?: bool}  $data
      */
     public function fire(string $slug, array $data = []): void
     {
@@ -50,8 +51,9 @@ class EventEmailService
         $agent = $data['agent'] ?? null;
         $subscription = $data['subscription'] ?? null;
         $tenant = $data['tenant'] ?? null;
+        $generatePasswordResetLink = $data['generate_password_reset_link'] ?? false;
 
-        return [
+        $variables = [
             'user_name' => $user?->name ?? '',
             'user_email' => $user?->email ?? '',
             'agent_name' => $agent?->name ?? '',
@@ -63,7 +65,18 @@ class EventEmailService
             'app_name' => config('app.name'),
             'app_url' => config('app.url'),
             'portal_url' => config('app.url').'/portal/agents',
+            'password_reset_url' => '',
         ];
+
+        if ($generatePasswordResetLink && $user) {
+            $token = Password::createToken($user);
+            $variables['password_reset_url'] = url('/welcome?'.http_build_query([
+                'token' => $token,
+                'email' => $user->email,
+            ]));
+        }
+
+        return $variables;
     }
 
     /**
@@ -84,7 +97,7 @@ class EventEmailService
                 return;
             }
 
-            SendEventEmail::dispatch($recipients, $renderedSubject, $renderedBody);
+            SendEventEmail::dispatchSync($recipients, $renderedSubject, $renderedBody);
         } catch (\Throwable $e) {
             Log::error('Failed to send event email', [
                 'template_id' => $template->id,
