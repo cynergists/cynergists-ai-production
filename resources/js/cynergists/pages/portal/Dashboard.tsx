@@ -47,7 +47,7 @@ export default function PortalDashboard() {
 
     return (
         <div className="min-h-screen bg-background">
-            <div className="mx-auto flex max-w-6xl flex-col gap-8 p-8">
+            <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 md:gap-8 md:p-8">
                 <section className="flex flex-col gap-6">
                     <div className="flex flex-col gap-3">
                         <p className="text-sm font-medium text-primary">
@@ -246,21 +246,23 @@ export default function PortalDashboard() {
                             </Button>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="grid grid-cols-7 gap-2 text-xs text-muted-foreground">
-                                {plannerDays.map((day) => (
-                                    <div
-                                        key={day}
-                                        className="text-center font-medium uppercase"
-                                    >
-                                        {day}
-                                    </div>
-                                ))}
-                                {plannerDays.map((day) => (
-                                    <div
-                                        key={`${day}-block`}
-                                        className="h-16 rounded-lg border border-dashed border-border bg-muted/40"
-                                    />
-                                ))}
+                            <div className="-mx-2 overflow-x-auto px-2">
+                                <div className="grid min-w-[420px] grid-cols-7 gap-2 text-xs text-muted-foreground">
+                                    {plannerDays.map((day) => (
+                                        <div
+                                            key={day}
+                                            className="text-center font-medium uppercase"
+                                        >
+                                            {day}
+                                        </div>
+                                    ))}
+                                    {plannerDays.map((day) => (
+                                        <div
+                                            key={`${day}-block`}
+                                            className="h-16 rounded-lg border border-dashed border-border bg-muted/40"
+                                        />
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

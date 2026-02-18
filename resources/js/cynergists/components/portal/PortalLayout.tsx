@@ -1,13 +1,20 @@
 import { TenantProvider } from '@/components/portal/TenantProvider';
 import { Button } from '@/components/ui/button';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import PortalContext from '@/contexts/PortalContext';
 import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { Loader2, LogOut, Shield, UserCircle } from 'lucide-react';
-import { ReactNode } from 'react';
+import { Loader2, LogOut, Menu, Shield, UserCircle } from 'lucide-react';
+import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
 
 export function PortalLayout({ children }: { children: ReactNode }) {
     const { props } = usePage<{
@@ -19,6 +26,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     const { subdomain, isTenantDomain } = useSubdomain();
     const user = props.auth?.user ?? null;
     const isAdmin = props.auth?.roles?.includes('admin') ?? false;
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Fetch tenant by subdomain (for subdomain-based access)
     const { data: tenantBySubdomain, isLoading: tenantBySubdomainLoading } =
@@ -32,6 +40,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     // Users can change their subdomain in settings if needed
 
     const handleLogout = async () => {
+        setMobileMenuOpen(false);
         router.post('/logout');
     };
 
@@ -87,29 +96,18 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <title>{portalTitle} | Cynergists</title>
                 </Helmet>
 
-                <div className="flex min-h-screen flex-col bg-background md:h-screen md:max-h-screen md:min-h-0 md:overflow-hidden">
-                    <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
+                <div className="flex h-dvh flex-col overflow-hidden bg-background">
+                    <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
                         <div>
-                            <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                Customer Portal
-                            </p>
-                            <h1 className="text-lg font-semibold text-foreground">
-                                {activeTenant?.company_name ||
-                                    'Customer Portal'}
-                            </h1>
-                            <p className="text-xs text-muted-foreground">
-                                {userEmail}
-                            </p>
+                            <img 
+                                src={cynergistsLogo} 
+                                alt="Company Logo"
+                                className="h-12 object-contain"
+                            />
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="text-sm font-medium text-foreground">
-                                    {userDisplayName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {userEmail}
-                                </p>
-                            </div>
+
+                        {/* Desktop nav */}
+                        <div className="hidden items-center gap-3 md:flex">
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -141,9 +139,82 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                 Sign Out
                             </Button>
                         </div>
+
+                        {/* Mobile hamburger */}
+                        <button
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+                            onClick={() => setMobileMenuOpen(true)}
+                            aria-label="Open menu"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
                     </header>
 
-                    <main className="flex-1 overflow-hidden">{children}</main>
+                    {/* Mobile menu Sheet */}
+                    <Sheet
+                        open={mobileMenuOpen}
+                        onOpenChange={setMobileMenuOpen}
+                    >
+                        <SheetContent side="right" className="w-72">
+                            <SheetHeader>
+                                <SheetTitle>Menu</SheetTitle>
+                            </SheetHeader>
+                            <div className="flex flex-col gap-4 px-4">
+                                <div className="rounded-lg border border-border bg-muted/50 p-3">
+                                    <p className="text-sm font-medium text-foreground">
+                                        {userDisplayName}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {userEmail}
+                                    </p>
+                                </div>
+                                <nav className="flex flex-col gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start gap-2"
+                                        asChild
+                                        onClick={() =>
+                                            setMobileMenuOpen(false)
+                                        }
+                                    >
+                                        <a href="/portal/account">
+                                            <UserCircle className="h-4 w-4" />
+                                            Account
+                                        </a>
+                                    </Button>
+                                    {isAdmin && (
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start gap-2"
+                                            asChild
+                                            onClick={() =>
+                                                setMobileMenuOpen(false)
+                                            }
+                                        >
+                                            <a href="/admin">
+                                                <Shield className="h-4 w-4" />
+                                                Admin
+                                            </a>
+                                        </Button>
+                                    )}
+                                </nav>
+                                <div className="border-t border-border pt-2">
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                                        onClick={handleLogout}
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Sign Out
+                                    </Button>
+                                </div>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+
+                    <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+                        {children}
+                    </main>
                 </div>
             </PortalContext.Provider>
         </TenantProvider>

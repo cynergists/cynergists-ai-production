@@ -45,8 +45,8 @@ export default function PortalBilling() {
     const monthlyTotal = null;
 
     return (
-        <div className="p-8">
-            <div className="mb-8">
+        <div className="p-4 md:p-8">
+            <div className="mb-6 md:mb-8">
                 <div className="mb-2 flex items-center gap-3">
                     <CreditCard className="h-8 w-8 text-primary" />
                     <h1 className="text-3xl font-bold text-foreground">

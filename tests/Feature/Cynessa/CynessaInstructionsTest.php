@@ -1,8 +1,10 @@
 <?php
 
 use App\Ai\Agents\Cynessa;
+use App\Models\AgentKnowledgeBase;
 use App\Models\PortalTenant;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 it('includes DOES NOT boundary constraints in onboarding instructions', function () {
     $user = User::factory()->create();
@@ -146,4 +148,32 @@ it('tracks new fields in user context', function () {
     expect($instructions)->toContain('https://testco.com');
     expect($instructions)->toContain('We build things');
     expect($instructions)->toContain('Blue and gold');
+});
+
+it('truncates oversized knowledge base content before injecting it', function () {
+    $user = User::factory()->create();
+    $tenant = PortalTenant::factory()->create([
+        'user_id' => (string) $user->id,
+    ]);
+
+    Cache::forget('agent_knowledge_base:cynessa');
+
+    AgentKnowledgeBase::query()->create([
+        'agent_name' => 'cynessa',
+        'title' => 'Large KB',
+        'content' => str_repeat('policy ', 30_000),
+        'is_active' => true,
+        'version' => 'v-test',
+    ]);
+
+    $agent = new Cynessa(
+        user: $user,
+        tenant: $tenant,
+        includeKnowledgeBase: true
+    );
+
+    $instructions = (string) $agent->instructions();
+
+    expect($instructions)->toContain('[Knowledge base truncated to fit context limits.]');
+    expect(mb_strlen($instructions))->toBeLessThan(160_000);
 });

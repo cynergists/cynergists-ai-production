@@ -5,6 +5,7 @@ namespace App\Services\Apex;
 use App\Models\PortalAvailableAgent;
 use App\Models\User;
 use App\Services\ApiKeyService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -25,11 +26,18 @@ class UnipileService
      */
     public function forAgent(PortalAvailableAgent $agent): self
     {
-        $apiKey = $this->apiKeyService->getKeyWithMetadata($agent, 'unipile');
+        try {
+            $apiKey = $this->apiKeyService->getKeyWithMetadata($agent, 'unipile');
 
-        if ($apiKey) {
-            $this->apiKey = $apiKey->key;
-            $this->domain = $apiKey->metadata['domain'] ?? 'api1.unipile.com';
+            if ($apiKey) {
+                $this->apiKey = $apiKey->key;
+                $this->domain = $apiKey->metadata['domain'] ?? 'api1.unipile.com';
+            }
+        } catch (DecryptException $e) {
+            Log::error('Failed to decrypt Unipile API key for agent '.$agent->id.'. The stored key may have been encrypted with a different APP_KEY.', [
+                'agent_id' => $agent->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $this;
@@ -120,12 +128,20 @@ class UnipileService
                 ];
             }
 
+            $errorBody = $response->json();
+            $errorDetail = $errorBody['detail'] ?? $errorBody['title'] ?? null;
+
             Log::error('Unipile connect with credentials failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
 
-            return null;
+            return [
+                'account_id' => null,
+                'status' => 'failed',
+                'checkpoint_type' => null,
+                'error' => $errorDetail,
+            ];
         } catch (\Exception $e) {
             Log::error('Unipile connect with credentials exception', ['error' => $e->getMessage()]);
 

@@ -163,6 +163,13 @@ class ApexCampaign extends Model
             return false;
         }
 
+        // Don't auto-complete if the campaign has never had any prospects
+        $totalProspects = $this->campaignProspects()->count();
+
+        if ($totalProspects === 0) {
+            return false;
+        }
+
         $hasActiveProspects = $this->campaignProspects()
             ->whereIn('status', ['queued', 'connection_sent', 'connection_accepted', 'message_sent'])
             ->exists();

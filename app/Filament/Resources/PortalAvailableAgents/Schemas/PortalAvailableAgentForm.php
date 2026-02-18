@@ -199,10 +199,23 @@ class PortalAvailableAgentForm
                                                     ->label('Or Upload File')
                                                     ->disk('public')
                                                     ->directory('agents/card-media')
-                                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
-                                                    ->maxSize(51200)
+                                                    ->acceptedFileTypes([
+                                                        'image/jpeg',
+                                                        'image/jpg',
+                                                        'image/png',
+                                                        'image/webp',
+                                                        'image/gif',
+                                                        'video/mp4',
+                                                        'video/webm',
+                                                        'video/quicktime',
+                                                        'video/x-msvideo',
+                                                        'video/x-matroska',
+                                                        'video/mpeg',
+                                                        'video/ogg',
+                                                    ])
+                                                    ->maxSize(204800)
                                                     ->imagePreviewHeight('100')
-                                                    ->helperText('Upload overwrites URL'),
+                                                    ->helperText('Upload overwrites URL. Max 200MB'),
                                                 \Filament\Forms\Components\Select::make('type')
                                                     ->options([
                                                         'image' => 'Image',
@@ -231,10 +244,23 @@ class PortalAvailableAgentForm
                                                     ->label('Or Upload File')
                                                     ->disk('public')
                                                     ->directory('agents/product-media')
-                                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
-                                                    ->maxSize(51200)
+                                                    ->acceptedFileTypes([
+                                                        'image/jpeg',
+                                                        'image/jpg',
+                                                        'image/png',
+                                                        'image/webp',
+                                                        'image/gif',
+                                                        'video/mp4',
+                                                        'video/webm',
+                                                        'video/quicktime',
+                                                        'video/x-msvideo',
+                                                        'video/x-matroska',
+                                                        'video/mpeg',
+                                                        'video/ogg',
+                                                    ])
+                                                    ->maxSize(204800)
                                                     ->imagePreviewHeight('100')
-                                                    ->helperText('Upload overwrites URL'),
+                                                    ->helperText('Upload overwrites URL. Max 200MB'),
                                                 \Filament\Forms\Components\Select::make('type')
                                                     ->options([
                                                         'image' => 'Image',

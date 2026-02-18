@@ -177,7 +177,7 @@ class ApexAgentHandler
 
         // Warn if no targeting criteria — campaign won't discover prospects
         if (empty($jobTitles) && empty($locations) && empty($keywords) && empty($industries)) {
-            Log::warning('Campaign created without targeting criteria — DiscoverProspectsJob will skip', [
+            Log::warning('Campaign created without targeting criteria — prospect discovery will skip', [
                 'user_id' => $user->id,
                 'raw_context' => $context,
             ]);
