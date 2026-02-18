@@ -70,8 +70,7 @@ class CampaignController extends Controller
         $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
 
         if ($agent) {
-            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
         }
 
         ApexActivityLog::log(
@@ -196,8 +195,7 @@ class CampaignController extends Controller
         $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
 
         if ($agent) {
-            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
         }
 
         ApexActivityLog::log(
@@ -238,8 +236,7 @@ class CampaignController extends Controller
         $agent = PortalAvailableAgent::query()->where('name', 'Apex')->first();
 
         if ($agent) {
-            SyncLinkedInMessagesJob::dispatch($campaign->user, $agent);
-            RunCampaignPipelineJob::dispatch($campaign, $agent)->delay(now()->addSeconds(10));
+            RunCampaignPipelineJob::dispatch($campaign, $agent);
         }
 
         ApexActivityLog::log(

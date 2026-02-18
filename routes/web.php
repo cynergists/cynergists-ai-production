@@ -30,10 +30,10 @@ use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
-    ->defaults('component', 'Index')
+    ->defaults('component', 'Marketplace')
     ->name('home');
 
-Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
+Route::redirect('/marketplace', '/');
 Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
@@ -219,6 +219,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/profile', [PortalProfileController::class, 'show']);
         Route::put('/profile', [PortalProfileController::class, 'update']);
         Route::post('/suggestions', [PortalSuggestionsController::class, 'store']);
+        Route::get('/support/agent-names', [PortalSupportController::class, 'agentNames']);
         Route::post('/support', [PortalSupportController::class, 'store']);
         Route::get('/account', [PortalAccountController::class, 'index']);
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);

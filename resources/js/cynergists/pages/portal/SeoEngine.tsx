@@ -440,7 +440,7 @@ export default function PortalSeoEngine() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 p-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 md:gap-8 md:p-8">
         <section className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
             <div>

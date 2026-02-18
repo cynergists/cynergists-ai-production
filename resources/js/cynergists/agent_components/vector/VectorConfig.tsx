@@ -1,84 +1,49 @@
-import { cn } from '@/lib/utils';
-import { DollarSign, Target } from 'lucide-react';
+import { DollarSign, Target, TrendingUp } from 'lucide-react';
 
 interface VectorConfigProps {
-    agentDetails?: any;
+    agentDetails: any;
 }
 
 export function VectorConfig({ agentDetails }: VectorConfigProps) {
-    const vectorData = agentDetails?.vector_data || {};
-    const metrics = vectorData?.metrics || {};
+    const vectorData = agentDetails?.vector_data ?? null;
+    const performance = vectorData?.performance;
 
-    const totalSpend = metrics.total_spend ?? null;
-    const roas = metrics.roas ?? null;
-    const activeCampaigns = metrics.active_campaigns ?? 0;
+    if (!performance) {
+        return null;
+    }
+
+    const roasColor =
+        performance.roas >= 3
+            ? 'text-green-600'
+            : performance.roas >= 1.5
+              ? 'text-yellow-600'
+              : 'text-red-500';
 
     return (
-        <div className="space-y-1.5 rounded-xl border border-primary/10 bg-muted/30 p-3">
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                    Campaign Performance
-                </span>
-                {roas !== null ? (
-                    <span
-                        className={cn(
-                            'text-xl font-bold',
-                            roas >= 3
-                                ? 'text-green-600 dark:text-green-400'
-                                : roas >= 1.5
-                                  ? 'text-yellow-600 dark:text-yellow-400'
-                                  : 'text-red-600 dark:text-red-400',
-                        )}
-                    >
-                        {roas}x ROAS
-                    </span>
-                ) : (
-                    <span className="text-sm font-medium text-muted-foreground">
-                        No data yet
-                    </span>
-                )}
-            </div>
-            {roas !== null && (
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                        className={cn(
-                            'h-full transition-all duration-300',
-                            roas >= 3
-                                ? 'bg-green-500'
-                                : roas >= 1.5
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500',
-                        )}
-                        style={{
-                            width: `${Math.min((roas / 5) * 100, 100)}%`,
-                        }}
-                    />
-                </div>
-            )}
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-                <div className="flex flex-col gap-0.5 rounded-md bg-muted/50 px-1.5 py-1">
-                    <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">
-                            Spend
-                        </span>
+        <div className="space-y-4">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <TrendingUp className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="text-sm font-semibold">
-                        {totalSpend !== null
-                            ? `$${Number(totalSpend).toLocaleString()}`
-                            : '—'}
-                    </span>
-                </div>
-                <div className="flex flex-col gap-0.5 rounded-md bg-muted/50 px-1.5 py-1">
-                    <div className="flex items-center gap-1">
-                        <Target className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">
-                            Campaigns
-                        </span>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-semibold text-foreground">
+                            Ad Performance
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                            {vectorData?.active_campaigns ?? 0} active campaigns
+                        </p>
                     </div>
-                    <span className="text-sm font-semibold">
-                        {activeCampaigns}
-                    </span>
+                </div>
+                <div className="mt-3 flex items-center gap-4">
+                    <div className={`flex items-center gap-1.5 text-xs font-medium ${roasColor}`}>
+                        <Target className="h-3.5 w-3.5" />
+                        <span>ROAS: {Number(performance.roas).toFixed(1)}x</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <DollarSign className="h-3.5 w-3.5" />
+                        <span>${Number(performance.total_spend).toLocaleString()}</span>
+                    </div>
                 </div>
             </div>
         </div>

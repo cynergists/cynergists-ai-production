@@ -59,7 +59,7 @@ export default function CynessaSidebar({
         brandColors: settings?.brand_colors || null,
     };
 
-    const providedFiles = settings?.brand_assets || [];
+    const providedFiles = Array.isArray(settings?.brand_assets) ? settings.brand_assets : [];
 
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">

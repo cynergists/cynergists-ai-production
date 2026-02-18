@@ -31,6 +31,25 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
+const stripHtmlAndTruncate = (
+    html: string | null | undefined,
+    maxLength: number = 120,
+): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const decoded = text
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'");
+    // Truncate
+    if (decoded.length <= maxLength) return decoded;
+    return decoded.substring(0, maxLength).trim() + '...';
+};
+
 const getTypeLabel = (type: string) => {
     switch (type) {
         case 'role':
@@ -342,9 +361,14 @@ const Cart = () => {
                                                     <h3 className="text-lg font-semibold">
                                                         {item.name}
                                                     </h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {item.description}
-                                                    </p>
+                                                    {item.description && (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {stripHtmlAndTruncate(
+                                                                item.description,
+                                                                120,
+                                                            )}
+                                                        </p>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex items-center gap-4">

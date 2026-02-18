@@ -6,6 +6,7 @@ use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\EventEmailService;
+use App\Services\IDevAffiliateService;
 use App\Services\SquareSubscriptionService;
 use Illuminate\Support\Str;
 use Square\Types\CancelSubscriptionResponse;
@@ -42,6 +43,7 @@ beforeEach(function () {
 
     // Mock EventEmailService to prevent actual email sending
     mock(EventEmailService::class)->shouldIgnoreMissing();
+    mock(IDevAffiliateService::class)->shouldIgnoreMissing();
 });
 
 /*

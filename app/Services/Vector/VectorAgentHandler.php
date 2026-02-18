@@ -13,7 +13,7 @@ class VectorAgentHandler
     /**
      * Handle an incoming chat message and generate a response.
      */
-    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = [], int $maxTokens = 2048): string
+    public function handle(string $message, User $user, PortalAvailableAgent $agent, PortalTenant $tenant, array $conversationHistory = [], int $maxTokens = 1024): string
     {
         try {
             $vectorAgent = new Vector(

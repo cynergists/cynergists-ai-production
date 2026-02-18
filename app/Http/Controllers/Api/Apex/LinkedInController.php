@@ -89,8 +89,10 @@ class LinkedInController extends Controller
         );
 
         if (! $result || ! $result['account_id']) {
+            $error = $result['error'] ?? 'Failed to connect LinkedIn account. Please check your credentials.';
+
             return response()->json([
-                'error' => 'Failed to connect LinkedIn account. Please check your credentials.',
+                'error' => $error,
             ], 422);
         }
 

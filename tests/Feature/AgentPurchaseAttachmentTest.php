@@ -5,13 +5,25 @@ use App\Models\AgentAccess;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Models\User;
+use App\Services\SquareSubscriptionService;
 use Illuminate\Support\Facades\Queue;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     Queue::fake();
+    
+    // Mock Square service to avoid external API calls
+    $this->mock(SquareSubscriptionService::class, function (MockInterface $mock) {
+        $mockPayment = \Mockery::mock('Square\Types\Payment');
+        $mockPayment->shouldReceive('getId')->andReturn('test-payment-id');
+        $mockPayment->shouldReceive('getReceiptUrl')->andReturn('https://example.com/receipt');
+        
+        $mock->shouldReceive('processOneTimePayment')
+            ->andReturn($mockPayment);
+    });
 });
 
-it('dispatches agent attachment job after successful payment', function () {
+it('attaches agents to user after successful payment', function () {
     // Create a user
     $user = User::factory()->create([
         'email' => 'test@example.com',
@@ -43,12 +55,14 @@ it('dispatches agent attachment job after successful payment', function () {
                 'description' => 'Test agent 1',
                 'quantity' => 1,
                 'price' => 5000,
+                'billing_type' => 'one_time',
             ],
             [
                 'name' => 'AI Agent 2',
                 'description' => 'Test agent 2',
                 'quantity' => 1,
                 'price' => 5000,
+                'billing_type' => 'one_time',
             ],
         ],
     ];
@@ -57,11 +71,21 @@ it('dispatches agent attachment job after successful payment', function () {
 
     $response->assertStatus(200);
 
-    // Verify the job was dispatched
-    Queue::assertPushed(AttachPortalAgentsToUser::class, function ($job) use ($user) {
-        return $job->email === $user->email
-            && $job->agentNames === ['AI Agent 1', 'AI Agent 2'];
-    });
+    // Verify the agents were actually attached to the user's tenant
+    $tenant = PortalTenant::forUser($user);
+    expect($tenant)->not->toBeNull();
+    
+    $this->assertDatabaseHas('agent_access', [
+        'tenant_id' => $tenant->id,
+        'agent_name' => 'AI Agent 1',
+        'is_active' => true,
+    ]);
+    
+    $this->assertDatabaseHas('agent_access', [
+        'tenant_id' => $tenant->id,
+        'agent_name' => 'AI Agent 2',
+        'is_active' => true,
+    ]);
 });
 
 it('attaches purchased agents to user tenant', function () {
@@ -99,7 +123,7 @@ it('attaches purchased agents to user tenant', function () {
         agentNames: ['AI Agent 1', 'AI Agent 2']
     );
 
-    $job->handle();
+    app()->call([$job, 'handle']);
 
     // Verify only the specified agents were attached
     $this->assertDatabaseHas('agent_access', [
@@ -156,7 +180,7 @@ it('attaches all active agents when no specific agents are provided', function (
         agentNames: null
     );
 
-    $job->handle();
+    app()->call([$job, 'handle']);
 
     // Verify all active agents were attached
     $this->assertDatabaseHas('agent_access', [
@@ -198,7 +222,7 @@ it('creates tenant if user does not have one', function () {
         agentNames: ['AI Agent 1']
     );
 
-    $job->handle();
+    app()->call([$job, 'handle']);
 
     // Verify tenant was created
     $this->assertDatabaseHas('portal_tenants', [

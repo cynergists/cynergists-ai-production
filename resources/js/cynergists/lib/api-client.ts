@@ -8,13 +8,13 @@ type ApiError = {
     status: number;
 };
 
-const getCsrfToken = (): string | null => {
+const getXsrfTokenFromCookie = (): string | null => {
     if (typeof document === 'undefined') return null;
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? null
-    );
+    const match = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('XSRF-TOKEN='));
+    if (!match) return null;
+    return decodeURIComponent(match.split('=')[1]);
 };
 
 const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
@@ -23,11 +23,9 @@ const buildHeaders = (body: BodyInit | null | undefined): HeadersInit => {
         Accept: 'application/json',
     };
 
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-        // Laravel checks for X-XSRF-TOKEN (from cookie) or X-CSRF-TOKEN (from meta tag)
-        headers['X-CSRF-TOKEN'] = csrfToken;
-        headers['X-XSRF-TOKEN'] = csrfToken;
+    const xsrfToken = getXsrfTokenFromCookie();
+    if (xsrfToken) {
+        headers['X-XSRF-TOKEN'] = xsrfToken;
     }
 
     // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
@@ -63,6 +61,12 @@ const request = async <T>(
     });
 
     if (!response.ok) {
+        // Session expired or CSRF token mismatch — redirect to login
+        if (response.status === 419) {
+            window.location.href = '/login';
+            throw { message: 'Session expired. Redirecting to login...', status: 419 } as ApiError;
+        }
+
         let message = response.statusText || 'Request failed';
 
         // Try to parse error response body for detailed error message

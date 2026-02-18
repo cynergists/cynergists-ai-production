@@ -133,7 +133,7 @@ class SystemEventSeeder extends Seeder
             ['recipient_type' => 'client'],
             [
                 'name' => 'Welcome Email',
-                'subject' => 'Welcome to '.$this->mt('app_name').', '.$this->mt('user_name').'!',
+                'subject' => 'Welcome to {{ app_name }}, {{ user_name }}!',
                 'body' => $this->userCreatedClientBody(),
                 'is_active' => true,
             ]
@@ -143,7 +143,7 @@ class SystemEventSeeder extends Seeder
             ['recipient_type' => 'admin'],
             [
                 'name' => 'New User Admin Notification',
-                'subject' => 'New user created: '.$this->mt('user_name'),
+                'subject' => 'New user created: {{ user_name }}',
                 'body' => $this->userCreatedAdminBody(),
                 'is_active' => true,
             ]

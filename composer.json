@@ -12,6 +12,7 @@
         "laravel/ai": "^0.1.3",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
+        "laravel/nightwatch": "^1.22",
         "laravel/pulse": "^1.5",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",

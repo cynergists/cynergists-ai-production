@@ -17,14 +17,14 @@ class VectorSidebarConfig
         $vectorData = $settings['vector_data'] ?? [];
 
         return [
-            'metrics' => $vectorData['metrics'] ?? [
-                'total_spend' => null,
-                'roas' => null,
-                'cpa' => null,
-                'conversions' => null,
-                'active_campaigns' => 0,
+            'performance' => [
+                'roas' => $vectorData['roas'] ?? 0,
+                'total_spend' => $vectorData['total_spend'] ?? 0,
+                'cpa' => $vectorData['cpa'] ?? 0,
+                'conversions' => $vectorData['conversions'] ?? 0,
             ],
-            'platforms' => $vectorData['platforms'] ?? [],
+            'platforms' => $vectorData['platforms'] ?? ['Meta', 'Google Ads', 'TikTok', 'LinkedIn'],
+            'active_campaigns' => $vectorData['active_campaigns'] ?? 0,
             'recent_actions' => $vectorData['recent_actions'] ?? [],
         ];
     }

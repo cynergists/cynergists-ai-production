@@ -97,7 +97,7 @@ class EventEmailService
                 return;
             }
 
-            SendEventEmail::dispatch($recipients, $renderedSubject, $renderedBody);
+            SendEventEmail::dispatchSync($recipients, $renderedSubject, $renderedBody);
         } catch (\Throwable $e) {
             Log::error('Failed to send event email', [
                 'template_id' => $template->id,
