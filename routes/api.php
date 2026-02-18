@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Apex\LinkedInController;
 use App\Http\Controllers\Api\Apex\PendingActionController;
 use App\Http\Controllers\Api\Apex\ProspectController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\PartnerDataController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SquareWebhookController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
@@ -113,4 +114,19 @@ Route::prefix('briggs')->middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
     Route::post('/voice/{agentId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'processVoiceMessage']);
     Route::get('/voice/tts/{jobId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'checkTtsStatus']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Partner Portal API Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->prefix('partner')->group(function () {
+    Route::get('/commissions', [PartnerDataController::class, 'commissions']);
+    Route::get('/payouts', [PartnerDataController::class, 'payouts']);
+    Route::get('/referrals', [PartnerDataController::class, 'referrals']);
+    Route::post('/referrals', [PartnerDataController::class, 'createReferral']);
+    Route::get('/deals', [PartnerDataController::class, 'deals']);
+    Route::get('/marketing-assets', [PartnerDataController::class, 'marketingAssets']);
+    Route::get('/scheduled-reports', [PartnerDataController::class, 'scheduledReports']);
 });
