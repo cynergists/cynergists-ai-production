@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Apex\ProspectController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PartnerDataController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicChatController;
 use App\Http\Controllers\Api\SquareWebhookController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
 use Illuminate\Http\Request;
@@ -18,6 +19,13 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/user-cynergist-status', UserCynergistStatusController::class);
+
+/*
+|--------------------------------------------------------------------------
+| Public Chat API Routes
+|--------------------------------------------------------------------------
+*/
+Route::post('/chat', [PublicChatController::class, 'chat']);
 
 /*
 |--------------------------------------------------------------------------
