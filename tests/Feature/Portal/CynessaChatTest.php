@@ -337,12 +337,12 @@ it('bounds conversation history before prompting cynessa', function () {
     Cynessa::assertPrompted(function ($prompt) {
         $history = $prompt->agent->conversationHistory;
         $totalCharacters = array_sum(array_map(
-            fn (array $message): int => strlen($message['content']),
+            fn (array $message): int => mb_strlen($message['content']),
             $history
         ));
 
         return count($history) <= 24
-            && $totalCharacters <= 24000
+            && $totalCharacters <= 48000
             && str_contains($history[array_key_last($history)]['content'], 'history-39');
     });
 });

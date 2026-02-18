@@ -8,7 +8,7 @@ use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Aether\AetherAgentHandler;
-use App\Services\AiConversationHistoryLimiter;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
@@ -114,7 +114,7 @@ class VoiceController extends Controller
             }
 
             $conversationHistory = $conversation->messages ?? [];
-            $boundedConversationHistory = app(AiConversationHistoryLimiter::class)->limit($conversationHistory);
+            $boundedConversationHistory = app(ConversationHistoryWindow::class)->trim($conversationHistory);
 
             // Process message based on agent type
             $agentName = strtolower($agentAccess->agent_name);

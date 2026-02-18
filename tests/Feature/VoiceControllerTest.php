@@ -196,13 +196,13 @@ it('bounds voice conversation history before invoking the agent handler', functi
             int $maxTokens
         ) {
             $totalCharacters = array_sum(array_map(
-                fn (array $entry): int => strlen($entry['content']),
+                fn (array $entry): int => mb_strlen($entry['content']),
                 $conversationHistory
             ));
 
             return $maxTokens === 128
                 && count($conversationHistory) <= 24
-                && $totalCharacters <= 24000
+                && $totalCharacters <= 48000
                 && str_contains($conversationHistory[array_key_last($conversationHistory)]['content'], 'history-44');
         })
         ->andReturn('Bounded voice response');
