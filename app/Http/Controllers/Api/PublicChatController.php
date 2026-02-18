@@ -17,19 +17,11 @@ class PublicChatController extends Controller
     {
         $validated = $request->validate([
             'messages' => 'required|array',
-            'messages.*.role' => 'required|in:user,assistant,system',
+            'messages.*.role' => 'required|in:user,assistant',
             'messages.*.content' => 'required|string',
         ]);
 
         $messages = $validated['messages'];
-
-        // Add system message for public chatbot context
-        $systemMessage = [
-            'role' => 'system',
-            'content' => 'You are Cynessa, a friendly AI assistant for Cynergists. Help users learn about Cynergists services, AI agents, and pricing. Be concise and helpful. If asked about specific agents, provide brief overviews.',
-        ];
-
-        array_unshift($messages, $systemMessage);
 
         try {
             // Call Anthropic API
@@ -40,6 +32,7 @@ class PublicChatController extends Controller
             ])->post('https://api.anthropic.com/v1/messages', [
                 'model' => 'claude-3-5-sonnet-20241022',
                 'max_tokens' => 512,
+                'system' => 'You are Cynessa, a friendly AI assistant for Cynergists. Help users learn about Cynergists services, AI agents, and pricing. Be concise and helpful. If asked about specific agents, provide brief overviews.',
                 'messages' => $messages,
             ]);
 
