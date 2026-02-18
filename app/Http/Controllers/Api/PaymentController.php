@@ -7,6 +7,7 @@ use App\Http\Requests\ProcessPaymentRequest;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\AgentAttachmentService;
+use App\Services\IDevAffiliateService;
 use App\Services\SquareSubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,7 @@ class PaymentController extends Controller
 {
     public function __construct(
         private SquareSubscriptionService $squareService,
+        private IDevAffiliateService $idevAffiliateService,
     ) {}
 
     /**
@@ -172,6 +174,29 @@ class PaymentController extends Controller
                 'monthly_count' => count($monthlyItems),
                 'one_time_count' => count($oneTimeItems),
                 'agents_attached' => $result['agents_attached'] ?? 0,
+            ]);
+
+            // Report commission to iDevAffiliate
+            $totalSaleAmountCents = array_reduce(
+                $cartItems,
+                fn ($sum, $item) => $sum + ($item['price'] * $item['quantity']),
+                0,
+            );
+            $saleAmountDollars = number_format($totalSaleAmountCents / 100, 2, '.', '');
+
+            $productInfo = collect($cartItems)
+                ->map(fn ($item) => isset($item['description']) && $item['description']
+                    ? "{$item['name']} - {$item['description']}"
+                    : $item['name'])
+                ->implode(', ');
+
+            $this->idevAffiliateService->reportSale([
+                'sale_amount' => $saleAmountDollars,
+                'order_number' => $paymentId ?? $validated['idempotency_key'],
+                'ip_address' => $request->ip(),
+                'customer_name' => $validated['customer_name'],
+                'customer_email' => $validated['customer_email'],
+                'product_info' => $productInfo,
             ]);
 
             return response()->json([

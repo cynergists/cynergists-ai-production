@@ -29,6 +29,7 @@ class ProcessPaymentRequest extends FormRequest
             'cart_items.*.price' => ['required', 'integer'],
             'cart_items.*.quantity' => ['required', 'integer', 'min:1'],
             'cart_items.*.billing_type' => ['required', 'string', 'in:monthly,one_time'],
+            'cart_items.*.description' => ['nullable', 'string'],
         ];
     }
 }
