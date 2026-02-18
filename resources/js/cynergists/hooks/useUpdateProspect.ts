@@ -1,5 +1,5 @@
 import { useToast } from '@cy/hooks/use-toast';
-import { supabase } from '@cy/integrations/supabase/client';
+import { apiClient } from '@cy/integrations/supabase/client';
 import { formatErrorMessage } from '@cy/utils/errorMessages';
 import { useState } from 'react';
 import type { Prospect } from './useProspectsList';

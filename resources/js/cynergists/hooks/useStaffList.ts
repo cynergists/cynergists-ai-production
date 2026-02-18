@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import type { Database } from '@/integrations/supabase/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
