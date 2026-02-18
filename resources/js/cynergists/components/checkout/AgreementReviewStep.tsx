@@ -9,7 +9,7 @@ import {
     AgreementSigningFlow,
     SigningResult,
 } from '@/components/signing/AgreementSigningFlow';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import type { CompanyInfo, ContactInfo, SignatureData } from '@/pages/Checkout';
 import { FileText, Loader2 } from 'lucide-react';

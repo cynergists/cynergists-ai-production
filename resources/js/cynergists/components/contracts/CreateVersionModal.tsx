@@ -12,7 +12,7 @@ import { Input } from '@cy/components/ui/input';
 import { Label } from '@cy/components/ui/label';
 import { Textarea } from '@cy/components/ui/textarea';
 import { useAdminApi } from '@cy/hooks/useAdminApi';
-import { supabase } from '@cy/integrations/supabase/client';
+import { apiClient } from '@cy/integrations/supabase/client';
 import {
     AlertTriangle,
     ChevronRight,
