@@ -30,10 +30,10 @@ use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
-    ->defaults('component', 'Index')
+    ->defaults('component', 'Marketplace')
     ->name('home');
 
-Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
+Route::redirect('/marketplace', '/');
 Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');

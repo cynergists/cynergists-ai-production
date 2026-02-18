@@ -19,6 +19,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { usePortalContext } from '@/contexts/PortalContext';
 import { apiClient } from '@/lib/api-client';
@@ -29,6 +35,7 @@ import {
     Activity,
     Bot,
     Calendar,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     CircleCheck,
@@ -99,6 +106,7 @@ export default function PortalWorkspace() {
     const [supportSubject, setSupportSubject] = useState('');
     const [supportMessage, setSupportMessage] = useState('');
     const [agentSearchQuery, setAgentSearchQuery] = useState('');
+    const [mobileAgentSheetOpen, setMobileAgentSheetOpen] = useState(false);
     const [addSiteDialogOpen, setAddSiteDialogOpen] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteUrl, setNewSiteUrl] = useState('');
@@ -199,7 +207,7 @@ export default function PortalWorkspace() {
                 typeof conversation.messages === 'string'
                     ? JSON.parse(conversation.messages)
                     : conversation.messages;
-            setMessages(parsed);
+            setMessages(Array.isArray(parsed) ? parsed : []);
         } catch (error) {
             console.error('Error parsing messages:', error);
             setMessages([]);
@@ -272,7 +280,7 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            setMessages(response.messages);
+            setMessages(Array.isArray(response.messages) ? response.messages : []);
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -321,7 +329,7 @@ export default function PortalWorkspace() {
             toast.success(`File uploaded: ${response.file.filename}`);
 
             // Update conversation with full message history if provided
-            if (response.messages) {
+            if (Array.isArray(response.messages)) {
                 setMessages(response.messages);
             } else if (response.message) {
                 // Fallback: just add assistant message
@@ -493,11 +501,11 @@ export default function PortalWorkspace() {
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
         ? {
-              completed: portalStats.onboardingProgress.steps.filter(
+              completed: (portalStats.onboardingProgress.steps ?? []).filter(
                   (s) => s.completed,
               ).length,
-              total: portalStats.onboardingProgress.steps.length,
-              steps: portalStats.onboardingProgress.steps,
+              total: (portalStats.onboardingProgress.steps ?? []).length,
+              steps: portalStats.onboardingProgress.steps ?? [],
           }
         : {
               completed: 0,
@@ -545,7 +553,7 @@ export default function PortalWorkspace() {
     };
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-background">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-3 lg:flex-row lg:gap-6 lg:p-6">
                 {/* Agents list */}
                 <div className="hidden min-h-0 w-80 shrink-0 flex-col lg:flex">
@@ -708,6 +716,117 @@ export default function PortalWorkspace() {
                     )}
                 </div>
 
+                {/* Mobile agent picker bar */}
+                <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-xl border border-primary/20 bg-card px-3 py-2 lg:hidden"
+                    onClick={() => setMobileAgentSheetOpen(true)}
+                >
+                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+                        {agentDetails?.avatar_url ? (
+                            <img
+                                src={agentDetails.avatar_url}
+                                alt={agentDetails.agent_name}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                                <Bot className="h-4 w-4 text-primary" />
+                            </div>
+                        )}
+                    </div>
+                    <span className="flex-1 truncate text-left text-sm font-medium text-foreground">
+                        {agentDetails?.agent_name ?? 'Select an agent'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+
+                {/* Mobile agent picker Sheet */}
+                <Sheet
+                    open={mobileAgentSheetOpen}
+                    onOpenChange={setMobileAgentSheetOpen}
+                >
+                    <SheetContent side="left" className="w-80 p-0">
+                        <SheetHeader className="px-4 pt-4">
+                            <SheetTitle>Your AI Agents</SheetTitle>
+                        </SheetHeader>
+                        <div className="flex flex-1 flex-col overflow-hidden px-4 pb-4">
+                            <div className="relative mb-3">
+                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search agents..."
+                                    value={agentSearchQuery}
+                                    onChange={(e) =>
+                                        setAgentSearchQuery(e.target.value)
+                                    }
+                                    className="h-9 border-primary/15 bg-background pl-9 text-sm focus:border-primary/40"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-2 overflow-y-auto">
+                                {paginatedAgents.map((agent) => {
+                                    const isSelected =
+                                        selectedAgentId === agent.id;
+                                    return (
+                                        <button
+                                            key={agent.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (agent.redirect_url) {
+                                                    window.location.href =
+                                                        agent.redirect_url;
+                                                } else {
+                                                    setSelectedAgentId(
+                                                        agent.id,
+                                                    );
+                                                    router.visit(
+                                                        `/portal/agents/${agent.id}/chat`,
+                                                        {
+                                                            preserveState: true,
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }
+                                                setMobileAgentSheetOpen(false);
+                                            }}
+                                            className={cn(
+                                                'flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all',
+                                                isSelected &&
+                                                    'border-2 border-primary/40 bg-primary/10',
+                                                !isSelected &&
+                                                    'border-2 border-transparent hover:bg-accent',
+                                            )}
+                                        >
+                                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                                                {agent.avatar_url ? (
+                                                    <img
+                                                        src={agent.avatar_url}
+                                                        alt={agent.agent_name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                                                        <Bot className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-sm font-semibold text-foreground">
+                                                    {agent.agent_name}
+                                                </h3>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {agent.job_title ||
+                                                        agent.agent_type}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+
                 {/* Chat */}
                 <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card">
                     <div className="flex items-center justify-between border-b border-primary/20 px-4 py-2">
@@ -761,18 +880,6 @@ export default function PortalWorkspace() {
                             />
                         ) : (
                             <>
-                        {/* Agent-Specific Config Component (e.g., Setup Progress for Cynessa) */}
-                        {selectedAgentId &&
-                            agentComponents?.ConfigComponent && (
-                                <div className="mx-4 mt-3 mb-2">
-                                    <agentComponents.ConfigComponent
-                                        setupProgress={setupProgress}
-                                        seoStats={seoStats}
-                                        agentDetails={agentDetails}
-                                    />
-                                </div>
-                            )}
-
                         {/* Agent-Specific Chat Component */}
                         {agentComponents?.ChatComponent ? (
                             <agentComponents.ChatComponent

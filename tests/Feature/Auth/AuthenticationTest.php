@@ -1,6 +1,7 @@
 
 <?php
 
+use App\Models\PortalTenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +15,20 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
+test('users with a portal tenant are redirected to portal on login', function () {
+    $user = User::factory()->create();
+    PortalTenant::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect('/portal');
+});
+
+test('users without a portal tenant are redirected to portal on login', function () {
     $user = User::factory()->create();
 
     // Get the login page first to establish session and CSRF token

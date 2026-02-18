@@ -12,7 +12,7 @@ class RunApexCampaignsCommand extends Command
 {
     protected $signature = 'apex:run-campaigns';
 
-    protected $description = 'Orchestrate daily Apex campaign execution: sync messages, discover prospects, send connections, and process follow-ups.';
+    protected $description = 'Orchestrate Apex campaign execution: sync messages, discover prospects, send connections, and process follow-ups.';
 
     public function handle(PendingActionService $pendingActionService): int
     {
@@ -56,7 +56,7 @@ class RunApexCampaignsCommand extends Command
             $this->line("  - Campaign \"{$campaign->name}\" (user: {$userId}) queued with delay: {$delayOffset}m");
 
             // Offset next campaign to avoid burst activity (human-like pacing)
-            $delayOffset += rand(5, 10);
+            $delayOffset += rand(2, 5);
         }
 
         $this->info('All campaigns queued for processing.');

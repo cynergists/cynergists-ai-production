@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('apex:run-campaigns')->dailyAt('09:00');
+Schedule::command('apex:sync-linkedin')->dailyAt('09:00');
