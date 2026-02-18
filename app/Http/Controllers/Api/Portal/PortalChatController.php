@@ -319,6 +319,9 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->beaconAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Check if this is the Arsenal agent
         if (strtolower($agentAccess->agent_name) === 'arsenal') {
             if ($tenant) {
