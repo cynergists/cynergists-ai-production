@@ -3,6 +3,7 @@
 namespace App\Ai\Agents;
 
 use App\Ai\Concerns\BoundsConversationHistory;
+use App\Ai\Tools\GetAgentInformationTool;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\Cynessa\OnboardingService;
@@ -12,6 +13,7 @@ use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 use Stringable;
@@ -20,7 +22,7 @@ use Stringable;
 #[MaxTokens(1024)]
 #[Temperature(0.7)]
 #[Timeout(120)]
-class Cynessa implements Agent, Conversational
+class Cynessa implements Agent, Conversational, HasTools
 {
     use Promptable, BoundsConversationHistory;
 
@@ -35,6 +37,16 @@ class Cynessa implements Agent, Conversational
         public bool $includeKnowledgeBase = false
     ) {
         $this->onboardingService = app(OnboardingService::class);
+    }
+
+    /**
+     * Get the tools available to this agent.
+     */
+    public function tools(): iterable
+    {
+        return [
+            new GetAgentInformationTool,
+        ];
     }
 
     /**
@@ -89,6 +101,8 @@ Your role now is to:
 - Help them understand how to use their AI agents
 - Provide guidance on next steps and best practices
 - Direct them to support if needed
+
+IMPORTANT: When users ask about specific AI agents (Luna, Carbon, Apex, etc.), use the get_agent_information tool to get current, accurate information directly from the database. This ensures you always have the latest agent details, pricing, and features.
 
 DO NOT:
 - Ask for company name, industry, or services again
