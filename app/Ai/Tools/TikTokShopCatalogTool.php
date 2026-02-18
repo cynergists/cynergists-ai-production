@@ -142,7 +142,7 @@ class TikTokShopCatalogTool implements Tool
             $category = $categories[array_rand($categories)];
             
             $products[] = [
-                'sku' => "PROD-{$i:03d}",
+                'sku' => sprintf('PROD-%03d', $i),
                 'name' => "Sample Product {$i}",
                 'category' => $category,
                 'status' => ($includeInactive && $i % 7 === 0) ? 'inactive' : 'active',

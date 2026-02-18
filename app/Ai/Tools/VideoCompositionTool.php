@@ -11,7 +11,7 @@ class VideoCompositionTool implements Tool
 {
     public function description(): string
     {
-        return 'Create 9:16 videos from static assets using AI scene composition. Combines product images, motion graphics, captions, and trending audio into platform-optimized TikTok Shop content.';
+        return 'Create 9:16 videos from static assets using Kinetix AI video generation. Transforms product images into dynamic, platform-optimized TikTok Shop content with motion, captions, and trending audio.';
     }
 
     public function handle(Request $request): Stringable|string
@@ -29,8 +29,8 @@ class VideoCompositionTool implements Tool
                 throw new \InvalidArgumentException('Missing required composition data');
             }
 
-            // Generate video composition
-            $videoComposition = $this->composeVideo($scriptData, $productImages, $motionSettings, $audioTrack, $brandOverlay, $outputQuality);
+            // Generate video composition using Kinetix AI
+            $videoComposition = $this->composeVideoWithKinetix($scriptData, $productImages, $motionSettings, $audioTrack, $brandOverlay, $outputQuality);
             
             // Generate preview URL
             $previewUrl = $this->generatePreviewUrl($videoComposition['file_path']);
@@ -57,11 +57,13 @@ class VideoCompositionTool implements Tool
                 ],
                 'preview_url' => $previewUrl,
                 'composition_metadata' => [
+                    'kinetix_generation_id' => $videoComposition['kinetix_id'],
                     'template_used' => $scriptData['creative_metadata']['template_id'] ?? 'default',
                     'assets_processed' => count($productImages),
                     'motion_effects_applied' => count($motionSettings),
                     'brand_elements_integrated' => !empty($brandOverlay),
                     'audio_synchronized' => true,
+                    'ai_generation_quality' => $videoComposition['quality_score'],
                 ],
                 'technical_specs' => [
                     'platform_optimized' => 'TikTok Shop',
@@ -99,48 +101,45 @@ class VideoCompositionTool implements Tool
         }
     }
 
-    private function composeVideo(array $scriptData, array $productImages, array $motionSettings, array $audioTrack, array $brandOverlay, string $outputQuality): array
+    private function composeVideoWithKinetix(array $scriptData, array $productImages, array $motionSettings, array $audioTrack, array $brandOverlay, string $outputQuality): array
     {
-        // Mock video composition process
-        // In production, this would integrate with video processing libraries (FFmpeg, etc.)
-        
+        // Kinetix AI video generation integration
         $scenes = $scriptData['scenes'] ?? [];
         $duration = array_sum(array_column($scenes, 'duration'));
-        $fileName = 'video_' . uniqid() . '_draft.mp4';
+        $fileName = 'kinetix_video_' . uniqid() . '_draft.mp4';
         $filePath = storage_path('app/impulse/videos/' . $fileName);
         
-        // Simulate video processing
+        // Prepare Kinetix API request payload
+        $kinetixPayload = $this->prepareKinetixPayload($scriptData, $productImages, $motionSettings, $audioTrack, $brandOverlay, $outputQuality);
+        
+        // Call Kinetix API for video generation
+        $kinetixResponse = $this->callKinetixAPI($kinetixPayload);
+        
+        // Process Kinetix response
         $processedScenes = [];
         foreach ($scenes as $index => $scene) {
             $processedScenes[] = [
                 'scene_index' => $index,
                 'duration' => $scene['duration'],
                 'type' => $scene['type'],
-                'assets_used' => array_slice($productImages, 0, 2), // Mock asset usage
-                'motion_applied' => $scene['motion'] ?? 'static',
+                'kinetix_scene_id' => $kinetixResponse['scene_ids'][$index] ?? null,
+                'assets_used' => array_slice($productImages, 0, 2),
+                'motion_applied' => $kinetixResponse['motion_effects'][$index] ?? 'dynamic',
                 'caption_overlay' => $scriptData['captions'][$index] ?? '',
                 'brand_elements' => !empty($brandOverlay) ? ['logo_overlay', 'color_scheme'] : [],
             ];
         }
 
-        // Calculate file size based on quality and duration
-        $qualityMultipliers = [
-            'low' => 0.5,
-            'medium' => 1.0,
-            'high' => 2.0,
-            'ultra' => 3.5,
-        ];
-        
-        $baseSize = $duration * 2; // Base 2MB per second
-        $fileSizeMB = $baseSize * ($qualityMultipliers[$outputQuality] ?? 1.0);
+        // Calculate file size based on Kinetix output
+        $fileSizeMB = $kinetixResponse['file_size_mb'] ?? ($duration * 1.5); // Kinetix optimized compression
 
         // Create directory if it doesn't exist
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath), 0755, true);
         }
 
-        // Mock file creation (in production, actual video would be generated here)
-        file_put_contents($filePath, "Mock video content for {$fileName}");
+        // Download generated video from Kinetix (mock implementation)
+        $this->downloadKinetixVideo($kinetixResponse['download_url'], $filePath);
 
         return [
             'file_path' => $filePath,
@@ -150,7 +149,72 @@ class VideoCompositionTool implements Tool
             'audio_track' => $audioTrack['title'] ?? 'Default Audio',
             'resolution' => '1080x1920',
             'frame_rate' => 30,
+            'kinetix_id' => $kinetixResponse['generation_id'],
+            'quality_score' => $kinetixResponse['quality_score'] ?? 0.85,
         ];
+    }
+
+    private function prepareKinetixPayload(array $scriptData, array $productImages, array $motionSettings, array $audioTrack, array $brandOverlay, string $outputQuality): array
+    {
+        return [
+            'format' => [
+                'aspect_ratio' => '9:16',
+                'resolution' => '1080x1920',
+                'frame_rate' => 30,
+                'quality' => $outputQuality,
+            ],
+            'scenes' => array_map(function($scene, $index) use ($scriptData, $productImages) {
+                return [
+                    'duration' => $scene['duration'],
+                    'type' => $scene['type'],
+                    'assets' => array_slice($productImages, 0, 2),
+                    'motion_style' => $scene['motion'] ?? 'dynamic',
+                    'caption' => $scriptData['captions'][$index] ?? '',
+                ];
+            }, $scriptData['scenes'] ?? [], array_keys($scriptData['scenes'] ?? [])),
+            'audio' => [
+                'track_id' => $audioTrack['id'] ?? null,
+                'synchronize' => true,
+                'volume' => 0.8,
+            ],
+            'branding' => $brandOverlay,
+            'motion_settings' => $motionSettings,
+            'optimization' => [
+                'platform' => 'tiktok',
+                'mobile_optimized' => true,
+                'algorithm_friendly' => true,
+            ],
+        ];
+    }
+
+    private function callKinetixAPI(array $payload): array
+    {
+        // Mock Kinetix API response
+        // In production, this would make actual HTTP request to Kinetix API
+        
+        return [
+            'generation_id' => 'kinetix_' . uniqid(),
+            'status' => 'completed',
+            'processing_time' => rand(30, 180), // seconds
+            'download_url' => 'https://api.kinetix.com/download/' . uniqid(),
+            'file_size_mb' => rand(15, 45) / 10, // 1.5-4.5 MB
+            'quality_score' => round(rand(80, 95) / 100, 2),
+            'scene_ids' => array_fill(0, count($payload['scenes']), 'scene_' . uniqid()),
+            'motion_effects' => array_fill(0, count($payload['scenes']), 'dynamic_zoom'),
+            'metadata' => [
+                'template_applied' => true,
+                'brand_compliance_verified' => true,
+                'mobile_optimized' => true,
+            ],
+        ];
+    }
+
+    private function downloadKinetixVideo(string $downloadUrl, string $filePath): void
+    {
+        // Mock video download from Kinetix
+        // In production, this would download the actual generated video
+        
+        file_put_contents($filePath, "Kinetix AI generated video content - {$downloadUrl}");
     }
 
     private function generatePreviewUrl(string $filePath): string

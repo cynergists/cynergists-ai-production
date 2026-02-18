@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ComponentType } from 'react';
 import { AetherChat } from './aether/AetherChat';
 import { AetherConfig } from './aether/AetherConfig';
 import AetherSidebar from './aether/AetherSidebar';
@@ -16,6 +16,9 @@ import CarbonSidebar from './carbon/CarbonSidebar';
 import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
+import { ImpulseChat } from './impulse/ImpulseChat';
+import { ImpulseConfig } from './impulse/ImpulseConfig';
+import ImpulseSidebar from './impulse/ImpulseSidebar';
 import { KinetixChat } from './kinetix/KinetixChat';
 import { KinetixConfig } from './kinetix/KinetixConfig';
 import KinetixSidebar from './kinetix/KinetixSidebar';
@@ -28,12 +31,15 @@ import OptixSidebar from './optix/OptixSidebar';
 import { VectorChat } from './vector/VectorChat';
 import { VectorConfig } from './vector/VectorConfig';
 import VectorSidebar from './vector/VectorSidebar';
+import { ArsenalChat } from './arsenal/ArsenalChat';
+import { ArsenalConfig } from './arsenal/ArsenalConfig';
+import ArsenalSidebar from './arsenal/ArsenalSidebar';
 
 interface AgentComponents {
-    ChatComponent: React.ComponentType<any>;
-    ConfigComponent: React.ComponentType<any>;
-    SidebarComponent: React.ComponentType<any>;
-    ViewComponent?: React.ComponentType<any>;
+    ChatComponent: ComponentType;
+    ConfigComponent: ComponentType;
+    SidebarComponent: ComponentType;
+    ViewComponent?: ComponentType;
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
@@ -84,6 +90,16 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: VectorConfig,
         SidebarComponent: VectorSidebar,
     },
+    arsenal: {
+        ChatComponent: ArsenalChat,
+        ConfigComponent: ArsenalConfig,
+        SidebarComponent: ArsenalSidebar,
+    },
+    impulse: {
+        ChatComponent: ImpulseChat,
+        ConfigComponent: ImpulseConfig,
+        SidebarComponent: ImpulseSidebar,
+    },
 };
 
 export function getAgentComponents(agentName: string): AgentComponents | null {
@@ -119,4 +135,10 @@ export {
     VectorChat,
     VectorConfig,
     VectorSidebar,
+    ArsenalChat,
+    ArsenalConfig,
+    ArsenalSidebar,
+    ImpulseChat,
+    ImpulseConfig,
+    ImpulseSidebar,
 };

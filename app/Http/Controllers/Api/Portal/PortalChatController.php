@@ -10,8 +10,10 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
+
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
@@ -31,6 +33,7 @@ class PortalChatController extends Controller
     public function __construct(
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
+
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
@@ -39,7 +42,8 @@ class PortalChatController extends Controller
         private LunaAgentHandler $lunaAgentHandler,
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private ConversationHistoryWindow $conversationHistoryWindow
     ) {}
 
     /**
@@ -152,9 +156,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
+        $promptHistory = $this->conversationHistoryWindow->trim($messages);
 
         // Generate the assistant response with conversation history (before adding current message)
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $messages);
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $promptHistory);
 
         $messages[] = [
             'role' => 'user',
@@ -304,6 +309,25 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Arsenal agent
+        if (strtolower($agentAccess->agent_name) === 'arsenal') {
+            if ($tenant) {
+                $arsenalAgent = new \App\Ai\Agents\Arsenal(
+                    user: $user,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory
+                );
+
+                try {
+                    $response = $arsenalAgent->prompt($message);
+                    return (string) $response;
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: ' . $e->getMessage());
+                    return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
+                }
+            }
+        }
+
         // Default response for other agents
         return sprintf(
             "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
@@ -373,7 +397,9 @@ class PortalChatController extends Controller
 
             if ($availableAgent) {
                 // Pass the conversation history (before adding the new upload message)
-                $historyBeforeUpload = array_slice($messages, 0, -1);
+                $historyBeforeUpload = $this->conversationHistoryWindow->trim(
+                    array_slice($messages, 0, -1)
+                );
 
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,
