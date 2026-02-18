@@ -13,6 +13,7 @@ use App\Models\PortalTenant;
 use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Beacon\BeaconAgentHandler;
 
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
@@ -33,6 +34,7 @@ class PortalChatController extends Controller
     public function __construct(
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
+        private BeaconAgentHandler $beaconAgentHandler,
 
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
@@ -309,6 +311,14 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Beacon agent
+        if (strtolower($agentAccess->agent_name) === 'beacon') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->beaconAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
         // Check if this is the Arsenal agent
         if (strtolower($agentAccess->agent_name) === 'arsenal') {
             if ($tenant) {
