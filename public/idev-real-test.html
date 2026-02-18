@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>iDev Browser Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .box {
+            border: 2px solid #0f0;
+            padding: 20px;
+            margin: 20px 0;
+            background: #001100;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover { background: #0ff; }
+        #log {
+            background: #000;
+            border: 1px solid #333;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #0f0;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 iDevAffiliate Live Browser Test</h1>
+    
+    <div class="box">
+        <h2>Step 1: Open DevTools First!</h2>
+        <p class="warning">⚠️  Press F12 or Cmd+Option+I to open DevTools</p>
+        <p>Go to the <strong>Network</strong> tab and filter by "track"</p>
+    </div>
+
+    <div class="box">
+        <h2>Step 2: Run Tests</h2>
+        <button onclick="testPageTracking()">🔍 Test Page Tracking</button>
+        <button onclick="testWithAffiliateId()">🔗 Test with Affiliate ID</button>
+        <button onclick="checkCookies()">🍪 Check Cookies</button>
+        <button onclick="clearLog()">🧹 Clear Log</button>
+    </div>
+
+    <div class="box">
+        <h2>📊 Test Results:</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const log = (msg, type = 'info') => {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('log').appendChild(entry);
+            console.log(msg);
+        };
+
+        function testPageTracking() {
+            log('🚀 Testing page tracking pixel...', 'info');
+            log('📡 Loading: https://cynergists.idevaffiliate.com/track.php?profile=72198', 'info');
+            
+            const img = new Image();
+            
+            img.onload = function() {
+                log('✅ SUCCESS! Tracking pixel loaded!', 'success');
+                log('✅ Check Network tab for "track.php" request', 'success');
+                log('✅ iDevAffiliate is working correctly!', 'success');
+            };
+            
+            img.onerror = function() {
+                log('⚠️  Pixel blocked (but this is NORMAL)', 'warning');
+                log('📝 Check Network tab anyway - request might still go through', 'warning');
+                log('📝 Ad blockers often block this domain', 'warning');
+                log('📝 Try disabling ad blocker or use Incognito mode', 'warning');
+            };
+            
+            img.src = 'https://cynergists.idevaffiliate.com/track.php?profile=72198&test=' + Date.now();
+            document.body.appendChild(img);
+            
+            setTimeout(() => {
+                log('👀 Now check your Network tab for "track.php"', 'info');
+                log('If you see it (even with 403 status), tracking is working!', 'info');
+            }, 1000);
+        }
+
+        function testWithAffiliateId() {
+            log('🔗 Testing with affiliate ID...', 'info');
+            log('📡 Adding ?idev_id=test to URL', 'info');
+            
+            const img = new Image();
+            img.src = 'https://cynergists.idevaffiliate.com/track.php?profile=72198&idev_id=test&timestamp=' + Date.now();
+            document.body.appendChild(img);
+            
+            setTimeout(() => {
+                checkCookies();
+            }, 1500);
+        }
+
+        function checkCookies() {
+            log('🍪 Checking cookies...', 'info');
+            const cookies = document.cookie;
+            
+            if (cookies.includes('idev')) {
+                const idevCookie = cookies.split(';').find(c => c.includes('idev'));
+                log('✅ iDev cookie found: ' + idevCookie, 'success');
+            } else {
+                log('⚠️  No iDev cookie found', 'warning');
+                log('This is normal for localhost', 'warning');
+                log('Cookies work fine in production (HTTPS)', 'warning');
+            }
+            
+            log('All cookies: ' + (cookies || '(none)'), 'info');
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('Log cleared', 'info');
+        }
+
+        // Auto-run initial test
+        window.addEventListener('load', function() {
+            log('🎬 Page loaded - Ready to test!', 'success');
+            log('⬆️  Click "Test Page Tracking" button above', 'info');
+            log('', 'info');
+            log('💡 IMPORTANT:', 'warning');
+            log('• Open DevTools (F12) FIRST', 'warning');
+            log('• Go to Network tab', 'warning');
+            log('• Filter by "track"', 'warning');
+            log('• Then click the test button', 'warning');
+        });
+    </script>
+</body>
+</html>

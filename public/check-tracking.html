@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check iDev Integration</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #00ff00; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffaa00; }
+        pre { background: #000; padding: 10px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <h1>🔍 iDevAffiliate Integration Check</h1>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        const log = (msg, type = 'info') => {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = msg;
+            output.appendChild(div);
+        };
+
+        // Check 1: Can we reach iDevAffiliate?
+        log('<h2>Test 1: Network Connectivity</h2>');
+        fetch('https://cynergists.idevaffiliate.com/track.php?profile=72198', { mode: 'no-cors' })
+            .then(() => log('✅ Can reach idevaffiliate.com', 'success'))
+            .catch(err => log('❌ Cannot reach idevaffiliate.com: ' + err, 'error'));
+
+        // Check 2: Load tracking pixel
+        log('<h2>Test 2: Tracking Pixel</h2>');
+        const img = new Image();
+        img.onload = () => log('✅ Tracking pixel loaded', 'success');
+        img.onerror = () => log('❌ Tracking pixel failed', 'error');
+        img.src = 'https://cynergists.idevaffiliate.com/track.php?profile=72198&test=' + Date.now();
+
+        // Check 3: Console logging
+        setTimeout(() => {
+            log('<h2>Test 3: Browser Console</h2>');
+            log('⚠️  Check your browser Console (F12) for any errors', 'warning');
+            log('⚠️  Check Network tab for "track.php" request', 'warning');
+        }, 1000);
+
+        // Check 4: Cookie support
+        setTimeout(() => {
+            log('<h2>Test 4: Cookies</h2>');
+            document.cookie = 'test=123; path=/';
+            if (document.cookie.includes('test=123')) {
+                log('✅ Browser accepts cookies', 'success');
+            } else {
+                log('❌ Browser blocking cookies', 'error');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
