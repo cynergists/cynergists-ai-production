@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('mosaic_change_logs', function (Blueprint $table) {
             $table->id();
             $table->uuid('tenant_id');
-            $table->uuid('user_id');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('change_type');
             $table->text('description');
             $table->timestamp('requested_at');
@@ -22,7 +22,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('tenant_id')->references('id')->on('portal_tenants')->cascadeOnDelete();
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
 
             $table->index(['tenant_id', 'requested_at']);
         });
