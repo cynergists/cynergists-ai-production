@@ -36,11 +36,7 @@ class Mosaic implements Agent, Conversational, HasTools
 
     public function instructions(): Stringable|string
     {
-<<<<<<< Updated upstream
         return <<<'PROMPT'
-=======
-        return <<<PROMPT
->>>>>>> Stashed changes
 You are Mosaic, the Website Builder AI Agent for Cynergists.
 
 Purpose:

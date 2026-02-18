@@ -11,6 +11,7 @@ use App\Portal\Apex\Config\ApexSidebarConfig;
 use App\Portal\Briggs\Config\BriggsSidebarConfig;
 use App\Portal\Carbon\Config\CarbonSidebarConfig;
 use App\Portal\Luna\Config\LunaSidebarConfig;
+use App\Portal\Vector\Config\VectorSidebarConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -173,6 +174,11 @@ class PortalAgentsController extends Controller
                     $agentAccess->briggs_data = BriggsSidebarConfig::getConfig($tenant);
                 }
 
+                // Include Vector-specific media buying data for sidebar
+                if (strtolower($agentAccess->agent_name) === 'vector') {
+                    $agentAccess->vector_data = VectorSidebarConfig::getConfig($tenant);
+                }
+
                 return response()->json([
                     'agent' => $agentAccess,
                 ]);
@@ -214,6 +220,11 @@ class PortalAgentsController extends Controller
         // Include Briggs-specific training data for sidebar
         if (strtolower($agentAccess->agent_name) === 'briggs') {
             $agentAccess->briggs_data = BriggsSidebarConfig::getConfig($tenant);
+        }
+
+        // Include Vector-specific media buying data for sidebar
+        if (strtolower($agentAccess->agent_name) === 'vector') {
+            $agentAccess->vector_data = VectorSidebarConfig::getConfig($tenant);
         }
 
         return response()->json([

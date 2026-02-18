@@ -56,8 +56,8 @@ export function VectorChat({
     } = useVoiceMode({
         agentId: selectedAgentId ?? null,
         onTranscriptReceived: (text) => {
-            onMessageReceived?.({ 
-                role: 'user', 
+            onMessageReceived?.({
+                role: 'user',
                 content: text,
                 isVoiceGenerated: true,
             });
