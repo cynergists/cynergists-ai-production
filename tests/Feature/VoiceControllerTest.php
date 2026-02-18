@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AgentAccess;
+use App\Models\AgentConversation;
 use App\Models\CustomerSubscription;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
@@ -11,6 +12,7 @@ use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\EventEmailService;
 use App\Services\Luna\LunaAgentHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -158,4 +160,59 @@ it('does not require message when initiating voice conversation', function () {
 
     $response->assertSuccessful()
         ->assertJsonPath('success', true);
+});
+
+it('trims long conversation history before passing it to handlers', function () {
+    $agent = createAgentWithAccess('Carbon', $this);
+
+    AgentConversation::query()->create([
+        'id' => (string) Str::uuid(),
+        'agent_access_id' => $agent->id,
+        'customer_id' => $this->tenant->id,
+        'title' => 'Long history',
+        'tenant_id' => $this->tenant->id,
+        'status' => 'active',
+        'messages' => array_map(
+            fn (int $index) => [
+                'role' => $index % 2 === 0 ? 'user' : 'assistant',
+                'content' => str_repeat("message-{$index}-", 400),
+            ],
+            range(1, 30)
+        ),
+    ]);
+
+    $this->mock(CarbonAgentHandler::class)
+        ->shouldReceive('handle')
+        ->once()
+        ->withArgs(function (
+            string $message,
+            User $user,
+            PortalAvailableAgent $availableAgent,
+            PortalTenant $tenant,
+            array $conversationHistory,
+            int $maxTokens
+        ): bool {
+            $totalCharacters = array_sum(array_map(
+                fn (array $entry) => mb_strlen($entry['content'] ?? ''),
+                $conversationHistory
+            ));
+
+            return str_contains($message, 'IMPORTANT: This is voice mode')
+                && $user->is($this->user)
+                && $availableAgent->name === 'Carbon'
+                && $tenant->is($this->tenant)
+                && count($conversationHistory) <= 18
+                && $totalCharacters <= 24_000
+                && $maxTokens === 128;
+        })
+        ->andReturn('Trimmed context works.');
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/portal/voice/{$agent->id}", [
+            'message' => 'Can you summarize everything so far?',
+        ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('text', 'Trimmed context works.');
 });

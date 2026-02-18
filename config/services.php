@@ -58,4 +58,19 @@ return [
         'location_id' => env('GOHIGHLEVEL_LOCATION_ID'),
     ],
 
+    'ghl' => [
+        'api_key' => env('GHL_API_KEY', env('GOHIGHLEVEL_API_KEY')),
+        'base_url' => env('GHL_BASE_URL', 'https://rest.gohighlevel.com/v1'),
+    ],
+
+    'haven' => [
+        'api_url' => env('HAVEN_API_URL'),
+        'api_key' => env('HAVEN_API_KEY'),
+    ],
+
+    'arsenal' => [
+        'client_success_email' => env('ARSENAL_CLIENT_SUCCESS_EMAIL', 'support@cynergists.com'),
+        'escalation_enabled' => env('ARSENAL_ESCALATION_ENABLED', true),
+    ],
+
 ];

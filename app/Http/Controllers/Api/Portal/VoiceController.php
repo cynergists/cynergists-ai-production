@@ -7,6 +7,7 @@ use App\Models\AgentAccess;
 use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
@@ -113,6 +114,11 @@ class VoiceController extends Controller
             }
 
             $conversationHistory = $conversation->messages ?? [];
+            $promptHistory = app(ConversationHistoryWindow::class)->trim(
+                $conversationHistory,
+                maxMessages: 18,
+                maxCharacters: 24_000
+            );
 
             // Process message based on agent type
             $agentName = strtolower($agentAccess->agent_name);
@@ -131,7 +137,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'luna' => app(LunaAgentHandler::class)->handle(
@@ -139,7 +145,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'carbon' => app(CarbonAgentHandler::class)->handle(
@@ -147,7 +153,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'apex' => app(ApexAgentHandler::class)->handle(
@@ -155,7 +161,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'briggs' => app(BriggsAgentHandler::class)->handle(
@@ -163,7 +169,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'aether' => app(AetherAgentHandler::class)->handle(
@@ -171,7 +177,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'kinetix' => app(KinetixAgentHandler::class)->handle(
@@ -179,7 +185,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'optix' => app(OptixAgentHandler::class)->handle(
@@ -187,7 +193,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 'vector' => app(VectorAgentHandler::class)->handle(
@@ -195,7 +201,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 default => "I'm sorry, voice mode is not yet available for this agent."
