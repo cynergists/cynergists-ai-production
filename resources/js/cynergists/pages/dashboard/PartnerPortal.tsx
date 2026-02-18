@@ -1,6 +1,6 @@
 import cynergistsLogo from '@/assets/cynergists-logo-new.png';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { router } from '@inertiajs/react';
 import {
     AlertCircle,

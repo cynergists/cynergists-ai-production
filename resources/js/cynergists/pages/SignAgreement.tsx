@@ -10,7 +10,7 @@ import {
     SigningResult,
 } from '@/components/signing/AgreementSigningFlow';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle, FileText, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
