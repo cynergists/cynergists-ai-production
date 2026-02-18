@@ -275,11 +275,17 @@ const Chatbot = () => {
         let assistantContent = '';
 
         try {
+            // Get CSRF token
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
             const resp = await fetch(CHAT_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'include',
                 body: JSON.stringify({ messages: [...messages, userMsg] }),
