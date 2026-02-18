@@ -8,7 +8,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { router } from '@inertiajs/react';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
