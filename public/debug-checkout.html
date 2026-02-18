@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Checkout Validation</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        pre { background: #000; padding: 15px; border: 1px solid #333; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Checkout Validation Debugger</h1>
+    <p>This will show you EXACTLY which fields are missing</p>
+    <button onclick="testPayment()" style="background:#0f0;color:#000;padding:15px;border:none;cursor:pointer;font-size:16px;">
+        Test Payment Request
+    </button>
+    <div id="output"></div>
+
+    <script>
+        async function testPayment() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Sending test payment request...</h2>';
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            const testData = {
+                source_id: 'test_source_id',
+                amount: 9700,  // $97.00 in cents
+                currency: 'USD',
+                customer_email: 'test@example.com',
+                customer_name: 'Test User',
+                idempotency_key: 'test_' + Date.now(),
+                cart_items: [
+                    {
+                        name: 'Test Agent',
+                        price: 9700,
+                        quantity: 1,
+                        billing_type: 'one_time',
+                        description: 'Test Description'
+                    }
+                ]
+            };
+
+            output.innerHTML += '<h3>Request Data:</h3>';
+            output.innerHTML += '<pre>' + JSON.stringify(testData, null, 2) + '</pre>';
+
+            try {
+                const response = await fetch('/api/payment/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+
+                output.innerHTML += '<h3>Response:</h3>';
+                output.innerHTML += '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+
+                if (result.errors) {
+                    output.innerHTML += '<h3 class="error">❌ VALIDATION ERRORS:</h3>';
+                    output.innerHTML += '<ul class="error">';
+                    for (const [field, messages] of Object.entries(result.errors)) {
+                        output.innerHTML += '<li><strong>' + field + ':</strong> ' + messages.join(', ') + '</li>';
+                    }
+                    output.innerHTML += '</ul>';
+                }
+            } catch (error) {
+                output.innerHTML += '<h3 class="error">❌ ERROR:</h3>';
+                output.innerHTML += '<pre class="error">' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>
