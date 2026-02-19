@@ -3,13 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PortalAvailableAgent;
+use App\Models\PortalTenant;
+use App\Models\User;
+use App\Services\Ai\ConversationHistoryWindow;
+use App\Services\Cynessa\CynessaAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PublicChatController extends Controller
 {
+    public function __construct(
+        private CynessaAgentHandler $cynessaAgentHandler,
+        private ConversationHistoryWindow $conversationHistoryWindow
+    ) {}
+
     /**
      * Handle public chatbot messages (for cynergists.ai homepage)
      */
@@ -21,46 +32,84 @@ class PublicChatController extends Controller
             'messages.*.content' => 'required|string',
         ]);
 
-        $messages = $validated['messages'];
+        $userMessages = array_values(array_filter(
+            $validated['messages'],
+            fn (array $message) => $message['role'] === 'user'
+        ));
+
+        $lastMessage = end($userMessages);
+        $messageText = $lastMessage['content'] ?? '';
+
+        if (! is_string($messageText) || trim($messageText) === '') {
+            return response()->json(['error' => 'No message provided'], 400);
+        }
+
+        $conversationHistory = array_values(array_map(
+            fn (array $message) => [
+                'role' => $message['role'],
+                'content' => $message['content'],
+            ],
+            array_slice($validated['messages'], 0, -1)
+        ));
+
+        $conversationHistory = $this->conversationHistoryWindow->trim($conversationHistory);
 
         try {
-            // Call Anthropic API
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.api_key'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-3-5-sonnet-20241022',
-                'max_tokens' => 512,
-                'system' => 'You are Cynessa, a friendly AI assistant for Cynergists. Help users learn about Cynergists services, AI agents, and pricing. Be concise and helpful. If asked about specific agents, provide brief overviews.',
-                'messages' => $messages,
-            ]);
+            $guestUser = User::query()->firstOrCreate(
+                ['email' => 'public-chatbot@cynergists.ai'],
+                [
+                    'name' => 'Public Chatbot User',
+                    'password' => Hash::make(Str::random(40)),
+                    'is_active' => true,
+                ],
+            );
 
-            if (! $response->successful()) {
-                Log::error('Anthropic API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
+            $guestTenant = PortalTenant::query()->firstOrCreate(
+                ['user_id' => (string) $guestUser->id],
+                [
+                    'id' => (string) Str::uuid(),
+                    'company_name' => 'Public Visitor',
+                    'subdomain' => 'public-chatbot-'.Str::lower(Str::random(8)),
+                    'is_temp_subdomain' => true,
+                    'primary_color' => '#22c55e',
+                    'settings' => [],
+                    'status' => 'active',
+                ],
+            );
+
+            $cynessaAgent = PortalAvailableAgent::query()
+                ->where('name', 'Cynessa')
+                ->first();
+
+            if (! $cynessaAgent) {
+                $cynessaAgent = new PortalAvailableAgent([
+                    'name' => 'Cynessa',
+                    'is_active' => true,
                 ]);
-
-                return response()->json([
-                    'error' => 'Failed to get response from AI',
-                ], 500);
             }
 
-            $data = $response->json();
+            $assistantMessage = $this->cynessaAgentHandler->handle(
+                message: $messageText,
+                user: $guestUser,
+                agent: $cynessaAgent,
+                tenant: $guestTenant,
+                conversationHistory: $conversationHistory
+            );
 
             return response()->json([
-                'content' => $data['content'][0]['text'] ?? 'Sorry, I could not generate a response.',
+                'content' => $assistantMessage,
                 'role' => 'assistant',
             ]);
-        } catch (\Exception $e) {
-            Log::error('Public chat error', [
+        } catch (\Throwable $e) {
+            Log::error('Public Cynessa error', [
                 'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'error' => 'An error occurred',
-            ], 500);
+                'content' => "I'm having trouble right now. Please try again in a moment.",
+                'role' => 'assistant',
+            ]);
         }
     }
 }

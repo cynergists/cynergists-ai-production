@@ -1,13 +1,27 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
+use App\Services\Cynessa\CynessaAgentHandler;
+use Mockery\MockInterface;
 
 it('returns an assistant response for a valid message', function () {
-    Http::fake([
-        'api.anthropic.com/*' => Http::response([
-            'content' => [['text' => 'Hello! I can help you with that.']],
-        ], 200),
-    ]);
+    $this->mock(CynessaAgentHandler::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('handle')
+            ->once()
+            ->withArgs(function (
+                string $message,
+                $user,
+                $agent,
+                $tenant,
+                array $conversationHistory
+            ): bool {
+                return $message === 'Tell me about your services'
+                    && $user->email === 'public-chatbot@cynergists.ai'
+                    && $agent->name === 'Cynessa'
+                    && $tenant->company_name === 'Public Visitor'
+                    && $conversationHistory === [];
+            })
+            ->andReturn('Hello! I can help you with that.');
+    });
 
     $response = $this->postJson('/api/chat', [
         'messages' => [
@@ -17,19 +31,18 @@ it('returns an assistant response for a valid message', function () {
 
     $response->assertSuccessful()
         ->assertJsonStructure(['content', 'role'])
-        ->assertJsonFragment(['role' => 'assistant']);
-
-    Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'anthropic.com')
-            && $request['system'] === 'You are Cynessa, a friendly AI assistant for Cynergists. Help users learn about Cynergists services, AI agents, and pricing. Be concise and helpful. If asked about specific agents, provide brief overviews.'
-            && collect($request['messages'])->every(fn ($m) => in_array($m['role'], ['user', 'assistant']));
-    });
+        ->assertJson([
+            'role' => 'assistant',
+            'content' => 'Hello! I can help you with that.',
+        ]);
 });
 
-it('returns an error when the anthropic api fails', function () {
-    Http::fake([
-        'api.anthropic.com/*' => Http::response(['error' => 'Service unavailable'], 500),
-    ]);
+it('returns a fallback assistant response when cynessa handler fails', function () {
+    $this->mock(CynessaAgentHandler::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('handle')
+            ->once()
+            ->andThrow(new RuntimeException('Service unavailable'));
+    });
 
     $response = $this->postJson('/api/chat', [
         'messages' => [
@@ -37,8 +50,11 @@ it('returns an error when the anthropic api fails', function () {
         ],
     ]);
 
-    $response->assertStatus(500)
-        ->assertJsonFragment(['error' => 'Failed to get response from AI']);
+    $response->assertSuccessful()
+        ->assertJson([
+            'role' => 'assistant',
+            'content' => "I'm having trouble right now. Please try again in a moment.",
+        ]);
 });
 
 it('rejects messages with invalid roles', function () {
@@ -61,11 +77,25 @@ it('rejects requests with no messages', function () {
 });
 
 it('allows conversation with assistant and user turns', function () {
-    Http::fake([
-        'api.anthropic.com/*' => Http::response([
-            'content' => [['text' => 'I can help with that!']],
-        ], 200),
-    ]);
+    $this->mock(CynessaAgentHandler::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('handle')
+            ->once()
+            ->withArgs(function (
+                string $message,
+                $user,
+                $agent,
+                $tenant,
+                array $conversationHistory
+            ): bool {
+                return $message === 'Tell me about pricing'
+                    && count($conversationHistory) === 2
+                    && $conversationHistory[0]['role'] === 'user'
+                    && $conversationHistory[0]['content'] === 'Hi'
+                    && $conversationHistory[1]['role'] === 'assistant'
+                    && $conversationHistory[1]['content'] === 'Hello! How can I help?';
+            })
+            ->andReturn('I can help with that!');
+    });
 
     $response = $this->postJson('/api/chat', [
         'messages' => [
@@ -75,5 +105,9 @@ it('allows conversation with assistant and user turns', function () {
         ],
     ]);
 
-    $response->assertSuccessful();
+    $response->assertSuccessful()
+        ->assertJson([
+            'role' => 'assistant',
+            'content' => 'I can help with that!',
+        ]);
 });
