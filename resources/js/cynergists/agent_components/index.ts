@@ -28,6 +28,9 @@ import KinetixSidebar from './kinetix/KinetixSidebar';
 import { LunaChat } from './luna/LunaChat';
 import { LunaConfig } from './luna/LunaConfig';
 import LunaSidebar from './luna/LunaSidebar';
+import { MosaicChat } from './mosaic/MosaicChat';
+import { MosaicConfig } from './mosaic/MosaicConfig';
+import MosaicSidebar from './mosaic/MosaicSidebar';
 import { OptixChat } from './optix/OptixChat';
 import { OptixConfig } from './optix/OptixConfig';
 import OptixSidebar from './optix/OptixSidebar';
@@ -72,6 +75,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: LunaChat,
         ConfigComponent: LunaConfig,
         SidebarComponent: LunaSidebar,
+    },
+    mosaic: {
+        ChatComponent: MosaicChat,
+        ConfigComponent: MosaicConfig,
+        SidebarComponent: MosaicSidebar,
     },
     aether: {
         ChatComponent: AetherChat,
@@ -140,6 +148,9 @@ export {
     LunaChat,
     LunaConfig,
     LunaSidebar,
+    MosaicChat,
+    MosaicConfig,
+    MosaicSidebar,
     OptixChat,
     OptixConfig,
     OptixSidebar,

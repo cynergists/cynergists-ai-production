@@ -22,6 +22,8 @@ use App\Services\Cynessa\OnboardingService;
 use App\Services\Impulse\ImpulseAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Mosaic\MosaicAgentHandler;
+use App\Services\Mosaic\MosaicMediaService;
 use App\Services\Optix\OptixAgentHandler;
 use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +44,8 @@ class PortalChatController extends Controller
         private ImpulseAgentHandler $impulseAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
+        private MosaicAgentHandler $mosaicAgentHandler,
+        private MosaicMediaService $mosaicMediaService,
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService,
@@ -245,6 +249,17 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Mosaic agent
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->mosaicAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Check if this is the Briggs agent
         if (strtolower($agentAccess->agent_name) === 'briggs') {
             $availableAgent = PortalAvailableAgent::query()
@@ -335,7 +350,7 @@ class PortalChatController extends Controller
                     $response = $arsenalAgent->prompt($message);
                     return (string) $response;
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: ' . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: '.$e->getMessage());
                     return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
                 }
             }
@@ -373,14 +388,39 @@ class PortalChatController extends Controller
         $filename = $file->getClientOriginalName();
         $type = $request->input('type', 'brand_asset');
 
-        // Store file in tenant-specific directory
-        $path = $file->store(
-            "tenants/{$tenant->id}/brand_assets",
-            'public'
-        );
+        $warnings = [];
 
-        // Track the uploaded file
-        $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+        // Handle Mosaic media processing
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $mimeType = $file->getMimeType();
+
+            if (str_starts_with($mimeType ?? '', 'image/')) {
+                $result = $this->mosaicMediaService->processImage($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } elseif (str_starts_with($mimeType ?? '', 'video/')) {
+                $result = $this->mosaicMediaService->processVideo($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } else {
+                // Fallback for other file types
+                $path = $file->store(
+                    "tenants/{$tenant->id}/mosaic_assets",
+                    'public'
+                );
+            }
+        } else {
+            // Store file in tenant-specific directory (for other agents)
+            $path = $file->store(
+                "tenants/{$tenant->id}/brand_assets",
+                'public'
+            );
+
+            // Track the uploaded file for Cynessa
+            if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+            }
+        }
 
         // Get conversation to add upload notification
         $conversation = AgentConversation::query()
@@ -390,7 +430,7 @@ class PortalChatController extends Controller
             ->first();
 
         $confirmationMessage = null;
-        if ($conversation && strtolower($agentAccess->agent_name) === 'cynessa') {
+        if ($conversation && in_array(strtolower($agentAccess->agent_name), ['cynessa', 'mosaic'], true)) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -398,12 +438,18 @@ class PortalChatController extends Controller
             $fileSize = number_format($file->getSize() / 1024, 2); // KB
 
             $userMessage = "[File uploaded: {$filename} ({$fileSize} KB, .{$fileExtension})]";
+
+            // Add warnings if any (for Mosaic)
+            if (! empty($warnings)) {
+                $userMessage .= "\nWarnings: ".implode('; ', $warnings);
+            }
+
             $messages[] = [
                 'role' => 'user',
                 'content' => $userMessage,
             ];
 
-            // Let Cynessa respond to the file upload with full history
+            // Let the agent respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
                 ->first();
@@ -414,13 +460,23 @@ class PortalChatController extends Controller
                     array_slice($messages, 0, -1)
                 );
 
-                $confirmationMessage = $this->cynessaAgentHandler->handle(
-                    $userMessage,
-                    $user,
-                    $availableAgent,
-                    $tenant,
-                    $historyBeforeUpload
-                );
+                if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                    $confirmationMessage = $this->cynessaAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif (strtolower($agentAccess->agent_name) === 'mosaic') {
+                    $confirmationMessage = $this->mosaicAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                }
 
                 $messages[] = [
                     'role' => 'assistant',
