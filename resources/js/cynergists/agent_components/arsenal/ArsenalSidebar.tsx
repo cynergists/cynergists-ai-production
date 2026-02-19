@@ -11,14 +11,9 @@ import {
     Shield,
     Upload,
     Download,
-    Trash2,
 } from 'lucide-react';
 
-interface ArsenalSidebarProps {
-    onClearChat?: () => void;
-}
-
-export default function ArsenalSidebar({ onClearChat }: ArsenalSidebarProps) {
+export default function ArsenalSidebar() {
     return (
         <div className="h-full">
             <ScrollArea className="h-full px-3 py-4">
@@ -135,19 +130,6 @@ export default function ArsenalSidebar({ onClearChat }: ArsenalSidebarProps) {
                             <div>• Database exports</div>
                         </div>
                     </Card>
-
-                    {/* Session Controls */}
-                    <div className="pt-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full gap-2"
-                            onClick={onClearChat}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            Clear Session
-                        </Button>
-                    </div>
 
                     {/* Help */}
                     <Card className="border-blue-500/20 bg-blue-50/50 p-3 dark:bg-blue-950/20">

@@ -23,7 +23,6 @@ interface ArsenalChatProps {
     onSend: (e: React.FormEvent) => void;
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFileClick: () => void;
-    onClearChat?: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
@@ -44,7 +43,6 @@ export function ArsenalChat({
     onSend,
     onFileSelect,
     onFileClick,
-    onClearChat,
 }: ArsenalChatProps) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

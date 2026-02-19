@@ -1,4 +1,4 @@
-import { AlertCircle, Calendar, CheckCircle2, Clock, Play, TrendingUp, Upload, Video, Zap } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock, Loader2, Paperclip, Play, TrendingUp, Upload, Video, Zap } from 'lucide-react';
 import { useState, type ChangeEvent, type FormEvent, type RefObject } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,6 @@ interface ImpulseChatProps {
     onSend: (e: FormEvent<HTMLFormElement>) => void;
     onFileSelect: (e: ChangeEvent<HTMLInputElement>) => void;
     onFileClick: () => void;
-    onClearChat?: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: Message) => void;
 }
@@ -46,7 +45,6 @@ export const ImpulseChat = ({
     onSend,
     onFileSelect,
     onFileClick,
-    onClearChat,
 }: ImpulseChatProps) => {
     const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
     const agentName =
@@ -230,11 +228,19 @@ export const ImpulseChat = ({
                     >
                         🎵 Voice Mode
                     </Button>
-                    {onClearChat && (
-                        <Button variant="ghost" size="sm" onClick={onClearChat}>
-                            Clear
-                        </Button>
-                    )}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isUploading}
+                        onClick={onFileClick}
+                    >
+                        {isUploading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Paperclip className="h-3 w-3" />
+                        )}
+                        Attach
+                    </Button>
                 </div>
             </div>
 

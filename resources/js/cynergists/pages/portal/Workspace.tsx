@@ -50,7 +50,6 @@ import {
     Send,
     Sparkles,
     Target,
-    Trash2,
     Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -111,6 +110,7 @@ export default function PortalWorkspace() {
     const [addSiteDialogOpen, setAddSiteDialogOpen] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteUrl, setNewSiteUrl] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         setSelectedAgentId(props.agentId ?? null);
@@ -381,32 +381,6 @@ export default function PortalWorkspace() {
         // Reset input so same file can be selected again
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
-        }
-    };
-
-    const clearChat = useMutation({
-        mutationFn: async () => {
-            if (!selectedAgentId) throw new Error('No agent selected');
-
-            return apiClient.delete<{ success: boolean; deleted: boolean }>(
-                `/api/portal/agents/${selectedAgentId}/conversation`,
-            );
-        },
-        onSuccess: () => {
-            setMessages([]);
-            toast.success('Chat cleared');
-            queryClient.invalidateQueries({
-                queryKey: ['conversation', selectedAgentId],
-            });
-        },
-        onError: (error: Error) => {
-            toast.error(`Failed to clear chat: ${error.message}`);
-        },
-    });
-
-    const handleClearChat = () => {
-        if (window.confirm('Are you sure you want to clear this chat?')) {
-            clearChat.mutate();
         }
     };
 
@@ -873,7 +847,38 @@ export default function PortalWorkspace() {
                 </Sheet>
 
                 {/* Chat */}
-                <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card">
+                <div
+                    className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card"
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (selectedAgentId) setIsDragging(true);
+                    }}
+                    onDragLeave={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDragging(false);
+                    }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDragging(false);
+                        const file = e.dataTransfer.files[0];
+                        if (file && selectedAgentId) {
+                            uploadFile.mutate(file);
+                        }
+                    }}
+                >
+                    {isDragging && (
+                        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/10">
+                            <div className="text-center">
+                                <Paperclip className="mx-auto h-8 w-8 text-primary" />
+                                <p className="mt-2 text-sm font-medium text-primary">
+                                    Drop file to attach
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <div className="flex items-center justify-between border-b border-primary/20 px-4 py-2">
                         <div className="flex items-center gap-2">
                             <div
@@ -936,7 +941,6 @@ export default function PortalWorkspace() {
                                 onFileClick={() =>
                                     fileInputRef.current?.click()
                                 }
-                                onClearChat={handleClearChat}
                                 selectedAgentId={selectedAgentId}
                                 onMessageReceived={(message) => {
                                     setMessages((prev) => [...prev, message]);
@@ -1128,11 +1132,24 @@ export default function PortalWorkspace() {
                                             <Mic className="h-3 w-3" />
                                             Voice Mode
                                         </Button>
-                                        {/* Clear Chat button removed per spec #3:
-                                            - Memory integrity matters more than convenience
-                                            - Clearing chat should be backend-only or admin setting
-                                            - Users should not casually wipe agent memory
-                                        */}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
+                                            disabled={
+                                                !selectedAgentId || isUploading
+                                            }
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                        >
+                                            {isUploading ? (
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                                <Paperclip className="h-3 w-3" />
+                                            )}
+                                            Attach
+                                        </Button>
                                     </div>
                                 </div>
                             </>

@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { cn } from '@/lib/utils';
-import { Loader2, Mic, Paperclip, Send, Square, Trash2 } from 'lucide-react';
+import { Loader2, Mic, Paperclip, Send, Square } from 'lucide-react';
 import React from 'react';
 
 interface Message {
@@ -25,7 +25,6 @@ interface CynessaChatProps {
     onSend: (e: React.FormEvent) => void;
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFileClick: () => void;
-    onClearChat?: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
@@ -46,7 +45,6 @@ export function CynessaChat({
     onSend,
     onFileSelect,
     onFileClick,
-    onClearChat,
     selectedAgentId,
     onMessageReceived,
 }: CynessaChatProps) {
@@ -233,11 +231,15 @@ export function CynessaChat({
                         variant="outline"
                         size="sm"
                         className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
-                        onClick={onClearChat}
-                        disabled={!selectedAgentId || messages.length === 0}
+                        disabled={isUploading}
+                        onClick={onFileClick}
                     >
-                        <Trash2 className="h-3 w-3" />
-                        Clear Chat
+                        {isUploading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Paperclip className="h-3 w-3" />
+                        )}
+                        Attach
                     </Button>
                 </div>
             </div>
