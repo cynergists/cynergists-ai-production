@@ -165,21 +165,24 @@ export default function AgentChat({ agentId }: { agentId: string }) {
 
     return (
         <div className="flex h-full flex-col">
-            {/* Header */}
-            <div className="flex items-center gap-4 border-b border-border p-4">
+            {/* Header - Updated per spec: 2x larger image, larger text, job title */}
+            <div className="flex items-center gap-4 border-b border-border p-6">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/portal/agents">
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                        <Bot className="h-6 w-6 text-primary" />
+                <div className="flex items-center gap-4">
+                    {/* 2x larger agent image (was 12x12, now 24x24) */}
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+                        <Bot className="h-12 w-12 text-primary" />
                     </div>
                     <div>
-                        <h1 className="font-semibold">{agent.agent_name}</h1>
-                        <p className="text-sm text-muted-foreground capitalize">
-                            {agent.agent_type}
+                        {/* Larger agent name */}
+                        <h1 className="text-2xl font-semibold">{agent.agent_name}</h1>
+                        {/* Show job title instead of category, slightly larger */}
+                        <p className="text-base text-muted-foreground">
+                            {(agent as any).job_title || agent.agent_type || 'AI Agent'}
                         </p>
                     </div>
                 </div>
