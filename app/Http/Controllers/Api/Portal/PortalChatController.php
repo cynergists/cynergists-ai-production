@@ -17,6 +17,7 @@ use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Iris\IrisAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Optix\OptixAgentHandler;
@@ -34,6 +35,7 @@ class PortalChatController extends Controller
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private IrisAgentHandler $irisAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
         private OptixAgentHandler $optixAgentHandler,
@@ -43,11 +45,13 @@ class PortalChatController extends Controller
     ) {}
 
     /**
-     * Get or create a virtual Cynessa agent access for any user.
+     * Get or create a virtual agent access for Cynessa or Iris.
+     * Looks up the PortalAvailableAgent by ID to determine agent name,
+     * falling back to Cynessa for backward compatibility.
      */
-    private function getOrCreateCynessaAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
+    private function getOrCreateVirtualAgentAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
     {
-        // First check if user actually has Cynessa access
+        // First check if the user has a real agent access record
         $agentAccess = AgentAccess::query()
             ->where('tenant_id', $tenant->id)
             ->where('id', $agentId)
@@ -57,20 +61,27 @@ class PortalChatController extends Controller
             return $agentAccess;
         }
 
-        // Check if Cynessa is available
-        $cynessaAvailable = PortalAvailableAgent::query()
-            ->where('name', 'Cynessa')
+        // Try to determine the virtual agent by looking up PortalAvailableAgent by ID
+        $availableAgent = PortalAvailableAgent::query()
+            ->whereIn('name', ['Cynessa', 'Iris'])
+            ->where('id', $agentId)
             ->first();
 
-        if (! $cynessaAvailable) {
+        // Fall back to Cynessa for backward compatibility
+        if (! $availableAgent) {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', 'Cynessa')
+                ->first();
+        }
+
+        if (! $availableAgent) {
             return null;
         }
 
-        // Create a virtual agent access for Cynessa
-        $cynessaAgent = new AgentAccess([
+        $virtualAgent = new AgentAccess([
             'id' => $agentId,
             'agent_type' => 'assistant',
-            'agent_name' => 'Cynessa',
+            'agent_name' => $availableAgent->name,
             'configuration' => null,
             'is_active' => true,
             'usage_count' => 0,
@@ -79,10 +90,9 @@ class PortalChatController extends Controller
             'tenant_id' => $tenant->id,
         ]);
 
-        // Set exists to false so we know not to save it
-        $cynessaAgent->exists = false;
+        $virtualAgent->exists = false;
 
-        return $cynessaAgent;
+        return $virtualAgent;
     }
 
     public function conversation(Request $request, string $agent): JsonResponse
@@ -97,7 +107,7 @@ class PortalChatController extends Controller
             return response()->json(['conversation' => null], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['conversation' => null], 404);
@@ -126,7 +136,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false], 404);
@@ -214,6 +224,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Iris agent
+        if (strtolower($agentAccess->agent_name) === 'iris') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->firstOrNew(['name' => $agentAccess->agent_name]);
+
+            if ($tenant) {
+                return $this->irisAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -316,7 +337,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
@@ -343,7 +364,8 @@ class PortalChatController extends Controller
             ->first();
 
         $confirmationMessage = null;
-        if ($conversation && strtolower($agentAccess->agent_name) === 'cynessa') {
+        $agentNameLower = strtolower($agentAccess->agent_name);
+        if ($conversation && in_array($agentNameLower, ['cynessa', 'iris'])) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -356,17 +378,25 @@ class PortalChatController extends Controller
                 'content' => $userMessage,
             ];
 
-            // Let Cynessa respond to the file upload with full history
+            // Let the agent respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
-                ->first();
+                ->firstOrNew(['name' => $agentAccess->agent_name]);
 
-            if ($availableAgent) {
-                // Pass the conversation history (before adding the new upload message)
-                $historyBeforeUpload = $this->conversationHistoryWindow->trim(
-                    array_slice($messages, 0, -1)
+            // Pass the conversation history (before adding the new upload message)
+            $historyBeforeUpload = $this->conversationHistoryWindow->trim(
+                array_slice($messages, 0, -1)
+            );
+
+            if ($agentNameLower === 'iris') {
+                $confirmationMessage = $this->irisAgentHandler->handle(
+                    $userMessage,
+                    $user,
+                    $availableAgent,
+                    $tenant,
+                    $historyBeforeUpload
                 );
-
+            } else {
                 $confirmationMessage = $this->cynessaAgentHandler->handle(
                     $userMessage,
                     $user,
@@ -374,12 +404,12 @@ class PortalChatController extends Controller
                     $tenant,
                     $historyBeforeUpload
                 );
-
-                $messages[] = [
-                    'role' => 'assistant',
-                    'content' => $confirmationMessage,
-                ];
             }
+
+            $messages[] = [
+                'role' => 'assistant',
+                'content' => $confirmationMessage,
+            ];
 
             $conversation->update([
                 'messages' => $messages,
@@ -415,7 +445,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
