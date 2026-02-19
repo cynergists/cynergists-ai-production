@@ -906,12 +906,7 @@ export default function PortalWorkspace() {
                                 </p>
                             </div>
                         </div>
-                        {selectedAgentId && agentDetails?.is_active && (
-                            <div className="flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2 py-1 text-xs font-medium text-success">
-                                <CircleCheck className="h-3 w-3" />
-                                Connected
-                            </div>
-                        )}
+                        {/* Removed "Connected" status per spec - unclear and confusing */}
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
