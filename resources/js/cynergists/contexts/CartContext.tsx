@@ -14,7 +14,7 @@ export interface CartItem {
     name: string;
     description: string;
     price: number;
-    billingPeriod: 'monthly' | 'annual';
+    billingPeriod?: 'monthly' | 'annual';
     billingType?: 'monthly' | 'one_time';
     quantity: number;
     metadata?: {
@@ -65,7 +65,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 return updated;
             }
 
-            return [...current, { ...newItem, quantity: 1 }];
+            return [
+                ...current,
+                {
+                    ...newItem,
+                    billingPeriod: newItem.billingPeriod ?? 'monthly',
+                    quantity: 1,
+                },
+            ];
         });
     };
 

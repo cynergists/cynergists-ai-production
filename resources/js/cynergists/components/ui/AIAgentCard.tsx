@@ -53,6 +53,7 @@ export interface AIAgent {
     features: string[];
     is_popular: boolean;
     is_active: boolean;
+    avatar?: string | null;
     card_media?: MediaItem[];
     tiers?: AgentTier[];
 }
