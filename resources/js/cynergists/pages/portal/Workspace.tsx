@@ -1128,19 +1128,11 @@ export default function PortalWorkspace() {
                                             <Mic className="h-3 w-3" />
                                             Voice Mode
                                         </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
-                                            onClick={handleClearChat}
-                                            disabled={
-                                                !selectedAgentId ||
-                                                messages.length === 0
-                                            }
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                            Clear Chat
-                                        </Button>
+                                        {/* Clear Chat button removed per spec #3:
+                                            - Memory integrity matters more than convenience
+                                            - Clearing chat should be backend-only or admin setting
+                                            - Users should not casually wipe agent memory
+                                        */}
                                     </div>
                                 </div>
                             </>
