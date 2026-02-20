@@ -38,8 +38,6 @@ import {
     Bot,
     Calendar,
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     CircleCheck,
     Globe,
     Headphones,
@@ -73,9 +71,8 @@ interface AgentAccess {
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    timestamp?: Date;
 }
-
-const AGENTS_PER_PAGE = 5;
 
 export default function PortalWorkspace() {
     const { user } = usePortalContext();
@@ -84,7 +81,6 @@ export default function PortalWorkspace() {
     const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
         props.agentId ?? null,
     );
-    const [currentPage, setCurrentPage] = useState(1);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
@@ -166,18 +162,6 @@ export default function PortalWorkspace() {
                 (agent.job_title?.toLowerCase().includes(query) ?? false),
         );
     }, [agents, agentSearchQuery]);
-
-    const totalPages = Math.ceil(filteredAgents.length / AGENTS_PER_PAGE);
-
-    const paginatedAgents = useMemo(() => {
-        const startIndex = (currentPage - 1) * AGENTS_PER_PAGE;
-        return filteredAgents.slice(startIndex, startIndex + AGENTS_PER_PAGE);
-    }, [filteredAgents, currentPage]);
-
-    // Reset pagination when search changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [agentSearchQuery]);
 
     const { data: agentDetails, isLoading: agentLoading } = useQuery({
         queryKey: ['agent-details', selectedAgentId],
@@ -283,7 +267,7 @@ export default function PortalWorkspace() {
 
             const newMessages: Message[] = [
                 ...messages,
-                { role: 'user', content: messageText },
+                { role: 'user', content: messageText, timestamp: new Date() },
             ];
             setMessages(newMessages);
             setIsStreaming(true);
@@ -298,7 +282,17 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            setMessages(Array.isArray(response.messages) ? response.messages : []);
+            const serverMsgs = Array.isArray(response.messages) ? response.messages : [];
+            setMessages(prev => {
+                const prevTimestamps = new Map(
+                    prev.map(m => [`${m.role}:${m.content}`, m.timestamp])
+                );
+                return serverMsgs.map((m, i) => ({
+                    ...m,
+                    timestamp: prevTimestamps.get(`${m.role}:${m.content}`) ??
+                        (i === serverMsgs.length - 1 ? new Date() : undefined),
+                }));
+            });
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -592,7 +586,7 @@ export default function PortalWorkspace() {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {paginatedAgents.map((agent, index) => {
+                                    {filteredAgents.map((agent, index) => {
                                         const isFeatured = index === 0; // First agent is featured
                                         const isSelected =
                                             selectedAgentId === agent.id;
@@ -692,39 +686,6 @@ export default function PortalWorkspace() {
                             </Button>
                         </div>
                     </div>
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between border-t border-border px-4 py-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.max(1, prev - 1),
-                                    )
-                                }
-                                disabled={currentPage === 1}
-                                className="h-8 px-2"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                                {currentPage} / {totalPages}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.min(totalPages, prev + 1),
-                                    )
-                                }
-                                disabled={currentPage === totalPages}
-                                className="h-8 px-2"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Mobile agent picker bar */}
@@ -775,7 +736,7 @@ export default function PortalWorkspace() {
                                 />
                             </div>
                             <div className="flex-1 space-y-2 overflow-y-auto">
-                                {paginatedAgents.map((agent) => {
+                                {filteredAgents.map((agent) => {
                                     const isSelected =
                                         selectedAgentId === agent.id;
                                     return (
@@ -911,7 +872,8 @@ export default function PortalWorkspace() {
                                         'Select an agent'}
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
-                                    {agentDetails?.agent_type ??
+                                    {agentDetails?.job_title ||
+                                        agentDetails?.agent_type ||
                                         'Ready when you are'}
                                 </p>
                             </div>
@@ -1034,15 +996,17 @@ export default function PortalWorkspace() {
                                                                         }
                                                                     </p>
                                                                 </Card>
-                                                                <span className="px-1 text-left text-[10px] text-muted-foreground/60">
-                                                                    {new Date().toLocaleTimeString(
-                                                                        'en-US',
-                                                                        {
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit',
-                                                                        },
-                                                                    )}
-                                                                </span>
+                                                                {message.timestamp && (
+                                                                    <span className="px-1 text-left text-[10px] text-muted-foreground/60">
+                                                                        {message.timestamp.toLocaleTimeString(
+                                                                            'en-US',
+                                                                            {
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit',
+                                                                            },
+                                                                        )}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ),
@@ -1145,11 +1109,13 @@ export default function PortalWorkspace() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
-                                            disabled={!selectedAgentId}
+                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs"
+                                            disabled
+                                            title="Coming Soon"
                                         >
                                             <Mic className="h-3 w-3" />
                                             Voice Mode
+                                            <span className="text-muted-foreground/60">(Soon)</span>
                                         </Button>
                                         <Button
                                             variant="outline"

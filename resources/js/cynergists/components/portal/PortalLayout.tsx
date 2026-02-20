@@ -1,6 +1,13 @@
 import { TenantProvider } from '@/components/portal/TenantProvider';
 import { Button } from '@/components/ui/button';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     Sheet,
     SheetContent,
     SheetHeader,
@@ -11,7 +18,7 @@ import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { Loader2, LogOut, Menu, Shield, UserCircle } from 'lucide-react';
+import { Building2, ChevronDown, Loader2, LogOut, Menu, Shield, User, UserCircle } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
@@ -99,25 +106,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 <div className="flex h-dvh flex-col overflow-hidden bg-background">
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
                         <div>
-                            <img 
-                                src={cynergistsLogo} 
+                            <img
+                                src={cynergistsLogo}
                                 alt="Company Logo"
-                                className="h-12 object-contain"
+                                className="h-24 object-contain"
                             />
                         </div>
 
                         {/* Desktop nav */}
                         <div className="hidden items-center gap-3 md:flex">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                            >
-                                <a href="/portal/account">
-                                    <UserCircle className="mr-2 h-4 w-4" />
-                                    Account
-                                </a>
-                            </Button>
                             {isAdmin && (
                                 <Button
                                     variant="outline"
@@ -130,14 +127,43 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                     </a>
                                 </Button>
                             )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleLogout}
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Sign Out
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <UserCircle className="mr-2 h-4 w-4" />
+                                        {userDisplayName}
+                                        <ChevronDown className="ml-2 h-3 w-3" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem asChild>
+                                        <a href="/portal/account/company" className="flex items-center gap-2">
+                                            <Building2 className="h-4 w-4" />
+                                            Company Profile
+                                        </a>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <a href="/portal/account/profile" className="flex items-center gap-2">
+                                            <User className="h-4 w-4" />
+                                            My Profile
+                                        </a>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <a href="/portal/account" className="flex items-center gap-2">
+                                            <UserCircle className="h-4 w-4" />
+                                            My Account
+                                        </a>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={handleLogout}
+                                        className="flex items-center gap-2 text-destructive focus:text-destructive"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Sign Out
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
                         {/* Mobile hamburger */}
