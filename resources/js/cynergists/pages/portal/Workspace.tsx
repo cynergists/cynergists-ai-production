@@ -36,8 +36,6 @@ import {
     Bot,
     Calendar,
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     CircleCheck,
     Globe,
     Headphones,
@@ -76,8 +74,6 @@ interface Message {
     content: string;
 }
 
-const AGENTS_PER_PAGE = 5;
-
 export default function PortalWorkspace() {
     const { user } = usePortalContext();
     const queryClient = useQueryClient();
@@ -85,7 +81,6 @@ export default function PortalWorkspace() {
     const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
         props.agentId ?? null,
     );
-    const [currentPage, setCurrentPage] = useState(1);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
@@ -161,18 +156,6 @@ export default function PortalWorkspace() {
                 (agent.job_title?.toLowerCase().includes(query) ?? false),
         );
     }, [agents, agentSearchQuery]);
-
-    const totalPages = Math.ceil(filteredAgents.length / AGENTS_PER_PAGE);
-
-    const paginatedAgents = useMemo(() => {
-        const startIndex = (currentPage - 1) * AGENTS_PER_PAGE;
-        return filteredAgents.slice(startIndex, startIndex + AGENTS_PER_PAGE);
-    }, [filteredAgents, currentPage]);
-
-    // Reset pagination when search changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [agentSearchQuery]);
 
     const { data: agentDetails, isLoading: agentLoading } = useQuery({
         queryKey: ['agent-details', selectedAgentId],
@@ -613,7 +596,7 @@ export default function PortalWorkspace() {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {paginatedAgents.map((agent, index) => {
+                                    {filteredAgents.map((agent, index) => {
                                         const isFeatured = index === 0; // First agent is featured
                                         const isSelected =
                                             selectedAgentId === agent.id;
@@ -713,39 +696,6 @@ export default function PortalWorkspace() {
                             </Button>
                         </div>
                     </div>
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between border-t border-border px-4 py-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.max(1, prev - 1),
-                                    )
-                                }
-                                disabled={currentPage === 1}
-                                className="h-8 px-2"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                                {currentPage} / {totalPages}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.min(totalPages, prev + 1),
-                                    )
-                                }
-                                disabled={currentPage === totalPages}
-                                className="h-8 px-2"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Mobile agent picker bar */}
@@ -796,7 +746,7 @@ export default function PortalWorkspace() {
                                 />
                             </div>
                             <div className="flex-1 space-y-2 overflow-y-auto">
-                                {paginatedAgents.map((agent) => {
+                                {filteredAgents.map((agent) => {
                                     const isSelected =
                                         selectedAgentId === agent.id;
                                     return (
