@@ -1,3 +1,4 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -61,6 +62,7 @@ const getStatusColor = (status: string) => {
 export default function CarbonSidebar({
     agentDetails,
     seoStats,
+    activeView,
     setActiveView,
 }: CarbonSidebarProps) {
     const stats = seoStats || {
@@ -80,6 +82,14 @@ export default function CarbonSidebar({
 
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
+            {/* Quick Links */}
+            <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-5">
+                <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
+                    Quick Links
+                </h2>
+                <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+            </div>
+
             {/* SEO Overview */}
             <div className="flex flex-col rounded-2xl border border-green-500/20 bg-card p-5">
                 <div className="mb-4 flex items-center justify-between">

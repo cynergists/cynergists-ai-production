@@ -1,6 +1,6 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { FileText, LayoutTemplate, MessageSquare, Settings, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface MosaicSidebarProps {
     activeView: string;
@@ -31,56 +31,7 @@ export default function MosaicSidebar({
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Quick Links
                 </h2>
-                <nav className="flex flex-col space-y-2">
-                    <button
-                        onClick={() => setActiveView('chat')}
-                        className={cn(
-                            'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                            activeView === 'chat'
-                                ? 'border-l-primary bg-primary/10 text-primary'
-                                : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                        )}
-                    >
-                        <MessageSquare className="h-5 w-5 shrink-0" />
-                        Chat
-                    </button>
-                    <button
-                        onClick={() => setActiveView('preview')}
-                        className={cn(
-                            'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                            activeView === 'preview'
-                                ? 'border-l-primary bg-primary/10 text-primary'
-                                : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                        )}
-                    >
-                        <LayoutTemplate className="h-5 w-5 shrink-0" />
-                        Preview
-                    </button>
-                    <button
-                        onClick={() => setActiveView('blueprint')}
-                        className={cn(
-                            'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                            activeView === 'blueprint'
-                                ? 'border-l-primary bg-primary/10 text-primary'
-                                : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                        )}
-                    >
-                        <FileText className="h-5 w-5 shrink-0" />
-                        Blueprint
-                    </button>
-                    <button
-                        onClick={() => setActiveView('settings')}
-                        className={cn(
-                            'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                            activeView === 'settings'
-                                ? 'border-l-primary bg-primary/10 text-primary'
-                                : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                        )}
-                    >
-                        <Settings className="h-5 w-5 shrink-0" />
-                        Settings
-                    </button>
-                </nav>
+                <AgentQuickLinks activeView={activeView} setActiveView={setActiveView} />
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card p-5">

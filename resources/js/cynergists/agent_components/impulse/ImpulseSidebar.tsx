@@ -1,3 +1,4 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { AlertTriangle, BarChart3, Calendar, CheckCircle2, Clock, Pause, Play, RefreshCw, Settings, TrendingUp, Upload, Video, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -13,11 +14,15 @@ interface ImpulseAgentDetails {
 
 interface ImpulseSidebarProps {
     agentDetails?: ImpulseAgentDetails | null;
+    activeView?: string;
+    setActiveView?: (view: string) => void;
     onActionSelect?: (action: string) => void;
 }
 
 const ImpulseSidebar = ({
     agentDetails,
+    activeView,
+    setActiveView,
     onActionSelect,
 }: ImpulseSidebarProps) => {
     const [automationStatus, setAutomationStatus] = useState<'active' | 'paused' | 'setup'>('active');
@@ -291,6 +296,14 @@ const ImpulseSidebar = ({
             </div>
 
             <Separator />
+
+            {/* Quick Links */}
+            <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-4">
+                <h2 className="mb-3 shrink-0 text-base font-semibold text-foreground">
+                    Quick Links
+                </h2>
+                <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+            </div>
 
             {/* Status and Actions */}
             <div className="space-y-4">

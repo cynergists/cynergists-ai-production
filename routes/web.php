@@ -203,6 +203,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
         Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
         Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
+        Route::post('/agents/{agent}/onboarding/restart', [PortalChatController::class, 'restartOnboarding']);
         Route::get('/luna/images/{imageId}/status', [PortalChatController::class, 'lunaImageStatus']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [CarbonController::class, 'overview']);
@@ -214,6 +215,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/billing', [PortalBillingController::class, 'index']);
         Route::get('/activity', [PortalActivityController::class, 'index']);
         Route::get('/tenant', [PortalTenantController::class, 'show']);
+        Route::put('/tenant', [PortalTenantController::class, 'update']);
         Route::post('/tenant/check-subdomain', [PortalSubdomainController::class, 'check']);
         Route::post('/tenant/claim-subdomain', [PortalSubdomainController::class, 'claim']);
         Route::get('/profile', [PortalProfileController::class, 'show']);

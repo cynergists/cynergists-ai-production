@@ -10,11 +10,10 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
-use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Beacon\BeaconAgentHandler;
-
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
@@ -348,9 +347,11 @@ class PortalChatController extends Controller
 
                 try {
                     $response = $arsenalAgent->prompt($message);
+
                     return (string) $response;
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Arsenal agent error: '.$e->getMessage());
+
                     return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
                 }
             }
@@ -533,6 +534,40 @@ class PortalChatController extends Controller
         return response()->json([
             'success' => true,
             'deleted' => $deleted > 0,
+        ]);
+    }
+
+    /**
+     * Restart onboarding for the tenant: clears onboarding data and conversation history.
+     */
+    public function restartOnboarding(Request $request, string $agent): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $tenant = PortalTenant::forUser($user);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
+        }
+
+        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        if (! $agentAccess) {
+            return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
+        }
+
+        $onboardingService = app(OnboardingService::class);
+        $onboardingService->resetOnboarding($tenant);
+
+        AgentConversation::query()
+            ->where('agent_access_id', $agentAccess->id)
+            ->where('status', 'active')
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Onboarding restarted successfully.',
         ]);
     }
 

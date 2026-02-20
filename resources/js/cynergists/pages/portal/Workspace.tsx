@@ -1,4 +1,7 @@
 import { getAgentComponents } from '@/agent_components';
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
+import { OnboardingView } from '@/components/portal/OnboardingView';
+import { SettingsView } from '@/components/portal/SettingsView';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -32,7 +35,6 @@ import { cn } from '@/lib/utils';
 import { router, usePage } from '@inertiajs/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    Activity,
     Bot,
     Calendar,
     ChevronDown,
@@ -41,7 +43,6 @@ import {
     CircleCheck,
     Globe,
     Headphones,
-    LayoutDashboard,
     Loader2,
     MessageSquare,
     Mic,
@@ -49,7 +50,6 @@ import {
     Search,
     Send,
     Sparkles,
-    Target,
     Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -93,12 +93,17 @@ export default function PortalWorkspace() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeView, setActiveView] = useState<
         | 'chat'
+        | 'onboarding'
+        | 'settings'
         | 'dashboard'
         | 'campaigns'
         | 'connections'
         | 'messages'
         | 'activity'
         | 'add-site'
+        | 'content-pipeline'
+        | 'published'
+        | 'analytics'
     >('chat');
     const [supportDialogOpen, setSupportDialogOpen] = useState(false);
     const [supportCategory, setSupportCategory] = useState('agent_issue');
@@ -915,9 +920,23 @@ export default function PortalWorkspace() {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
-                        {/* Agent-Specific View Component (non-chat views) */}
-                        {agentComponents?.ViewComponent &&
-                        activeView !== 'chat' ? (
+                        {/* Global Onboarding View */}
+                        {activeView === 'onboarding' ? (
+                            <OnboardingView
+                                agentDetails={agentDetails}
+                                setupProgress={setupProgress}
+                            />
+                        ) : activeView === 'settings' ? (
+                            /* Global Settings View */
+                            <SettingsView
+                                agentId={selectedAgentId}
+                                agentDetails={agentDetails}
+                                settingsLinks={agentComponents?.settingsLinks}
+                                setActiveView={setActiveView as (view: string) => void}
+                                onMemoryCleared={() => setMessages([])}
+                            />
+                        ) : agentComponents?.ViewComponent && activeView !== 'chat' ? (
+                            /* Agent-Specific View Component (non-chat views) */
                             <agentComponents.ViewComponent
                                 activeView={activeView}
                                 setActiveView={setActiveView}
@@ -1176,80 +1195,7 @@ export default function PortalWorkspace() {
                             <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                                 Quick Links
                             </h2>
-                            <nav className="flex flex-col space-y-2">
-                                <button
-                                    onClick={() => setActiveView('chat')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'chat'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <MessageSquare className="h-5 w-5 shrink-0" />
-                                    Chat
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('dashboard')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'dashboard'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <LayoutDashboard className="h-5 w-5 shrink-0" />
-                                    Dashboard
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('campaigns')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'campaigns'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <Target className="h-5 w-5 shrink-0" />
-                                    Campaigns
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('connections')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'connections'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <Users className="h-5 w-5 shrink-0" />
-                                    Connections
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('messages')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'messages'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <MessageSquare className="h-5 w-5 shrink-0" />
-                                    Messages
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('activity')}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                        activeView === 'activity'
-                                            ? 'border-l-primary bg-primary/10 text-primary'
-                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                    )}
-                                >
-                                    <Activity className="h-5 w-5 shrink-0" />
-                                    Activity Log
-                                </button>
-                            </nav>
+                            <AgentQuickLinks activeView={activeView} setActiveView={setActiveView as (view: string) => void} />
                         </div>
 
                         {/* Today's Activity */}
