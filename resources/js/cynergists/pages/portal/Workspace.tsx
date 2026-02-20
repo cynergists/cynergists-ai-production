@@ -77,7 +77,21 @@ interface Message {
 export default function PortalWorkspace() {
     const { user } = usePortalContext();
     const queryClient = useQueryClient();
-    const { props } = usePage<{ agentId?: string }>();
+    const { props } = usePage<{
+        agentId?: string;
+        auth?: { roles?: string[] };
+    }>();
+
+    // Sales reps should use their own portal, not the client portal
+    useEffect(() => {
+        const roles = props.auth?.roles ?? [];
+        const isSalesRep = roles.includes('sales_rep');
+        const isAdmin = roles.includes('admin');
+        if (isSalesRep && !isAdmin) {
+            router.visit('/sales-rep');
+        }
+    }, [props.auth?.roles]);
+
     const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
         props.agentId ?? null,
     );

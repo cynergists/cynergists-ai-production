@@ -18,7 +18,7 @@ import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { Building2, ChevronDown, Loader2, LogOut, Menu, Shield, User, UserCircle } from 'lucide-react';
+import { BookOpen, Building2, ChevronDown, Loader2, LogOut, Menu, Shield, User, UserCircle } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
@@ -28,11 +28,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         auth: {
             user: { id: number | string; email?: string | null } | null;
             roles?: string[];
+            profile?: {
+                first_name?: string | null;
+                last_name?: string | null;
+            } | null;
         };
     }>();
     const { subdomain, isTenantDomain } = useSubdomain();
     const user = props.auth?.user ?? null;
     const isAdmin = props.auth?.roles?.includes('admin') ?? false;
+    const isSalesRep = props.auth?.roles?.includes('sales_rep') ?? false;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Fetch tenant by subdomain (for subdomain-based access)
@@ -42,9 +47,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     // Fetch current user's tenant (for checking onboarding status)
     const { data: userTenant, isLoading: userTenantLoading } =
         useCurrentUserTenant();
-
-    // No longer redirect to onboarding - subdomain is auto-assigned
-    // Users can change their subdomain in settings if needed
 
     const handleLogout = async () => {
         setMobileMenuOpen(false);
@@ -81,9 +83,18 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         : 'Customer Portal';
 
     const userEmail = user?.email ?? 'guest@cynergists.ai';
-    const userDisplayName = user?.email
-        ? user.email.split('@')[0]
-        : userEmail.split('@')[0];
+    const profile = props.auth?.profile;
+    const userDisplayName = profile?.first_name
+        ? `${profile.first_name}${profile.last_name ? ` ${profile.last_name}` : ''}`
+        : user?.email
+          ? user.email.split('@')[0]
+          : 'User';
+
+    // Build avatar initials from profile name or email
+    const avatarInitials = profile?.first_name
+        ? `${profile.first_name[0]}${profile.last_name ? profile.last_name[0] : ''}`.toUpperCase()
+        : (user?.email?.[0] ?? 'U').toUpperCase();
+
     const portalTenant = activeTenant
         ? {
               ...activeTenant,
@@ -115,6 +126,20 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
                         {/* Desktop nav */}
                         <div className="hidden items-center gap-3 md:flex">
+                            {/* Sales Reps see Sales Resources button */}
+                            {isSalesRep && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <a href="/sales-rep">
+                                        <BookOpen className="mr-2 h-4 w-4" />
+                                        Sales Resources
+                                    </a>
+                                </Button>
+                            )}
+                            {/* Admins see Admin button */}
                             {isAdmin && (
                                 <Button
                                     variant="outline"
@@ -127,15 +152,22 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                     </a>
                                 </Button>
                             )}
+                            {/* Account dropdown — all users */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <UserCircle className="mr-2 h-4 w-4" />
-                                        {userDisplayName}
-                                        <ChevronDown className="ml-2 h-3 w-3" />
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
+                                            {avatarInitials}
+                                        </div>
+                                        <ChevronDown className="h-3 w-3" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuContent align="end" className="w-52">
+                                    <div className="px-2 py-1.5">
+                                        <p className="text-sm font-medium text-foreground">{userDisplayName}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                                    </div>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <a href="/portal/account/company" className="flex items-center gap-2">
                                             <Building2 className="h-4 w-4" />
@@ -186,36 +218,50 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                 <SheetTitle>Menu</SheetTitle>
                             </SheetHeader>
                             <div className="flex flex-col gap-4 px-4">
-                                <div className="rounded-lg border border-border bg-muted/50 p-3">
-                                    <p className="text-sm font-medium text-foreground">
-                                        {userDisplayName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {userEmail}
-                                    </p>
+                                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">
+                                        {avatarInitials}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {userDisplayName}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                            {userEmail}
+                                        </p>
+                                    </div>
                                 </div>
                                 <nav className="flex flex-col gap-2">
                                     <Button
                                         variant="ghost"
                                         className="w-full justify-start gap-2"
                                         asChild
-                                        onClick={() =>
-                                            setMobileMenuOpen(false)
-                                        }
+                                        onClick={() => setMobileMenuOpen(false)}
                                     >
                                         <a href="/portal/account">
                                             <UserCircle className="h-4 w-4" />
-                                            Account
+                                            My Account
                                         </a>
                                     </Button>
+                                    {isSalesRep && (
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start gap-2"
+                                            asChild
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <a href="/sales-rep">
+                                                <BookOpen className="h-4 w-4" />
+                                                Sales Resources
+                                            </a>
+                                        </Button>
+                                    )}
                                     {isAdmin && (
                                         <Button
                                             variant="ghost"
                                             className="w-full justify-start gap-2"
                                             asChild
-                                            onClick={() =>
-                                                setMobileMenuOpen(false)
-                                            }
+                                            onClick={() => setMobileMenuOpen(false)}
                                         >
                                             <a href="/admin">
                                                 <Shield className="h-4 w-4" />

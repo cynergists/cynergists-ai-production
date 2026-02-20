@@ -115,7 +115,7 @@ Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->def
 Route::redirect('/portal/admin', '/filament');
 
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
-Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal');
+Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal')->middleware('auth');
 Route::get('/employee', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/EmployeePortal');
 
 Route::redirect('/admin', '/filament');
