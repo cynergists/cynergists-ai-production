@@ -1,11 +1,13 @@
 import cynergistsLogo from '@/assets/Cynergists_Word_Script_4.webp';
 import CartButton from '@/components/cart/CartButton';
 import { Button } from '@/components/ui/button';
+import { OrbitingButton } from '@/components/ui/orbiting-button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+    ArrowRight,
     Check,
     LayoutDashboard,
     LogIn,
@@ -132,20 +134,9 @@ const Header = ({
 
                         {/* Desktop Navigation - Right aligned */}
                         <div className="hidden items-center gap-2 lg:flex">
-                            {/* Agent Marketplace button - hide on homepage and marketplace */}
-                            {!isHomepage && !isMarketplace && (
-                                <Link href="/marketplace" onClick={scrollToTop}>
-                                    <Button className="btn-primary gap-2">
-                                        <Sparkles className="h-4 w-4" />
-                                        Agent Marketplace
-                                    </Button>
-                                </Link>
-                            )}
-
                             {/* Portal/Admin buttons with divider if authenticated */}
                             {(isAdmin || isClient) && (
                                 <>
-                                    <div className="mx-1 h-6 w-px bg-border/60" />
                                     {isClient && (
                                         <Link
                                             href="/portal"
@@ -173,13 +164,32 @@ const Header = ({
                                             </Button>
                                         </a>
                                     )}
+                                    <div className="mx-1 h-6 w-px bg-border/60" />
                                 </>
                             )}
 
-                            <div className="mx-1 h-6 w-px bg-border/60" />
-
                             {/* Icon buttons group */}
                             <div className="flex items-center gap-1">
+                                {/* CTA button - varies by page */}
+                                {isHomepage && (
+                                    <OrbitingButton
+                                        asChild
+                                        className="btn-primary group gap-2"
+                                    >
+                                        <Link href="/marketplace" onClick={scrollToTop}>
+                                            Deploy Your Agents Now
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                        </Link>
+                                    </OrbitingButton>
+                                )}
+                                {!isHomepage && !isMarketplace && (
+                                    <Link href="/marketplace" onClick={scrollToTop}>
+                                        <Button className="btn-primary gap-2">
+                                            <Sparkles className="h-4 w-4" />
+                                            Agent Marketplace
+                                        </Button>
+                                    </Link>
+                                )}
                                 {/* Theme toggle */}
                                 <button
                                     onClick={toggleTheme}
@@ -294,6 +304,23 @@ const Header = ({
                                 className="overflow-hidden lg:hidden"
                             >
                                 <nav className="flex flex-col gap-2 border-t border-border/40 py-4">
+                                    {isHomepage && (
+                                        <OrbitingButton
+                                            asChild
+                                            className="btn-primary group w-full gap-2"
+                                        >
+                                            <Link
+                                                href="/marketplace"
+                                                onClick={() => {
+                                                    setMobileMenuOpen(false);
+                                                    scrollToTop();
+                                                }}
+                                            >
+                                                Deploy Your Agents Now
+                                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                            </Link>
+                                        </OrbitingButton>
+                                    )}
                                     {!isHomepage && !isMarketplace && (
                                         <Link
                                             href="/marketplace"
