@@ -6,13 +6,15 @@ use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\GoHighLevelService;
 use App\Services\GoogleDriveService;
+use App\Services\Portal\AgentOnboardingService;
 use Illuminate\Support\Facades\Log;
 
 class OnboardingService
 {
     public function __construct(
         private GoogleDriveService $googleDriveService,
-        private GoHighLevelService $goHighLevelService
+        private GoHighLevelService $goHighLevelService,
+        private AgentOnboardingService $agentOnboardingService
     ) {}
 
     /**
@@ -107,13 +109,18 @@ class OnboardingService
      * Mark onboarding as complete.
      * Only marks complete if all requirements are met.
      */
-    public function markComplete(PortalTenant $tenant): void
+    public function markComplete(PortalTenant $tenant, ?User $user = null): void
     {
         // Double-check requirements before marking complete
         if (! $this->isComplete($tenant) && $this->canComplete($tenant)) {
             $tenant->update([
                 'onboarding_completed_at' => now(),
             ]);
+
+            // Also mark Iris onboarding complete in the new tracking table
+            if ($user) {
+                $this->agentOnboardingService->markCompleted($tenant, 'iris', $user);
+            }
 
             \Log::info('Onboarding marked complete', [
                 'tenant_id' => $tenant->id,

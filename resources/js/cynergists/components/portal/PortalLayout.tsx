@@ -18,7 +18,7 @@ import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
 import { router, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, ChevronDown, Loader2, LogOut, Menu, Shield, User, UserCircle } from 'lucide-react';
+import { BookOpen, Building2, ChevronDown, Loader2, LogOut, Menu, Palette, Shield, User, UserCircle } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
@@ -175,6 +175,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                         </a>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
+                                        <a href="/portal/brand-kit" className="flex items-center gap-2">
+                                            <Palette className="h-4 w-4" />
+                                            Brand Kit
+                                        </a>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
                                         <a href="/portal/account/profile" className="flex items-center gap-2">
                                             <User className="h-4 w-4" />
                                             My Profile
@@ -241,6 +247,17 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                         <a href="/portal/account">
                                             <UserCircle className="h-4 w-4" />
                                             My Account
+                                        </a>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start gap-2"
+                                        asChild
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <a href="/portal/brand-kit">
+                                            <Palette className="h-4 w-4" />
+                                            Brand Kit
                                         </a>
                                     </Button>
                                     {isSalesRep && (

@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { router, usePage } from '@inertiajs/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+    AlertTriangle,
     Bot,
     Calendar,
     ChevronDown,
@@ -230,11 +231,12 @@ export default function PortalWorkspace() {
         }
     }, [conversation]);
 
-    // Auto-start conversation with Cynessa
+    // Auto-start conversation with Cynessa or Iris
     useEffect(() => {
         if (
             selectedAgentId &&
-            agentDetails?.agent_name?.toLowerCase() === 'cynessa' &&
+            (agentDetails?.agent_name?.toLowerCase() === 'cynessa' ||
+                agentDetails?.agent_name?.toLowerCase() === 'iris') &&
             messages.length === 0 &&
             !isStreaming &&
             !sendMessage.isPending
@@ -491,6 +493,8 @@ export default function PortalWorkspace() {
                         completed: boolean;
                     }>;
                 };
+                irisOnboardingComplete: boolean;
+                agentOnboardingStates: Record<string, string>;
             }>('/api/portal/stats');
             return response;
         },
@@ -498,14 +502,18 @@ export default function PortalWorkspace() {
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         staleTime: 0,
-        // Poll every 2 seconds when talking to Cynessa to catch onboarding updates
+        // Poll every 2 seconds when talking to Iris or Cynessa to catch onboarding updates
         refetchInterval: (query) => {
-            return agentDetails?.agent_name?.toLowerCase() === 'cynessa' &&
-                !query.state.data?.onboardingProgress?.completed
+            const agentName = agentDetails?.agent_name?.toLowerCase();
+            return (agentName === 'cynessa' || agentName === 'iris') &&
+                !query.state.data?.irisOnboardingComplete
                 ? 2000
                 : false;
         },
     });
+
+    const irisOnboardingComplete = portalStats?.irisOnboardingComplete ?? true; // default true to avoid blocking on load
+    const agentOnboardingStates = portalStats?.agentOnboardingStates ?? {};
 
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
@@ -561,8 +569,49 @@ export default function PortalWorkspace() {
         meetingsScheduled: 0,
     };
 
+    // Which iris ID would be for this session (deterministic)
+    const irisAgentId = agents?.find(
+        (a) => a.agent_name.toLowerCase() === 'iris',
+    )?.id;
+
+    // Per-agent gate: show overlay when selected agent's onboarding isn't done
+    const selectedAgent = agents?.find((a) => a.id === selectedAgentId);
+    const selectedAgentName = selectedAgent?.agent_name?.toLowerCase() ?? '';
+    const isIrisAgent = selectedAgentName === 'iris';
+    const selectedAgentOnboardingState = agentOnboardingStates[selectedAgentName];
+    const showAgentOnboardingGate =
+        !isIrisAgent &&
+        selectedAgentId !== null &&
+        irisOnboardingComplete &&
+        selectedAgentOnboardingState !== 'completed' &&
+        selectedAgentOnboardingState !== undefined;
+
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+            {/* Iris onboarding banner — shown until Iris onboarding is complete */}
+            {!irisOnboardingComplete && (
+                <div className="flex shrink-0 items-center justify-between border-b border-primary/20 bg-primary/10 px-4 py-2">
+                    <div className="flex items-center gap-2 text-sm text-primary">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <span className="font-medium">
+                            Complete your Brand Kit setup with Iris to unlock all agents.
+                        </span>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="ml-4 shrink-0 border-primary/40 text-primary hover:bg-primary/20"
+                        onClick={() => {
+                            if (irisAgentId) {
+                                setSelectedAgentId(irisAgentId);
+                                setActiveView('chat');
+                            }
+                        }}
+                    >
+                        Start Now
+                    </Button>
+                </div>
+            )}
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-3 lg:flex-row lg:gap-6 lg:p-6">
                 {/* Agents list */}
                 <div className="hidden min-h-0 w-80 shrink-0 flex-col lg:flex">
@@ -911,6 +960,32 @@ export default function PortalWorkspace() {
                                 setActiveView={setActiveView as (view: string) => void}
                                 onMemoryCleared={() => setMessages([])}
                             />
+                        ) : showAgentOnboardingGate ? (
+                            /* Per-Agent Onboarding Gate */
+                            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+                                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary/10">
+                                    {agentDetails?.avatar_url ? (
+                                        <img
+                                            src={agentDetails.avatar_url}
+                                            alt={agentDetails.agent_name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <Bot className="h-8 w-8 text-primary" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-foreground">
+                                        Onboarding Required
+                                    </h2>
+                                    <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+                                        Complete {agentDetails?.agent_name ?? 'this agent'}&apos;s onboarding to start chatting.
+                                    </p>
+                                </div>
+                                <Button onClick={() => setActiveView('onboarding')}>
+                                    Begin Onboarding
+                                </Button>
+                            </div>
                         ) : agentComponents?.ViewComponent && activeView !== 'chat' ? (
                             /* Agent-Specific View Component (non-chat views) */
                             <agentComponents.ViewComponent

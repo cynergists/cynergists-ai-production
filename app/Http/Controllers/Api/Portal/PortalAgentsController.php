@@ -49,6 +49,26 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
+        // Always ensure Iris is available to all users (pinned first)
+        // Use a deterministic ID so conversation history persists across page refreshes
+        $irisAgent = new AgentAccess([
+            'id' => 'iris-'.$tenant->id,
+            'agent_type' => 'iris',
+            'agent_name' => 'Iris',
+            'configuration' => null,
+            'is_active' => true,
+            'usage_count' => 0,
+            'usage_limit' => null,
+            'last_used_at' => null,
+            'created_at' => now(),
+            'subscription_id' => null,
+        ]);
+        $irisAgent->subscription = null;
+        $irisAgent->avatar_url = null;
+        $irisAgent->redirect_url = null;
+        $irisAgent->job_title = 'Onboarding Guide';
+        $irisAgent->is_beta = false;
+
         // Always ensure Cynessa is available to all users
         $cynessaAvailable = PortalAvailableAgent::query()
             ->where('name', 'Cynessa')
@@ -74,7 +94,7 @@ class PortalAgentsController extends Controller
                 ]);
                 $cynessaAgent->subscription = null;
 
-                // Prepend Cynessa to the collection
+                // Prepend Cynessa to the collection (Iris goes before it below)
                 $agents = collect([$cynessaAgent])->concat($agents);
             } else {
                 // Move Cynessa to the front if she exists
@@ -84,6 +104,9 @@ class PortalAgentsController extends Controller
             }
         }
 
+        // Prepend Iris before everything else
+        $agents = collect([$irisAgent])->concat($agents);
+
         // Get avatars, redirect URLs, and job titles from portal_available_agents
         $agentNames = $agents->pluck('agent_name')->unique()->toArray();
         $availableAgents = PortalAvailableAgent::query()
@@ -92,7 +115,12 @@ class PortalAgentsController extends Controller
             ->keyBy('name');
 
         // Add avatar_url, redirect_url, job_title, and is_beta to each agent
+        // Skip Iris — its metadata is already set above as a virtual agent
         $agents = $agents->map(function ($agent) use ($availableAgents) {
+            if (strtolower($agent->agent_name) === 'iris') {
+                return $agent;
+            }
+
             $availableAgent = $availableAgents->get($agent->agent_name);
             $avatar = $availableAgent?->avatar;
             $agent->avatar_url = $avatar ? Storage::disk('public')->url($avatar) : null;

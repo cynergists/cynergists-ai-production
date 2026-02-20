@@ -1,4 +1,7 @@
 import type { ComponentType } from 'react';
+import { IrisChat } from './iris/IrisChat';
+import { IrisConfig } from './iris/IrisConfig';
+import IrisSidebar from './iris/IrisSidebar';
 import { AetherChat } from './aether/AetherChat';
 import { AetherConfig } from './aether/AetherConfig';
 import AetherSidebar from './aether/AetherSidebar';
@@ -55,6 +58,11 @@ interface AgentComponents {
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
+    iris: {
+        ChatComponent: IrisChat,
+        ConfigComponent: IrisConfig,
+        SidebarComponent: IrisSidebar,
+    },
     cynessa: {
         ChatComponent: CynessaChat,
         ConfigComponent: CynessaConfig,
@@ -165,6 +173,9 @@ export function getAgentComponents(agentName: string): AgentComponents | null {
 }
 
 export {
+    IrisChat,
+    IrisConfig,
+    IrisSidebar,
     AetherChat,
     AetherConfig,
     AetherSidebar,

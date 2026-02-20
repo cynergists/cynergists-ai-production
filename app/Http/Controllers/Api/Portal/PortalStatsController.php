@@ -8,13 +8,15 @@ use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Portal\AgentOnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PortalStatsController extends Controller
 {
     public function __construct(
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private AgentOnboardingService $agentOnboardingService
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -73,6 +75,11 @@ class PortalStatsController extends Controller
         // Get onboarding progress
         $progress = $this->onboardingService->getProgress($tenant);
 
+        // Get Iris onboarding status and per-agent states for the UI gating system
+        $irisComplete = $this->agentOnboardingService->isIrisComplete($tenant);
+        $agentOnboardingStates = $this->agentOnboardingService->getAllStates($tenant)
+            ->pluck('state', 'agent_name');
+
         return response()->json([
             'agentCount' => $agentCount,
             'conversationCount' => $conversationCount,
@@ -87,6 +94,8 @@ class PortalStatsController extends Controller
                     'completed' => $step['completed'],
                 ])->values()->toArray(),
             ],
+            'irisOnboardingComplete' => $irisComplete,
+            'agentOnboardingStates' => $agentOnboardingStates,
         ]);
     }
 }

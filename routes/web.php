@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\Carbon\CarbonReportController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\Admin\AdminOnboardingController;
+use App\Http\Controllers\Api\Portal\BrandKitController;
 use App\Http\Controllers\Api\Portal\PortalAccountController;
 use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
@@ -111,6 +113,7 @@ Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/account', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Account');
+Route::get('/portal/brand-kit', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/BrandKit');
 Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
@@ -225,12 +228,16 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/support', [PortalSupportController::class, 'store']);
         Route::get('/account', [PortalAccountController::class, 'index']);
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);
+        Route::get('/brand-kit', [BrandKitController::class, 'show']);
+        Route::put('/brand-kit', [BrandKitController::class, 'update']);
+        Route::post('/agents/{agent}/onboarding/complete', [PortalChatController::class, 'completeAgentOnboarding']);
     });
 });
 
 Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(function () {
     Route::match(['get', 'post', 'delete'], '/admin-data', AdminDataController::class);
     Route::post('/admin/ai-agents/media', [AiAgentMediaController::class, 'store']);
+    Route::post('/admin/tenants/{tenant}/onboarding/{agentName}/reset', [AdminOnboardingController::class, 'reset']);
 });
 
 Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');
