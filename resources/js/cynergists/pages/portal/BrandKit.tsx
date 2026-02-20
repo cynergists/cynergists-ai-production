@@ -14,9 +14,21 @@ import { PortalLayout } from '@/components/portal/PortalLayout';
 import { usePortalContext } from '@/contexts/PortalContext';
 import { apiClient } from '@/lib/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Palette, Save } from 'lucide-react';
+import { AlertTriangle, Loader2, Palette, RotateCcw, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { router } from '@inertiajs/react';
 
 interface BrandKitData {
     brand_kit: {
@@ -73,6 +85,24 @@ export default function BrandKit() {
             toast.error(error.message || 'Failed to save Brand Kit.');
         },
     });
+
+    const restart = useMutation({
+        mutationFn: async () => apiClient.post('/api/portal/brand-kit/restart'),
+        onSuccess: () => {
+            toast.success('Brand Kit restarted. You will be redirected to Iris.');
+            queryClient.invalidateQueries({ queryKey: ['portal-brand-kit'] });
+            queryClient.invalidateQueries({ queryKey: ['portal-stats'] });
+            // Redirect to portal to start Iris onboarding
+            setTimeout(() => router.visit('/portal'), 1000);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to restart Brand Kit.');
+        },
+    });
+
+    const handleRestart = () => {
+        restart.mutate();
+    };
 
     return (
         <PortalLayout>
@@ -172,7 +202,60 @@ export default function BrandKit() {
                                     />
                                 </div>
 
-                                <div className="flex justify-end pt-2">
+                                <div className="flex items-center justify-between pt-2">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                type="button"
+                                                className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                                            >
+                                                <RotateCcw className="h-4 w-4" />
+                                                Restart Brand Kit
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="flex items-center gap-2">
+                                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                                    Restart Brand Kit?
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription className="space-y-2 text-left">
+                                                    <p>This will:</p>
+                                                    <ul className="list-disc space-y-1 pl-5">
+                                                        <li>Clear all your Brand Kit information</li>
+                                                        <li>Restart Iris onboarding from the beginning</li>
+                                                        <li>
+                                                            <strong>Lock all agents</strong> until Iris onboarding is
+                                                            completed again
+                                                        </li>
+                                                    </ul>
+                                                    <p className="pt-2 font-semibold text-destructive">
+                                                        This cannot be undone. Are you absolutely sure?
+                                                    </p>
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleRestart}
+                                                    disabled={restart.isPending}
+                                                    className="bg-destructive hover:bg-destructive/90"
+                                                >
+                                                    {restart.isPending ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Restarting...
+                                                        </>
+                                                    ) : (
+                                                        'Yes, Restart Brand Kit'
+                                                    )}
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+
                                     <Button type="submit" disabled={save.isPending} className="gap-2">
                                         {save.isPending ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />

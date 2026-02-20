@@ -230,6 +230,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);
         Route::get('/brand-kit', [BrandKitController::class, 'show']);
         Route::put('/brand-kit', [BrandKitController::class, 'update']);
+        Route::post('/brand-kit/restart', [BrandKitController::class, 'restart']);
         Route::post('/agents/{agent}/onboarding/complete', [PortalChatController::class, 'completeAgentOnboarding']);
     });
 });
