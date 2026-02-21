@@ -30,43 +30,18 @@ use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
-    ->defaults('component', 'Marketplace')
+    ->defaults('component', 'Index')
     ->name('home');
 
-Route::redirect('/marketplace', '/');
+Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
 Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
-Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
-Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
-Route::get('/team', [CynergistsPageController::class, 'page'])->defaults('component', 'Team');
-Route::get('/case-studies', [CynergistsPageController::class, 'page'])->defaults('component', 'CaseStudies');
-Route::get('/case-studies/jm-auto-repair', [CynergistsPageController::class, 'page'])->defaults('component', 'case-studies/JMAutoRepair');
-Route::get('/case-studies/ogden-ventures', [CynergistsPageController::class, 'page'])->defaults('component', 'case-studies/OgdenVentures');
-Route::get('/partners', [CynergistsPageController::class, 'page'])->defaults('component', 'Partners');
-Route::get('/blog', [CynergistsPageController::class, 'page'])->defaults('component', 'Blog');
-Route::get('/blog/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'BlogPost');
-Route::get('/podcasts', [CynergistsPageController::class, 'page'])->defaults('component', 'Podcasts');
-Route::get('/services', [CynergistsPageController::class, 'page'])->defaults('component', 'Services');
-Route::get('/sample-work', [CynergistsPageController::class, 'page'])->defaults('component', 'SampleWork');
-Route::get('/careers', [CynergistsPageController::class, 'page'])->defaults('component', 'Careers');
-Route::get('/schedule', [CynergistsPageController::class, 'page'])->defaults('component', 'Schedule');
-Route::get('/schedule/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'ScheduleThankYou');
-Route::get('/plans/essentials', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/Essentials');
-Route::get('/plans/emerge', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/Emerge');
-Route::get('/plans/expansion', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/Expansion');
-Route::get('/plans/elite', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/Elite');
-Route::get('/plans/enterprise', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/Enterprise');
-Route::get('/plans/test-plan', [CynergistsPageController::class, 'page'])->defaults('component', 'plans/TestPlan');
-Route::get('/products/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'products/LinkedInOutreach');
-Route::get('/products/crm', [CynergistsPageController::class, 'page'])->defaults('component', 'products/CRM');
-Route::get('/products/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'products/SEOEngine');
-Route::get('/partner/linkedin-outreach', [CynergistsPageController::class, 'page'])->defaults('component', 'partners/LinkedInOutreachPartner');
 Route::get('/partner/linkedin-outreach/checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLinkedInCheckout');
 Route::get('/quick-checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'QuickCheckout');
-Route::get('/terms', [CynergistsPageController::class, 'page'])->defaults('component', 'Terms');
-Route::get('/privacy', [CynergistsPageController::class, 'page'])->defaults('component', 'Privacy');
 Route::get('/checkout', [CynergistsPageController::class, 'page'])->defaults('component', 'Checkout');
 Route::get('/cart', [CynergistsPageController::class, 'page'])->defaults('component', 'Cart');
 Route::get('/sign-agreement', [CynergistsPageController::class, 'page'])->defaults('component', 'SignAgreement');
+Route::get('/terms', [CynergistsPageController::class, 'page'])->defaults('component', 'Terms');
+Route::get('/privacy', [CynergistsPageController::class, 'page'])->defaults('component', 'Privacy');
 Route::get('/signin', [CynergistsPageController::class, 'page'])->defaults('component', 'auth/SignIn');
 Route::get('/welcome', function (Illuminate\Http\Request $request) {
     return Inertia\Inertia::render('auth/reset-password', [
@@ -114,47 +89,11 @@ Route::get('/portal/account', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
-Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
 Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal');
 Route::get('/employee', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/EmployeePortal');
 
 Route::redirect('/admin', '/filament');
 Route::redirect('/admin/dashboard', '/filament');
-Route::get('/admin/prospects', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Prospects');
-Route::get('/admin/clients', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Clients');
-Route::get('/admin/partners', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Partners');
-Route::get('/admin/calendars', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Calendars');
-Route::get('/admin/employees', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Staff');
-Route::get('/admin/sales', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/SalesReps');
-Route::get('/admin/users', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AdminUsers');
-Route::get('/admin/contracts', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Agreements');
-Route::get('/admin/contracts/{agreementType}', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/agreements/AgreementEditor');
-Route::get('/admin/payment-settings', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Payments');
-Route::get('/admin/tracking', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Tracking');
-Route::get('/admin/notes', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Notes');
-Route::get('/admin/debug', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Debug');
-Route::get('/admin/settings', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Settings');
-Route::get('/admin/permissions', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Permissions');
-Route::get('/admin/access-denied', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AccessDenied');
-Route::get('/admin/analytics', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Index');
-Route::get('/admin/analytics/clarity', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Clarity');
-Route::get('/admin/analytics/revenue', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Revenue');
-Route::get('/admin/analytics/website', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Website');
-Route::get('/admin/analytics/seo', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/SEO');
-Route::get('/admin/analytics/youtube', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Youtube');
-Route::get('/admin/analytics/tiktok', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Tiktok');
-Route::get('/admin/analytics/linkedin', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Linkedin');
-Route::get('/admin/analytics/meta', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/analytics/Meta');
-Route::get('/admin/client-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/CustomerPortal');
-Route::get('/admin/client-portal/tenants', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/client-portal/Tenants');
-Route::get('/admin/client-portal/roadmap', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/client-portal/Roadmap');
-Route::get('/admin/client-portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/client-portal/Integrations');
-Route::get('/admin/client-portal/faqs', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/client-portal/FAQs');
-Route::get('/admin/client-portal/suggestions', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/client-portal/Suggestions');
-Route::get('/admin/ai-agents', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgents');
-Route::get('/admin/ai-agents/{id}', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentEdit');
-Route::get('/admin/partner-portal', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/PartnerPortalManagement');
-Route::get('/admin/ai-agent-template', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/AIAgentTemplate');
 
 Route::middleware(['auth', EnsureAdminUser::class])->group(function () {
     Route::get('/reports/seo/{report}', [CarbonReportController::class, 'show'])->name('reports.seo.show');
@@ -231,11 +170,5 @@ Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(functi
     Route::post('/admin/ai-agents/media', [AiAgentMediaController::class, 'store']);
 });
 
-Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');
-Route::get('/meetchris/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetChrisThankYou');
-Route::get('/meetchris/calendar', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetChrisCalendar');
-
 require __DIR__.'/settings.php';
-
-Route::get('/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'CalendarPage');
 Route::fallback([CynergistsPageController::class, 'page'])->defaults('component', 'NotFound');
