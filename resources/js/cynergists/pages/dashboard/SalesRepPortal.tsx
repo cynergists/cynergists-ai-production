@@ -1,4 +1,4 @@
-import cynergistsLogo from '@/assets/cynergists-logo-new.png';
+import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

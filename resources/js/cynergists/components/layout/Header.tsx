@@ -1,4 +1,4 @@
-import cynergistsLogo from '@/assets/Cynergists_Word_Script_4.webp';
+import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import CartButton from '@/components/cart/CartButton';
 import { Button } from '@/components/ui/button';
 import { OrbitingButton } from '@/components/ui/orbiting-button';
