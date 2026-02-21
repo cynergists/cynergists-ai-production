@@ -20,6 +20,9 @@ import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
 import { ImpulseChat } from './impulse/ImpulseChat';
+import { IrisChat } from './iris/IrisChat';
+import { IrisConfig } from './iris/IrisConfig';
+import IrisSidebar from './iris/IrisSidebar';
 import { ImpulseConfig } from './impulse/ImpulseConfig';
 import ImpulseSidebar from './impulse/ImpulseSidebar';
 import { KinetixChat } from './kinetix/KinetixChat';
@@ -42,10 +45,10 @@ import { ArsenalConfig } from './arsenal/ArsenalConfig';
 import ArsenalSidebar from './arsenal/ArsenalSidebar';
 
 interface AgentComponents {
-    ChatComponent: ComponentType;
-    ConfigComponent: ComponentType;
-    SidebarComponent: ComponentType;
-    ViewComponent?: ComponentType;
+    ChatComponent: ComponentType<any>;
+    ConfigComponent: ComponentType<any>;
+    SidebarComponent: ComponentType<any>;
+    ViewComponent?: ComponentType<any>;
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
@@ -53,6 +56,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: CynessaChat,
         ConfigComponent: CynessaConfig,
         SidebarComponent: CynessaSidebar,
+    },
+    iris: {
+        ChatComponent: IrisChat,
+        ConfigComponent: IrisConfig,
+        SidebarComponent: IrisSidebar,
     },
     apex: {
         ChatComponent: ApexChat,
@@ -163,4 +171,7 @@ export {
     ImpulseChat,
     ImpulseConfig,
     ImpulseSidebar,
+    IrisChat,
+    IrisConfig,
+    IrisSidebar,
 };

@@ -300,11 +300,15 @@ const BlogPost = ({ slug }: { slug: string }) => {
             {post.featured_image_url && (
                 <div className="relative z-10 container mx-auto -mt-8 px-4">
                     <div className="mx-auto max-w-4xl">
-                        <img
-                            src={post.featured_image_url}
-                            alt={post.title}
-                            className="w-full rounded-xl shadow-lg"
-                        />
+                        <div className="p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                            <div className="rounded-lg md:rounded-xl overflow-hidden bg-card">
+                                <img
+                                    src={post.featured_image_url}
+                                    alt={post.title}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

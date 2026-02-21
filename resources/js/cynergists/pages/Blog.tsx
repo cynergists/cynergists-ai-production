@@ -335,14 +335,16 @@ const Blog = () => {
                                         >
                                             {/* Image */}
                                             {post.featured_image_url ? (
-                                                <div className="mb-6 aspect-video overflow-hidden rounded-lg">
-                                                    <img
+                                                <div className="mb-6 p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+                                                    <div className="aspect-video overflow-hidden rounded-lg md:rounded-xl bg-card">
+                                                        <img
                                                         src={
                                                             post.featured_image_url
                                                         }
-                                                        alt={post.title}
-                                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                                    />
+                                                            alt={post.title}
+                                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                        />
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div className="mb-6 flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 transition-all group-hover:from-primary/20 group-hover:to-secondary/20">

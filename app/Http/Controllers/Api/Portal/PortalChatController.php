@@ -10,16 +10,16 @@ use App\Models\AgentConversation;
 use App\Models\LunaGeneratedImage;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
-use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Beacon\BeaconAgentHandler;
-
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
 use App\Services\Impulse\ImpulseAgentHandler;
+use App\Services\Iris\IrisAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Mosaic\MosaicAgentHandler;
@@ -37,11 +37,11 @@ class PortalChatController extends Controller
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
         private BeaconAgentHandler $beaconAgentHandler,
-
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private ImpulseAgentHandler $impulseAgentHandler,
+        private IrisAgentHandler $irisAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
         private MosaicAgentHandler $mosaicAgentHandler,
@@ -53,11 +53,13 @@ class PortalChatController extends Controller
     ) {}
 
     /**
-     * Get or create a virtual Cynessa agent access for any user.
+     * Get or create a virtual agent access for Cynessa or Iris.
+     * Looks up the PortalAvailableAgent by ID to determine agent name,
+     * falling back to Cynessa for backward compatibility.
      */
-    private function getOrCreateCynessaAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
+    private function getOrCreateVirtualAgentAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
     {
-        // First check if user actually has Cynessa access
+        // First check if the user has a real agent access record
         $agentAccess = AgentAccess::query()
             ->where('tenant_id', $tenant->id)
             ->where('id', $agentId)
@@ -67,20 +69,27 @@ class PortalChatController extends Controller
             return $agentAccess;
         }
 
-        // Check if Cynessa is available
-        $cynessaAvailable = PortalAvailableAgent::query()
-            ->where('name', 'Cynessa')
+        // Try to determine the virtual agent by looking up PortalAvailableAgent by ID
+        $availableAgent = PortalAvailableAgent::query()
+            ->whereIn('name', ['Cynessa', 'Iris'])
+            ->where('id', $agentId)
             ->first();
 
-        if (! $cynessaAvailable) {
+        // Fall back to Cynessa for backward compatibility
+        if (! $availableAgent) {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', 'Cynessa')
+                ->first();
+        }
+
+        if (! $availableAgent) {
             return null;
         }
 
-        // Create a virtual agent access for Cynessa
-        $cynessaAgent = new AgentAccess([
+        $virtualAgent = new AgentAccess([
             'id' => $agentId,
             'agent_type' => 'assistant',
-            'agent_name' => 'Cynessa',
+            'agent_name' => $availableAgent->name,
             'configuration' => null,
             'is_active' => true,
             'usage_count' => 0,
@@ -89,10 +98,9 @@ class PortalChatController extends Controller
             'tenant_id' => $tenant->id,
         ]);
 
-        // Set exists to false so we know not to save it
-        $cynessaAgent->exists = false;
+        $virtualAgent->exists = false;
 
-        return $cynessaAgent;
+        return $virtualAgent;
     }
 
     public function conversation(Request $request, string $agent): JsonResponse
@@ -107,7 +115,7 @@ class PortalChatController extends Controller
             return response()->json(['conversation' => null], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['conversation' => null], 404);
@@ -136,7 +144,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false], 404);
@@ -224,6 +232,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Iris agent
+        if (strtolower($agentAccess->agent_name) === 'iris') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->firstOrNew(['name' => $agentAccess->agent_name]);
+
+            if ($tenant) {
+                return $this->irisAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -378,7 +397,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
@@ -430,7 +449,8 @@ class PortalChatController extends Controller
             ->first();
 
         $confirmationMessage = null;
-        if ($conversation && in_array(strtolower($agentAccess->agent_name), ['cynessa', 'mosaic'], true)) {
+        $agentNameLower = strtolower($agentAccess->agent_name);
+        if ($conversation && in_array($agentNameLower, ['cynessa', 'iris', 'mosaic'], true)) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -460,7 +480,7 @@ class PortalChatController extends Controller
                     array_slice($messages, 0, -1)
                 );
 
-                if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                if ($agentNameLower === 'cynessa') {
                     $confirmationMessage = $this->cynessaAgentHandler->handle(
                         $userMessage,
                         $user,
@@ -468,7 +488,15 @@ class PortalChatController extends Controller
                         $tenant,
                         $historyBeforeUpload
                     );
-                } elseif (strtolower($agentAccess->agent_name) === 'mosaic') {
+                } elseif ($agentNameLower === 'iris') {
+                    $confirmationMessage = $this->irisAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif ($agentNameLower === 'mosaic') {
                     $confirmationMessage = $this->mosaicAgentHandler->handle(
                         $userMessage,
                         $user,
@@ -518,7 +546,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
