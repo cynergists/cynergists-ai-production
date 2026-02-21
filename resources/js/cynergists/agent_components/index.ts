@@ -2,6 +2,9 @@ import type { ComponentType } from 'react';
 import { AetherChat } from './aether/AetherChat';
 import { AetherConfig } from './aether/AetherConfig';
 import AetherSidebar from './aether/AetherSidebar';
+import { BeaconChat } from './beacon/BeaconChat';
+import { BeaconConfig } from './beacon/BeaconConfig';
+import BeaconSidebar from './beacon/BeaconSidebar';
 import { ApexChat } from './apex/ApexChat';
 import { ApexConfig } from './apex/ApexConfig';
 import ApexSidebar from './apex/ApexSidebar';
@@ -28,12 +31,18 @@ import KinetixSidebar from './kinetix/KinetixSidebar';
 import { LunaChat } from './luna/LunaChat';
 import { LunaConfig } from './luna/LunaConfig';
 import LunaSidebar from './luna/LunaSidebar';
+import { MosaicChat } from './mosaic/MosaicChat';
+import { MosaicConfig } from './mosaic/MosaicConfig';
+import MosaicSidebar from './mosaic/MosaicSidebar';
 import { OptixChat } from './optix/OptixChat';
 import { OptixConfig } from './optix/OptixConfig';
 import OptixSidebar from './optix/OptixSidebar';
 import { VectorChat } from './vector/VectorChat';
 import { VectorConfig } from './vector/VectorConfig';
 import VectorSidebar from './vector/VectorSidebar';
+import { ArsenalChat } from './arsenal/ArsenalChat';
+import { ArsenalConfig } from './arsenal/ArsenalConfig';
+import ArsenalSidebar from './arsenal/ArsenalSidebar';
 
 interface AgentComponents {
     ChatComponent: ComponentType<any>;
@@ -75,6 +84,11 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: LunaConfig,
         SidebarComponent: LunaSidebar,
     },
+    mosaic: {
+        ChatComponent: MosaicChat,
+        ConfigComponent: MosaicConfig,
+        SidebarComponent: MosaicSidebar,
+    },
     aether: {
         ChatComponent: AetherChat,
         ConfigComponent: AetherConfig,
@@ -95,6 +109,16 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ConfigComponent: VectorConfig,
         SidebarComponent: VectorSidebar,
     },
+    beacon: {
+        ChatComponent: BeaconChat,
+        ConfigComponent: BeaconConfig,
+        SidebarComponent: BeaconSidebar,
+    },
+    arsenal: {
+        ChatComponent: ArsenalChat,
+        ConfigComponent: ArsenalConfig,
+        SidebarComponent: ArsenalSidebar,
+    },
     impulse: {
         ChatComponent: ImpulseChat,
         ConfigComponent: ImpulseConfig,
@@ -111,6 +135,9 @@ export {
     AetherChat,
     AetherConfig,
     AetherSidebar,
+    BeaconChat,
+    BeaconConfig,
+    BeaconSidebar,
     ApexChat,
     ApexConfig,
     ApexSidebar,
@@ -129,12 +156,18 @@ export {
     LunaChat,
     LunaConfig,
     LunaSidebar,
+    MosaicChat,
+    MosaicConfig,
+    MosaicSidebar,
     OptixChat,
     OptixConfig,
     OptixSidebar,
     VectorChat,
     VectorConfig,
     VectorSidebar,
+    ArsenalChat,
+    ArsenalConfig,
+    ArsenalSidebar,
     ImpulseChat,
     ImpulseConfig,
     ImpulseSidebar,

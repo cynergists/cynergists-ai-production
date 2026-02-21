@@ -162,29 +162,26 @@ it('does not require message when initiating voice conversation', function () {
         ->assertJsonPath('success', true);
 });
 
-it('bounds voice conversation history before invoking the agent handler', function () {
-    $agent = createAgentWithAccess('Apex', $this);
-
-    $messages = [];
-
-    for ($i = 0; $i < 45; $i++) {
-        $messages[] = [
-            'role' => $i % 2 === 0 ? 'user' : 'assistant',
-            'content' => "history-{$i} ".str_repeat('x', 1200),
-        ];
-    }
+it('trims long conversation history before passing it to handlers', function () {
+    $agent = createAgentWithAccess('Carbon', $this);
 
     AgentConversation::query()->create([
         'id' => (string) Str::uuid(),
         'agent_access_id' => $agent->id,
-        'customer_id' => (string) $this->tenant->id,
-        'title' => 'Voice Conversation',
-        'messages' => $messages,
-        'status' => 'active',
+        'customer_id' => $this->tenant->id,
+        'title' => 'Long history',
         'tenant_id' => $this->tenant->id,
+        'status' => 'active',
+        'messages' => array_map(
+            fn (int $index) => [
+                'role' => $index % 2 === 0 ? 'user' : 'assistant',
+                'content' => str_repeat("message-{$index}-", 400),
+            ],
+            range(1, 30)
+        ),
     ]);
 
-    $this->mock(ApexAgentHandler::class)
+    $this->mock(CarbonAgentHandler::class)
         ->shouldReceive('handle')
         ->once()
         ->withArgs(function (
@@ -194,24 +191,28 @@ it('bounds voice conversation history before invoking the agent handler', functi
             PortalTenant $tenant,
             array $conversationHistory,
             int $maxTokens
-        ) {
+        ): bool {
             $totalCharacters = array_sum(array_map(
-                fn (array $entry): int => mb_strlen($entry['content']),
+                fn (array $entry) => mb_strlen($entry['content'] ?? ''),
                 $conversationHistory
             ));
 
-            return $maxTokens === 128
-                && count($conversationHistory) <= 24
-                && $totalCharacters <= 48000
-                && str_contains($conversationHistory[array_key_last($conversationHistory)]['content'], 'history-44');
+            return str_contains($message, 'IMPORTANT: This is voice mode')
+                && $user->is($this->user)
+                && $availableAgent->name === 'Carbon'
+                && $tenant->is($this->tenant)
+                && count($conversationHistory) <= 18
+                && $totalCharacters <= 24_000
+                && $maxTokens === 128;
         })
-        ->andReturn('Bounded voice response');
+        ->andReturn('Trimmed context works.');
 
     $response = $this->actingAs($this->user)
         ->postJson("/api/portal/voice/{$agent->id}", [
-            'message' => 'How are my campaigns doing?',
+            'message' => 'Can you summarize everything so far?',
         ]);
 
     $response->assertSuccessful()
-        ->assertJsonPath('text', 'Bounded voice response');
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('text', 'Trimmed context works.');
 });

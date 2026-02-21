@@ -146,7 +146,7 @@ const Header = ({
                                 }}
                                 className="overflow-hidden lg:hidden"
                             >
-                                <nav className="flex flex-col gap-3 border-t border-border/40 py-4">
+                                <nav className="flex flex-col gap-2 border-t border-border/40 py-4">
                                     {isClient && (
                                         <Link
                                             href="/portal"

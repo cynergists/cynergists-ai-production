@@ -191,14 +191,11 @@ export default function AgentDetail({ slug }: { slug: string }) {
     const handleAddToCart = () => {
         addToCart({
             id: agent.id,
+            type: 'ai-agent',
             name: agent.name,
-            description: agent.description,
-            job_title: agent.job_title,
+            description: selectedTier?.description || agent.job_title || '',
             price: displayPrice,
-            recurring: 'monthly',
-            quantity: 1,
-            type: 'agent',
-            tier_index: hasTiers ? selectedTierIndex : undefined,
+            billingPeriod: 'monthly',
         });
     };
 

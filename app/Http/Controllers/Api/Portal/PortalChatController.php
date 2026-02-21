@@ -13,13 +13,17 @@ use App\Models\PortalTenant;
 use App\Services\Aether\AetherAgentHandler;
 use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Apex\ApexAgentHandler;
+use App\Services\Beacon\BeaconAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
 use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
+use App\Services\Impulse\ImpulseAgentHandler;
 use App\Services\Iris\IrisAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
+use App\Services\Mosaic\MosaicAgentHandler;
+use App\Services\Mosaic\MosaicMediaService;
 use App\Services\Optix\OptixAgentHandler;
 use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
@@ -32,12 +36,16 @@ class PortalChatController extends Controller
     public function __construct(
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
+        private BeaconAgentHandler $beaconAgentHandler,
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
+        private ImpulseAgentHandler $impulseAgentHandler,
         private IrisAgentHandler $irisAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
+        private MosaicAgentHandler $mosaicAgentHandler,
+        private MosaicMediaService $mosaicMediaService,
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService,
@@ -162,10 +170,10 @@ class PortalChatController extends Controller
 
         $userMessage = $request->validated('message');
         $messages = $conversation->messages ?? [];
-        $boundedHistory = $this->conversationHistoryWindow->trim($messages);
+        $promptHistory = $this->conversationHistoryWindow->trim($messages);
 
         // Generate the assistant response with conversation history (before adding current message)
-        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $boundedHistory);
+        $assistantMessage = $this->generateResponse($agentAccess, $userMessage, $user, $promptHistory);
 
         $messages[] = [
             'role' => 'user',
@@ -260,6 +268,17 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Mosaic agent
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->mosaicAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
         // Check if this is the Briggs agent
         if (strtolower($agentAccess->agent_name) === 'briggs') {
             $availableAgent = PortalAvailableAgent::query()
@@ -279,6 +298,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->aetherAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Impulse agent
+        if (strtolower($agentAccess->agent_name) === 'impulse') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->impulseAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -315,6 +345,36 @@ class PortalChatController extends Controller
             }
         }
 
+        // Check if this is the Beacon agent
+        if (strtolower($agentAccess->agent_name) === 'beacon') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->beaconAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Arsenal agent
+        if (strtolower($agentAccess->agent_name) === 'arsenal') {
+            if ($tenant) {
+                $arsenalAgent = new \App\Ai\Agents\Arsenal(
+                    user: $user,
+                    tenant: $tenant,
+                    conversationHistory: $conversationHistory
+                );
+
+                try {
+                    $response = $arsenalAgent->prompt($message);
+                    return (string) $response;
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Arsenal agent error: '.$e->getMessage());
+                    return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
+                }
+            }
+        }
+
         // Default response for other agents
         return sprintf(
             "Thanks for the message! %s is moving this agent to the new Laravel pipeline. We'll respond soon.",
@@ -347,14 +407,39 @@ class PortalChatController extends Controller
         $filename = $file->getClientOriginalName();
         $type = $request->input('type', 'brand_asset');
 
-        // Store file in tenant-specific directory
-        $path = $file->store(
-            "tenants/{$tenant->id}/brand_assets",
-            'public'
-        );
+        $warnings = [];
 
-        // Track the uploaded file
-        $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+        // Handle Mosaic media processing
+        if (strtolower($agentAccess->agent_name) === 'mosaic') {
+            $mimeType = $file->getMimeType();
+
+            if (str_starts_with($mimeType ?? '', 'image/')) {
+                $result = $this->mosaicMediaService->processImage($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } elseif (str_starts_with($mimeType ?? '', 'video/')) {
+                $result = $this->mosaicMediaService->processVideo($file, $tenant);
+                $path = $result['path'];
+                $warnings = $result['warnings'];
+            } else {
+                // Fallback for other file types
+                $path = $file->store(
+                    "tenants/{$tenant->id}/mosaic_assets",
+                    'public'
+                );
+            }
+        } else {
+            // Store file in tenant-specific directory (for other agents)
+            $path = $file->store(
+                "tenants/{$tenant->id}/brand_assets",
+                'public'
+            );
+
+            // Track the uploaded file for Cynessa
+            if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                $this->onboardingService->trackBrandAsset($tenant, $filename, $path, $type);
+            }
+        }
 
         // Get conversation to add upload notification
         $conversation = AgentConversation::query()
@@ -365,7 +450,7 @@ class PortalChatController extends Controller
 
         $confirmationMessage = null;
         $agentNameLower = strtolower($agentAccess->agent_name);
-        if ($conversation && in_array($agentNameLower, ['cynessa', 'iris'])) {
+        if ($conversation && in_array($agentNameLower, ['cynessa', 'iris', 'mosaic'], true)) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -373,6 +458,12 @@ class PortalChatController extends Controller
             $fileSize = number_format($file->getSize() / 1024, 2); // KB
 
             $userMessage = "[File uploaded: {$filename} ({$fileSize} KB, .{$fileExtension})]";
+
+            // Add warnings if any (for Mosaic)
+            if (! empty($warnings)) {
+                $userMessage .= "\nWarnings: ".implode('; ', $warnings);
+            }
+
             $messages[] = [
                 'role' => 'user',
                 'content' => $userMessage,
@@ -381,35 +472,45 @@ class PortalChatController extends Controller
             // Let the agent respond to the file upload with full history
             $availableAgent = \App\Models\PortalAvailableAgent::query()
                 ->where('name', $agentAccess->agent_name)
-                ->firstOrNew(['name' => $agentAccess->agent_name]);
+                ->first();
 
-            // Pass the conversation history (before adding the new upload message)
-            $historyBeforeUpload = $this->conversationHistoryWindow->trim(
-                array_slice($messages, 0, -1)
-            );
+            if ($availableAgent) {
+                // Pass the conversation history (before adding the new upload message)
+                $historyBeforeUpload = $this->conversationHistoryWindow->trim(
+                    array_slice($messages, 0, -1)
+                );
 
-            if ($agentNameLower === 'iris') {
-                $confirmationMessage = $this->irisAgentHandler->handle(
-                    $userMessage,
-                    $user,
-                    $availableAgent,
-                    $tenant,
-                    $historyBeforeUpload
-                );
-            } else {
-                $confirmationMessage = $this->cynessaAgentHandler->handle(
-                    $userMessage,
-                    $user,
-                    $availableAgent,
-                    $tenant,
-                    $historyBeforeUpload
-                );
+                if ($agentNameLower === 'cynessa') {
+                    $confirmationMessage = $this->cynessaAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif ($agentNameLower === 'iris') {
+                    $confirmationMessage = $this->irisAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif ($agentNameLower === 'mosaic') {
+                    $confirmationMessage = $this->mosaicAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                }
+
+                $messages[] = [
+                    'role' => 'assistant',
+                    'content' => $confirmationMessage,
+                ];
             }
-
-            $messages[] = [
-                'role' => 'assistant',
-                'content' => $confirmationMessage,
-            ];
 
             $conversation->update([
                 'messages' => $messages,

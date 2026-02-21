@@ -11,7 +11,8 @@ class ConversationHistoryWindow
         array $messages,
         int $maxMessages = 24,
         int $maxCharacters = 48_000
-    ): array {
+    ): array
+    {
         if ($maxMessages < 1 || $maxCharacters < 1) {
             return [];
         }

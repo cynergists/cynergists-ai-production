@@ -102,7 +102,8 @@ export default function PortalWorkspace() {
         | 'add-site'
     >('chat');
     const [supportDialogOpen, setSupportDialogOpen] = useState(false);
-    const [supportCategory, setSupportCategory] = useState('general');
+    const [supportCategory, setSupportCategory] = useState('agent_issue');
+    const [supportAgentName, setSupportAgentName] = useState('');
     const [supportSubject, setSupportSubject] = useState('');
     const [supportMessage, setSupportMessage] = useState('');
     const [agentSearchQuery, setAgentSearchQuery] = useState('');
@@ -127,6 +128,18 @@ export default function PortalWorkspace() {
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         staleTime: 0,
+    });
+
+    const { data: availableAgentNames } = useQuery({
+        queryKey: ['support-agent-names'],
+        queryFn: async () => {
+            const response = await apiClient.get<{ agents: string[] }>(
+                '/api/portal/support/agent-names',
+            );
+            return response.agents;
+        },
+        enabled: supportCategory === 'agent_issue',
+        staleTime: 5 * 60 * 1000,
     });
 
     // Auto-select first agent (Cynessa) if no agent is selected
@@ -207,7 +220,7 @@ export default function PortalWorkspace() {
                 typeof conversation.messages === 'string'
                     ? JSON.parse(conversation.messages)
                     : conversation.messages;
-            setMessages(parsed);
+            setMessages(Array.isArray(parsed) ? parsed : []);
         } catch (error) {
             console.error('Error parsing messages:', error);
             setMessages([]);
@@ -281,7 +294,7 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            setMessages(response.messages);
+            setMessages(Array.isArray(response.messages) ? response.messages : []);
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -330,7 +343,7 @@ export default function PortalWorkspace() {
             toast.success(`File uploaded: ${response.file.filename}`);
 
             // Update conversation with full message history if provided
-            if (response.messages) {
+            if (Array.isArray(response.messages)) {
                 setMessages(response.messages);
             } else if (response.message) {
                 // Fallback: just add assistant message
@@ -408,6 +421,7 @@ export default function PortalWorkspace() {
                 '/api/portal/support',
                 {
                     category: supportCategory,
+                    agent_name: supportCategory === 'agent_issue' ? supportAgentName : null,
                     subject: supportSubject,
                     message: supportMessage,
                 },
@@ -418,7 +432,8 @@ export default function PortalWorkspace() {
                 response.message || 'Support request submitted successfully',
             );
             setSupportDialogOpen(false);
-            setSupportCategory('general');
+            setSupportCategory('agent_issue');
+            setSupportAgentName('');
             setSupportSubject('');
             setSupportMessage('');
         },
@@ -426,6 +441,13 @@ export default function PortalWorkspace() {
             toast.error(error.message || 'Failed to submit support request');
         },
     });
+
+    const handleCategoryChange = (value: string) => {
+        setSupportCategory(value);
+        if (value !== 'agent_issue') {
+            setSupportAgentName('');
+        }
+    };
 
     const handleSupportSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -503,11 +525,11 @@ export default function PortalWorkspace() {
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
         ? {
-              completed: portalStats.onboardingProgress.steps.filter(
+              completed: (portalStats.onboardingProgress.steps ?? []).filter(
                   (s) => s.completed,
               ).length,
-              total: portalStats.onboardingProgress.steps.length,
-              steps: portalStats.onboardingProgress.steps,
+              total: (portalStats.onboardingProgress.steps ?? []).length,
+              steps: portalStats.onboardingProgress.steps ?? [],
           }
         : {
               completed: 0,
@@ -682,6 +704,16 @@ export default function PortalWorkspace() {
                                 </div>
                             )}
                         </div>
+                        <div className="shrink-0 border-t border-primary/20 pt-3">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start gap-2 text-sm"
+                                onClick={() => setSupportDialogOpen(true)}
+                            >
+                                <Headphones className="h-4 w-4" />
+                                Get Support
+                            </Button>
+                        </div>
                     </div>
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between border-t border-border px-4 py-2">
@@ -824,6 +856,19 @@ export default function PortalWorkspace() {
                                         </button>
                                     );
                                 })}
+                            </div>
+                            <div className="shrink-0 border-t border-primary/20 pt-3">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start gap-2 text-sm"
+                                    onClick={() => {
+                                        setMobileAgentSheetOpen(false);
+                                        setSupportDialogOpen(true);
+                                    }}
+                                >
+                                    <Headphones className="h-4 w-4" />
+                                    Get Support
+                                </Button>
                             </div>
                         </div>
                     </SheetContent>
@@ -1266,16 +1311,6 @@ export default function PortalWorkspace() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="shrink-0 border-t border-primary/20 pt-4">
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start gap-2 text-sm"
-                                    onClick={() => setSupportDialogOpen(true)}
-                                >
-                                    <Headphones className="h-4 w-4" />
-                                    Get Support
-                                </Button>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -1305,17 +1340,14 @@ export default function PortalWorkspace() {
                             <Label htmlFor="support-category">Category</Label>
                             <Select
                                 value={supportCategory}
-                                onValueChange={setSupportCategory}
+                                onValueChange={handleCategoryChange}
                             >
                                 <SelectTrigger id="support-category">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="general">
-                                        General Question
-                                    </SelectItem>
-                                    <SelectItem value="technical">
-                                        Technical Issue
+                                    <SelectItem value="agent_issue">
+                                        Agent Issue
                                     </SelectItem>
                                     <SelectItem value="billing">
                                         Billing & Account
@@ -1323,10 +1355,42 @@ export default function PortalWorkspace() {
                                     <SelectItem value="feature_request">
                                         Feature Request
                                     </SelectItem>
+                                    <SelectItem value="general">
+                                        General Question
+                                    </SelectItem>
+                                    <SelectItem value="portal_issue">
+                                        Portal Issue
+                                    </SelectItem>
                                     <SelectItem value="other">Other</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
+                        {supportCategory === 'agent_issue' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="support-agent-name">
+                                    AI Agent{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <Select
+                                    value={supportAgentName}
+                                    onValueChange={setSupportAgentName}
+                                >
+                                    <SelectTrigger id="support-agent-name">
+                                        <SelectValue placeholder="Select an agent..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableAgentNames?.map((name) => (
+                                            <SelectItem
+                                                key={name}
+                                                value={name}
+                                            >
+                                                {name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="support-subject">
                                 Subject{' '}
@@ -1374,7 +1438,9 @@ export default function PortalWorkspace() {
                                 disabled={
                                     submitSupportRequest.isPending ||
                                     !supportSubject.trim() ||
-                                    !supportMessage.trim()
+                                    !supportMessage.trim() ||
+                                    (supportCategory === 'agent_issue' &&
+                                        !supportAgentName)
                                 }
                             >
                                 {submitSupportRequest.isPending ? (

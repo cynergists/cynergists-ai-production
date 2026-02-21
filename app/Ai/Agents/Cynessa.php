@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Concerns\BoundsConversationHistory;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\Cynessa\OnboardingService;
@@ -21,7 +22,9 @@ use Stringable;
 #[Timeout(120)]
 class Cynessa implements Agent, Conversational
 {
-    use Promptable;
+    use Promptable, BoundsConversationHistory;
+
+    private const KNOWLEDGE_BASE_MAX_CHARACTERS = 120_000;
 
     private OnboardingService $onboardingService;
 
@@ -66,7 +69,7 @@ class Cynessa implements Agent, Conversational
     {
         return array_map(
             fn (array $msg) => new Message($msg['role'], $msg['content']),
-            $this->conversationHistory
+            $this->boundedConversationHistory($this->conversationHistory)
         );
     }
 
@@ -267,17 +270,30 @@ The user cannot see [ESCALATE: ...] markers - they are only for the system. Alwa
         $content = \App\Models\AgentKnowledgeBase::getForAgent('cynessa');
 
         if ($content) {
-            return $content;
+            return $this->limitKnowledgeBaseLength($content);
         }
 
         // Fallback to file if database entry doesn't exist
         $path = storage_path('app/cynessa-knowledge-base.md');
 
         if (file_exists($path)) {
-            return file_get_contents($path);
+            return $this->limitKnowledgeBaseLength((string) file_get_contents($path));
         }
 
         return 'Knowledge base not available.';
+    }
+
+    /**
+     * Keep the knowledge base within a safe context budget.
+     */
+    private function limitKnowledgeBaseLength(string $content): string
+    {
+        if (mb_strlen($content) <= self::KNOWLEDGE_BASE_MAX_CHARACTERS) {
+            return $content;
+        }
+
+        return mb_substr($content, 0, self::KNOWLEDGE_BASE_MAX_CHARACTERS)
+            ."\n\n[Knowledge base truncated to fit context limits.]";
     }
 
     /**
