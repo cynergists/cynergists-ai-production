@@ -354,7 +354,7 @@ export default function RichTextEditor({
         editorProps: {
             attributes: {
                 class: 'prose prose-sm max-w-none min-h-[300px] p-6 focus:outline-none text-black agreement-content',
-                style: 'font-family: Roboto, sans-serif;',
+                style: 'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;',
             },
         },
         onUpdate: ({ editor }) => {
@@ -418,7 +418,7 @@ export default function RichTextEditor({
         /* Base font family */
         .ProseMirror,
         .agreement-content {
-          font-family: 'Roboto', sans-serif;
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
         /* H1 - Document Title: 34px for web */
@@ -512,7 +512,7 @@ export default function RichTextEditor({
         @media print {
           .ProseMirror,
           .agreement-content {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
           }
           
           /* H1 - Document Title: 19pt for PDF */

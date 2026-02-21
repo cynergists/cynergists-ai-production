@@ -227,11 +227,12 @@ export default function PortalWorkspace() {
         }
     }, [conversation]);
 
-    // Auto-start conversation with Cynessa
+    // Auto-start conversation with Cynessa or Iris
     useEffect(() => {
+        const agentName = agentDetails?.agent_name?.toLowerCase();
         if (
             selectedAgentId &&
-            agentDetails?.agent_name?.toLowerCase() === 'cynessa' &&
+            (agentName === 'cynessa' || agentName === 'iris') &&
             messages.length === 0 &&
             !isStreaming &&
             !sendMessage.isPending
@@ -511,9 +512,10 @@ export default function PortalWorkspace() {
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         staleTime: 0,
-        // Poll every 2 seconds when talking to Cynessa to catch onboarding updates
+        // Poll every 2 seconds when talking to Cynessa or Iris to catch onboarding updates
         refetchInterval: (query) => {
-            return agentDetails?.agent_name?.toLowerCase() === 'cynessa' &&
+            const agentName = agentDetails?.agent_name?.toLowerCase();
+            return (agentName === 'cynessa' || agentName === 'iris') &&
                 !query.state.data?.onboardingProgress?.completed
                 ? 2000
                 : false;

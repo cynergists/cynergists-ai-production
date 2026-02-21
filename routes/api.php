@@ -107,10 +107,18 @@ Route::prefix('briggs')->middleware('auth:sanctum')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Voice API Routes
+| Portal API Routes (Voice & Chat)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
+    // Voice routes
     Route::post('/voice/{agentId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'processVoiceMessage']);
     Route::get('/voice/tts/{jobId}', [\App\Http\Controllers\Api\Portal\VoiceController::class, 'checkTtsStatus']);
+
+    // Chat routes
+    Route::get('/agents/{agent}/conversation', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'conversation']);
+    Route::post('/agents/{agent}/message', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'sendMessage']);
+    Route::post('/agents/{agent}/files', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'uploadFile']);
+    Route::delete('/agents/{agent}/conversation', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'clearConversation']);
+    Route::get('/luna/images/{imageId}/status', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'lunaImageStatus']);
 });

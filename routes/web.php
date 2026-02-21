@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDataController;
+use App\Http\Controllers\Api\AgentSuggestionController;
 use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\Carbon\CarbonController;
 use App\Http\Controllers\Api\Carbon\CarbonPixelController;
@@ -13,7 +14,6 @@ use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
 use App\Http\Controllers\Api\Portal\PortalBillingController;
 use App\Http\Controllers\Api\Portal\PortalBrowseController;
-use App\Http\Controllers\Api\Portal\PortalChatController;
 use App\Http\Controllers\Api\Portal\PortalProfileController;
 use App\Http\Controllers\Api\Portal\PortalStatsController;
 use App\Http\Controllers\Api\Portal\PortalSubdomainController;
@@ -176,6 +176,7 @@ Route::prefix('api')->group(function () {
     Route::post('/public/products/categories', [PublicDataController::class, 'productsByCategories']);
     Route::get('/public/agents', [PublicDataController::class, 'activeAgents']);
     Route::get('/public/agents/{slug}', [PublicDataController::class, 'agentBySlug']);
+    Route::post('/public/suggest-agent', [AgentSuggestionController::class, 'store']);
 });
 
 Route::middleware('auth')->prefix('api')->group(function () {
@@ -199,11 +200,6 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/agents', [PortalAgentsController::class, 'index']);
         Route::get('/agents/{agent}', [PortalAgentsController::class, 'show']);
         Route::put('/agents/{agent}/configuration', [PortalAgentsController::class, 'updateConfiguration']);
-        Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
-        Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
-        Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
-        Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
-        Route::get('/luna/images/{imageId}/status', [PortalChatController::class, 'lunaImageStatus']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [CarbonController::class, 'overview']);
         Route::post('/seo/sites', [CarbonController::class, 'storeSite']);

@@ -245,7 +245,7 @@ export function AIAgentCard({
                                                 ${discountedPrice.toFixed(0)}
                                             </span>
                                             <span className="text-sm text-slate-500 line-through">
-                                                ${displayPrice}
+                                                ${Math.floor(displayPrice)}
                                             </span>
                                             <span className="text-base text-slate-400">
                                                 /mo
@@ -261,7 +261,7 @@ export function AIAgentCard({
                                         )}
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-3xl font-bold text-white">
-                                                ${displayPrice}
+                                                ${Math.floor(displayPrice)}
                                             </span>
                                             <span className="text-base text-slate-400">
                                                 /mo
@@ -288,8 +288,8 @@ export function AIAgentCard({
 
     // Default AI Agent card variant
     return (
-        <div className="h-[440px] w-[560px] shrink-0 rounded-2xl bg-gradient-to-br from-[#81CA16] to-[#26908B] p-[8px] [box-shadow:0_0_15px_rgba(132,204,22,0.15)] transition-all duration-300 hover:scale-[1.02] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)]">
-            <Card className="group relative flex h-full w-full flex-row overflow-hidden rounded-xl border-0 transition-all duration-300">
+        <div className="h-[440px] w-[560px] shrink-0 p-[6px] md:p-[8px] rounded-xl md:rounded-2xl animate-gradient-reverse [box-shadow:0_0_15px_rgba(132,204,22,0.15)] hover:[box-shadow:0_0_25px_rgba(132,204,22,0.3)] hover:scale-[1.02] transition-all duration-300">
+            <Card className="group relative flex h-full w-full flex-row overflow-hidden rounded-lg md:rounded-xl border-0 transition-all duration-300">
                 {/* Left Side - Media - Fixed size container */}
                 <div className="relative h-full w-[280px] shrink-0 overflow-hidden bg-muted/30">
                     {hasMedia && currentMedia ? (
@@ -445,7 +445,7 @@ export function AIAgentCard({
                                                 ${discountedPrice.toFixed(0)}
                                             </span>
                                             <span className="text-sm text-muted-foreground line-through">
-                                                ${displayPrice}
+                                                ${Math.floor(displayPrice)}
                                             </span>
                                             <span className="text-base text-muted-foreground">
                                                 /mo
@@ -461,7 +461,7 @@ export function AIAgentCard({
                                         )}
                                         <div className="flex items-baseline justify-center gap-1">
                                             <span className="text-3xl font-bold text-foreground">
-                                                ${displayPrice}
+                                                ${Math.floor(displayPrice)}
                                             </span>
                                             <span className="text-base text-muted-foreground">
                                                 /mo

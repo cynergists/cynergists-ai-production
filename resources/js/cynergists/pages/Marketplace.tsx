@@ -1,7 +1,8 @@
 import Layout from '@/components/layout/Layout';
 import { MarketplaceAgentCard } from '@/components/marketplace/MarketplaceAgentCard';
+import { SuggestAgentDialog } from '@/components/marketplace/SuggestAgentDialog';
 import { type AIAgent } from '@/components/ui/AIAgentCard';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -11,8 +12,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { apiClient } from '@/lib/api-client';
+import { Link } from '@inertiajs/react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Sparkles } from 'lucide-react';
+import { Building2, Lightbulb, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 export default function Marketplace() {
@@ -95,44 +97,22 @@ export default function Marketplace() {
     // Define category order and descriptions
     const categoryConfig: Record<
         string,
-        { order: number; description: string }
+        { order: number; displayName?: string; description: string }
     > = {
         Growth: {
             order: 1,
-            description: 'Scale your business and expand your reach.',
+            displayName: 'Deployed Agents',
+            description: 'Check out all our available agents.',
         },
         Content: {
             order: 2,
-            description: 'Create engaging content that converts.',
+            displayName: 'Beta',
+            description: 'Be the first to try our newest agents in development.',
         },
         General: {
             order: 3,
-            description: 'Essential tools for everyday operations.',
-        },
-        Communication: {
-            order: 4,
-            description: 'Connect and engage with your audience.',
-        },
-        Operations: {
-            order: 5,
-            description: 'Streamline your workflows and processes.',
-        },
-        Sales: { order: 6, description: 'Close more deals, faster.' },
-        Marketing: {
-            order: 7,
-            description: 'Attract and convert more customers.',
-        },
-        'Data and Analytics': {
-            order: 8,
-            description: 'Make data-driven decisions.',
-        },
-        'Team Support': {
-            order: 9,
-            description: 'Empower your team to do their best work.',
-        },
-        Finance: {
-            order: 10,
-            description: 'Manage your money with confidence.',
+            displayName: 'In Progress',
+            description: 'Agents currently being built and tested.',
         },
     };
 
@@ -230,7 +210,7 @@ export default function Marketplace() {
                         <div className="text-center text-muted-foreground">
                             Loading agents...
                         </div>
-                    ) : sortedCategories.length > 0 ? (
+                    ) : selectedCategory === 'all' && sortedCategories.length > 0 ? (
                         <div className="space-y-12">
                             {sortedCategories.map((category) => {
                                 const categoryAgents = agentsByCategory[category];
@@ -244,7 +224,7 @@ export default function Marketplace() {
                                         <div>
                                             <h2 className="text-2xl md:text-4xl">
                                                 <span className="font-bold text-foreground">
-                                                    {category}.
+                                                    {config?.displayName || category}.
                                                 </span>{' '}
                                                 <span className="font-normal text-muted-foreground">
                                                     {config?.description ||
@@ -264,6 +244,15 @@ export default function Marketplace() {
                                 );
                             })}
                         </div>
+                    ) : filteredAndSortedAgents.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            {filteredAndSortedAgents.map((agent) => (
+                                <MarketplaceAgentCard
+                                    key={agent.id}
+                                    agent={agent}
+                                />
+                            ))}
+                        </div>
                     ) : (
                         <div className="py-12 text-center">
                             <p className="text-lg text-muted-foreground">
@@ -271,6 +260,78 @@ export default function Marketplace() {
                             </p>
                         </div>
                     )}
+
+                    {/* Suggest an Agent Section */}
+                    <div className="mt-16 mb-[60px] border-t border-border pt-12">
+                        <div className="mx-auto max-w-5xl text-center">
+                            <h2 className="mb-4 text-2xl font-bold md:text-3xl">
+                                Don't see what you're looking for?
+                            </h2>
+                            <p className="mb-12 text-lg text-muted-foreground">
+                                We're here to help. Choose how you'd like to work with us.
+                            </p>
+                            
+                            <div className="grid gap-8 md:grid-cols-3">
+                                {/* Suggest an Agent */}
+                                <div className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-lime-500/50 hover:shadow-lg">
+                                    <div className="mb-4 flex justify-center">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 pulse-ring">
+                                            <Lightbulb className="h-8 w-8 text-primary icon-pulse" />
+                                        </div>
+                                    </div>
+                                    <h3 className="mb-2 text-xl font-bold">Suggest an Agent</h3>
+                                    <p className="mb-6 text-sm text-muted-foreground">
+                                        Have an idea? Share your agent concept and we'll consider building it.
+                                    </p>
+                                    <SuggestAgentDialog />
+                                </div>
+
+                                {/* Custom Development */}
+                                <div className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-lime-500/50 hover:shadow-lg">
+                                    <div className="mb-4 flex justify-center">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 pulse-ring">
+                                            <Sparkles className="h-8 w-8 text-primary icon-pulse" />
+                                        </div>
+                                    </div>
+                                    <h3 className="mb-2 text-xl font-bold">Custom Development</h3>
+                                    <p className="mb-6 text-sm text-muted-foreground">
+                                        Need a fully custom agent built specifically for your business?
+                                    </p>
+                                    <Button
+                                        asChild
+                                        size="lg"
+                                        className="orbiting-button w-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+                                    >
+                                        <Link href="/contact">
+                                            Get in Touch
+                                        </Link>
+                                    </Button>
+                                </div>
+
+                                {/* Enterprise Solutions */}
+                                <div className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-lime-500/50 hover:shadow-lg">
+                                    <div className="mb-4 flex justify-center">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 pulse-ring">
+                                            <Building2 className="h-8 w-8 text-primary icon-pulse" />
+                                        </div>
+                                    </div>
+                                    <h3 className="mb-2 text-xl font-bold">Enterprise Solutions</h3>
+                                    <p className="mb-6 text-sm text-muted-foreground">
+                                        Looking for a complete AI workforce solution for your organization?
+                                    </p>
+                                    <Button
+                                        asChild
+                                        size="lg"
+                                        className="orbiting-button w-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+                                    >
+                                        <Link href="/contact">
+                                            Learn More
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </Layout>
