@@ -17,8 +17,9 @@ import PortalContext from '@/contexts/PortalContext';
 import { useSubdomain } from '@/hooks/useSubdomain';
 import { useCurrentUserTenant, useTenant } from '@/hooks/useTenant';
 import TenantNotFound from '@/pages/portal/TenantNotFound';
+import { ImpersonationBanner } from './ImpersonationBanner';
 import { router, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, ChevronDown, Loader2, LogOut, Menu, Palette, Shield, User, UserCircle } from 'lucide-react';
+import { BookOpen, Building2, ChevronDown, Loader2, LogOut, Menu, Palette, Shield, User, UserCheck, UserCircle } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import cynergistsLogo from '../../assets/logos/cynergists-ai-full.webp';
@@ -115,12 +116,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 </Helmet>
 
                 <div className="flex h-dvh flex-col overflow-hidden bg-background">
+                    {/* Impersonation Banner (shows when admin is impersonating) */}
+                    <ImpersonationBanner />
+                    
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
                         <div>
                             <img
                                 src={cynergistsLogo}
-                                alt="Company Logo"
-                                className="h-24 object-contain"
+                                alt="Cynergists AI"
+                                className="h-48 object-contain"
                             />
                         </div>
 
@@ -139,18 +143,30 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                                     </a>
                                 </Button>
                             )}
-                            {/* Admins see Admin button */}
+                            {/* Admins see Admin & Impersonate buttons */}
                             {isAdmin && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                >
-                                    <a href="/admin">
-                                        <Shield className="mr-2 h-4 w-4" />
-                                        Admin
-                                    </a>
-                                </Button>
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                    >
+                                        <a href="/admin">
+                                            <Shield className="mr-2 h-4 w-4" />
+                                            Admin
+                                        </a>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                    >
+                                        <a href="/admin/impersonate">
+                                            <UserCheck className="mr-2 h-4 w-4" />
+                                            Impersonate
+                                        </a>
+                                    </Button>
+                                </>
                             )}
                             {/* Account dropdown — all users */}
                             <DropdownMenu>
