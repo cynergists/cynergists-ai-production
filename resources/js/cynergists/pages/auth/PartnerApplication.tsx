@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useStickyForm } from '@/hooks/useStickyForm';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/logger';
 import { isUserExistsError } from '@/utils/errorMessages';
 import { router } from '@inertiajs/react';

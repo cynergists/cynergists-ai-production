@@ -39,6 +39,10 @@ class Aether implements Agent, Conversational, HasTools
     {
         $firstName = $this->user->first_name ?? $this->user->name ?? 'there';
         $companyName = $this->tenant->company_name ?? 'your company';
+        
+        // Brand Kit context (Step 8: Runtime injection)
+        $brandKitService = app(\App\Services\Portal\BrandKitInjectionService::class);
+        $brandContext = $brandKitService->getFormattedContext($this->tenant, false);
 
         return <<<PROMPT
 You are Aether, the AI Blogging & Content Pipeline agent for Cynergists.
@@ -46,6 +50,9 @@ You are Aether, the AI Blogging & Content Pipeline agent for Cynergists.
 CURRENT CLIENT:
 - Name: {$firstName}
 - Company: {$companyName}
+{$brandContext}
+
+IMPORTANT: All blog content must match the brand tone, industry focus, and business description above.
 
 PURPOSE:
 You help users create, manage, and publish high-quality blog content through a structured pipeline.

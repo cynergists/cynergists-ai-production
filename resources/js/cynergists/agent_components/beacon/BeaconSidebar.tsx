@@ -1,25 +1,28 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { 
-    Calendar,
-    Clock,
-    Users,
-    Shield,
-    CheckCircle2,
-    PlayCircle,
-    PauseCircle,
-    Settings,
+import {
     AlertTriangle,
+    Calendar,
+    CheckCircle2,
+    Clock,
+    PauseCircle,
+    PlayCircle,
+    Settings,
+    Shield,
+    Users,
 } from 'lucide-react';
 import React from 'react';
 
 interface BeaconSidebarProps {
     agentDetails: any;
+    activeView?: string;
+    setActiveView?: (view: string) => void;
 }
 
-export default function BeaconSidebar({ agentDetails }: BeaconSidebarProps) {
+export default function BeaconSidebar({ agentDetails, activeView, setActiveView }: BeaconSidebarProps) {
     // Mock state - in real implementation this would come from props/context
     const currentState = 'Draft'; // Draft, Onboarding, Active, Paused, etc.
     const isConfigured = false;
@@ -50,6 +53,14 @@ export default function BeaconSidebar({ agentDetails }: BeaconSidebarProps) {
         <div className="h-full">
             <ScrollArea className="h-full px-4 py-3">
                 <div className="space-y-4">
+                    {/* Quick Links */}
+                    <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-4">
+                        <h2 className="mb-3 shrink-0 text-base font-semibold text-foreground">
+                            Quick Links
+                        </h2>
+                        <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+                    </div>
+
                     {/* Agent Status */}
                     <Card className="p-4">
                         <div className="mb-3 flex items-center gap-2">

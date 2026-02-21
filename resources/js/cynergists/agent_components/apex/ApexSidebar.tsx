@@ -1,18 +1,6 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import {
-    Activity,
-    AlertCircle,
-    Calendar,
-    CircleCheck,
-    LayoutDashboard,
-    Lock,
-    MessageSquare,
-    Settings,
-    Target,
-    TrendingUp,
-    Users,
-} from 'lucide-react';
+import { Calendar, CircleCheck, MessageSquare, TrendingUp, Users } from 'lucide-react';
 
 interface ApexSidebarProps {
     activeView: string;
@@ -32,20 +20,6 @@ export default function ApexSidebar({
     agentDetails,
     todayActivity,
 }: ApexSidebarProps) {
-    const isLinkedInConnected =
-        agentDetails?.apex_data?.linkedin?.connected === true;
-
-    const navItems = [
-        { key: 'chat', label: 'Chat', icon: MessageSquare, requiresLinkedIn: false },
-        { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, requiresLinkedIn: true },
-        { key: 'pending-actions', label: 'Pending Approvals', icon: AlertCircle, requiresLinkedIn: true },
-        { key: 'campaigns', label: 'Campaigns', icon: Target, requiresLinkedIn: true },
-        { key: 'connections', label: 'Connections', icon: Users, requiresLinkedIn: true },
-        { key: 'messages', label: 'Messages', icon: MessageSquare, requiresLinkedIn: true },
-        { key: 'activity', label: 'Activity Log', icon: Activity, requiresLinkedIn: true },
-        { key: 'settings', label: 'Settings', icon: Settings, requiresLinkedIn: true },
-    ];
-
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
             {/* Quick Links */}
@@ -53,35 +27,7 @@ export default function ApexSidebar({
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Quick Links
                 </h2>
-                <nav className="flex flex-col space-y-2">
-                    {navItems.map((item) => {
-                        const isDisabled = item.requiresLinkedIn && !isLinkedInConnected;
-                        const Icon = item.icon;
-
-                        return (
-                            <button
-                                key={item.key}
-                                onClick={() => !isDisabled && setActiveView(item.key)}
-                                disabled={isDisabled}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                    isDisabled
-                                        ? 'cursor-not-allowed border-l-transparent text-foreground/30'
-                                        : activeView === item.key
-                                          ? 'border-l-primary bg-primary/10 text-primary'
-                                          : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                )}
-                            >
-                                {isDisabled ? (
-                                    <Lock className="h-4 w-4 shrink-0" />
-                                ) : (
-                                    <Icon className="h-5 w-5 shrink-0" />
-                                )}
-                                {item.label}
-                            </button>
-                        );
-                    })}
-                </nav>
+                <AgentQuickLinks activeView={activeView} setActiveView={setActiveView} />
             </div>
 
             {/* Today's Activity */}

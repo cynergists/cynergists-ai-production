@@ -1,14 +1,6 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import {
-    Award,
-    BarChart3,
-    BookOpen,
-    GraduationCap,
-    History,
-    MessageSquare,
-    TrendingUp,
-} from 'lucide-react';
+import { Award, BarChart3, GraduationCap, TrendingUp } from 'lucide-react';
 
 interface BriggsSidebarProps {
     activeView: string;
@@ -23,16 +15,6 @@ export default function BriggsSidebar({
 }: BriggsSidebarProps) {
     const briggsData = agentDetails?.briggs_data ?? null;
     const stats = briggsData?.user_stats;
-
-    const navItems = [
-        { key: 'chat', label: 'Chat', icon: MessageSquare },
-        {
-            key: 'training-library',
-            label: 'Training Library',
-            icon: BookOpen,
-        },
-        { key: 'past-sessions', label: 'Past Sessions', icon: History },
-    ];
 
     const scoreColor =
         stats?.average_score >= 75
@@ -50,27 +32,7 @@ export default function BriggsSidebar({
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Quick Links
                 </h2>
-                <nav className="flex flex-col space-y-2">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-
-                        return (
-                            <button
-                                key={item.key}
-                                onClick={() => setActiveView(item.key)}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                    activeView === item.key
-                                        ? 'border-l-primary bg-primary/10 text-primary'
-                                        : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                )}
-                            >
-                                <Icon className="h-5 w-5 shrink-0" />
-                                {item.label}
-                            </button>
-                        );
-                    })}
-                </nav>
+                <AgentQuickLinks activeView={activeView} setActiveView={setActiveView} />
             </div>
 
             {/* Performance Summary */}

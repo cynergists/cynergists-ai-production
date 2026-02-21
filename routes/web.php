@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\Carbon\CarbonReportController;
 use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
+use App\Http\Controllers\Api\Admin\AdminOnboardingController;
+use App\Http\Controllers\Api\Admin\ImpersonationController;
+use App\Http\Controllers\Api\Portal\BrandKitController;
 use App\Http\Controllers\Api\Portal\PortalAccountController;
 use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
@@ -111,11 +114,17 @@ Route::get('/portal/billing', [CynergistsPageController::class, 'page'])->defaul
 Route::get('/portal/activity', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/integrations', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Workspace');
 Route::get('/portal/account', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/Account');
+Route::get('/portal/brand-kit', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/BrandKit');
 Route::get('/portal/seo-engine', [CynergistsPageController::class, 'page'])->defaults('component', 'portal/SeoEngine');
 Route::redirect('/portal/admin', '/filament');
 
+// Admin-only routes
+Route::middleware(['auth', EnsureAdminUser::class])->group(function () {
+    Route::get('/admin/impersonate', [CynergistsPageController::class, 'page'])->defaults('component', 'admin/Impersonate');
+});
+
 Route::get('/p/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'PartnerLanding');
-Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal');
+Route::get('/sales-rep', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/SalesRepPortal')->middleware('auth');
 Route::get('/employee', [CynergistsPageController::class, 'page'])->defaults('component', 'dashboard/EmployeePortal');
 
 Route::redirect('/admin', '/filament');
@@ -210,6 +219,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/billing', [PortalBillingController::class, 'index']);
         Route::get('/activity', [PortalActivityController::class, 'index']);
         Route::get('/tenant', [PortalTenantController::class, 'show']);
+        Route::put('/tenant', [PortalTenantController::class, 'update']);
         Route::post('/tenant/check-subdomain', [PortalSubdomainController::class, 'check']);
         Route::post('/tenant/claim-subdomain', [PortalSubdomainController::class, 'claim']);
         Route::get('/profile', [PortalProfileController::class, 'show']);
@@ -219,12 +229,24 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/support', [PortalSupportController::class, 'store']);
         Route::get('/account', [PortalAccountController::class, 'index']);
         Route::post('/account/unsubscribe/{agent}', [PortalAccountController::class, 'unsubscribe']);
+        Route::get('/brand-kit', [BrandKitController::class, 'show']);
+        Route::put('/brand-kit', [BrandKitController::class, 'update']);
+        Route::post('/brand-kit/restart', [BrandKitController::class, 'restart']);
+        Route::post('/agents/{agent}/onboarding/complete', [PortalChatController::class, 'completeAgentOnboarding']);
     });
 });
 
 Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(function () {
     Route::match(['get', 'post', 'delete'], '/admin-data', AdminDataController::class);
     Route::post('/admin/ai-agents/media', [AiAgentMediaController::class, 'store']);
+    Route::post('/admin/tenants/{tenant}/onboarding/{agentName}/reset', [AdminOnboardingController::class, 'reset']);
+    
+    // Impersonation routes
+    Route::get('/admin/impersonate/search', [ImpersonationController::class, 'search']);
+    Route::post('/admin/impersonate/start', [ImpersonationController::class, 'start']);
+    Route::post('/admin/impersonate/end', [ImpersonationController::class, 'end']);
+    Route::get('/admin/impersonate/status', [ImpersonationController::class, 'status']);
+    Route::get('/admin/impersonate/logs', [ImpersonationController::class, 'logs']);
 });
 
 Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');

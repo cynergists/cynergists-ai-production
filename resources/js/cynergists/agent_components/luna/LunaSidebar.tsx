@@ -1,3 +1,4 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Download, Eye, ImageIcon, Sparkles, TrendingUp } from 'lucide-react';
@@ -12,7 +13,7 @@ interface LunaSidebarProps {
     setupProgress?: any;
 }
 
-export default function LunaSidebar({ agentDetails }: LunaSidebarProps) {
+export default function LunaSidebar({ agentDetails, activeView, setActiveView }: LunaSidebarProps) {
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
     const lunaData = agentDetails?.luna_data || {};
@@ -24,6 +25,14 @@ export default function LunaSidebar({ agentDetails }: LunaSidebarProps) {
 
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
+            {/* Quick Links */}
+            <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-5">
+                <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
+                    Quick Links
+                </h2>
+                <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+            </div>
+
             {/* Lightbox */}
             {expandedImage && (
                 <div

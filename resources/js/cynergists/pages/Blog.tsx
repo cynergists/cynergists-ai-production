@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { OrbitingButton } from '@/components/ui/orbiting-button';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Link } from '@inertiajs/react';
 import {
     BookOpen,

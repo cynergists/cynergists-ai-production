@@ -13,7 +13,6 @@ import {
     RotateCcw,
     Send,
     Square,
-    Trash2,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,7 +31,6 @@ interface ApexChatProps {
     agentDetails: any;
     scrollRef: React.RefObject<HTMLDivElement>;
     onSend: (e: React.FormEvent) => void;
-    onClearChat?: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
@@ -48,7 +46,6 @@ export function ApexChat({
     agentDetails,
     scrollRef,
     onSend,
-    onClearChat,
     selectedAgentId,
     onMessageReceived,
 }: ApexChatProps) {
@@ -367,11 +364,15 @@ export function ApexChat({
                         variant="outline"
                         size="sm"
                         className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
-                        onClick={onClearChat}
-                        disabled={!selectedAgentId || messages.length === 0}
+                        disabled={isUploading}
+                        onClick={onFileClick}
                     >
-                        <Trash2 className="h-3 w-3" />
-                        Clear Chat
+                        {isUploading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Paperclip className="h-3 w-3" />
+                        )}
+                        Attach
                     </Button>
                 </div>
             </div>

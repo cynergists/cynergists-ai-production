@@ -3,6 +3,7 @@
 namespace App\Ai\Agents;
 
 use App\Ai\Concerns\BoundsConversationHistory;
+use App\Ai\Tools\GetAgentInformationTool;
 use App\Models\PortalTenant;
 use App\Models\User;
 use App\Services\Cynessa\OnboardingService;
@@ -12,6 +13,7 @@ use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 use Stringable;
@@ -20,7 +22,7 @@ use Stringable;
 #[MaxTokens(1024)]
 #[Temperature(0.7)]
 #[Timeout(120)]
-class Cynessa implements Agent, Conversational
+class Cynessa implements Agent, Conversational, HasTools
 {
     use Promptable, BoundsConversationHistory;
 
@@ -35,6 +37,16 @@ class Cynessa implements Agent, Conversational
         public bool $includeKnowledgeBase = false
     ) {
         $this->onboardingService = app(OnboardingService::class);
+    }
+
+    /**
+     * Get the tools available to this agent.
+     */
+    public function tools(): iterable
+    {
+        return [
+            new GetAgentInformationTool,
+        ];
     }
 
     /**
@@ -90,6 +102,16 @@ Your role now is to:
 - Provide guidance on next steps and best practices
 - Direct them to support if needed
 
+AGENT INFORMATION TOOL (CRITICAL):
+You have access to the get_agent_information tool. USE IT whenever users ask about:
+- Specific agents (What does Luna do, Tell me about Carbon)
+- Agent pricing (How much is Apex, What does it cost)
+- Agent features (What features does Carbon have)
+- Available agents (What agents do you have, Show me all agents)
+- Agent comparisons (Which agent is best for X)
+
+The tool gives you LIVE data from the database - always current and accurate. ALWAYS use it instead of guessing or using static knowledge.
+
 DO NOT:
 - Ask for company name, industry, or services again
 - Request brand assets again
@@ -123,6 +145,16 @@ IDENTITY RULES:
 - You are Cynessa, an AI assistant. Always identify as AI if asked.
 - Never impersonate a human or claim to be one.
 - If relaying a message from a human team member, clearly label it with their name.
+
+AGENT INFORMATION TOOL (CRITICAL):
+You have access to the get_agent_information tool. USE IT whenever users ask about:
+- Specific agents (What does Luna do, Tell me about Carbon)
+- Agent pricing (How much is Apex, What does it cost)
+- Agent features (What features does Carbon have)
+- Available agents (What agents do you have, Show me all agents)
+- Agent comparisons (Which agent is best for X)
+
+The tool gives you LIVE data from the database - always current and accurate. ALWAYS use it instead of guessing.
 
 🚨 CRITICAL DATA SAVING REQUIREMENT 🚨
 EVERY TIME a user provides information, you MUST end your response with:

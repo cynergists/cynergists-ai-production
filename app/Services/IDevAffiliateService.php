@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class IDevAffiliateService
@@ -24,7 +23,18 @@ class IDevAffiliateService
      *
      * Never throws — errors are logged and swallowed so checkout is never blocked.
      *
-     * @param  array{sale_amount: string, order_number: string, ip_address: string, customer_name?: string, customer_email?: string, product_info?: string}  $data
+     * @param  array{
+     *     sale_amount: string,
+     *     order_number: string,
+     *     ip_address?: string,
+     *     affiliate_id?: string,
+     *     email_address?: string,
+     *     customer_name?: string,
+     *     customer_email?: string,
+     *     product_info?: string,
+     *     idev_percent?: string,
+     *     idev_commission?: string,
+     * }  $data
      */
     public function reportSale(array $data): bool
     {
@@ -36,27 +46,78 @@ class IDevAffiliateService
             return false;
         }
 
+        // Required fields
         $payload = [
             'idev_secret' => $this->secret,
             'profile' => $this->profile,
             'idev_saleamt' => $data['sale_amount'],
             'idev_ordernum' => $data['order_number'],
-            'ip_address' => $data['ip_address'],
-            'idev_option_1' => $data['customer_name'] ?? '',
-            'idev_option_2' => $data['customer_email'] ?? '',
-            'idev_option_3' => $data['product_info'] ?? '',
             'idev_currency' => 'USD',
         ];
 
-        try {
-            $response = Http::timeout(5)
-                ->asForm()
-                ->post($this->url, $payload);
+        // Tracking — at least one of ip_address, affiliate_id, or email_address is required
+        if (! empty($data['ip_address'])) {
+            $payload['ip_address'] = $data['ip_address'];
+        }
 
-            if ($response->successful()) {
+        if (! empty($data['affiliate_id'])) {
+            $payload['affiliate_id'] = $data['affiliate_id'];
+        }
+
+        if (! empty($data['email_address'])) {
+            $payload['email_address'] = $data['email_address'];
+        }
+
+        // Optional customer / product data
+        if (! empty($data['customer_name'])) {
+            $payload['idev_option_1'] = $data['customer_name'];
+        }
+
+        if (! empty($data['customer_email'])) {
+            $payload['idev_option_2'] = $data['customer_email'];
+        }
+
+        if (! empty($data['product_info'])) {
+            $payload['idev_option_3'] = $data['product_info'];
+        }
+
+        // Optional custom commissioning
+        if (! empty($data['idev_percent'])) {
+            $payload['idev_percent'] = $data['idev_percent'];
+        }
+
+        if (! empty($data['idev_commission'])) {
+            $payload['idev_commission'] = $data['idev_commission'];
+        }
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $this->url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+
+            $json = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                Log::error('iDevAffiliate cURL error', [
+                    'order_number' => $data['order_number'],
+                    'error' => $curlError,
+                ]);
+
+                return false;
+            }
+
+            if ($httpCode >= 200 && $httpCode < 300) {
                 Log::info('iDevAffiliate commission reported', [
                     'order_number' => $data['order_number'],
                     'sale_amount' => $data['sale_amount'],
+                    'http_code' => $httpCode,
                 ]);
 
                 return true;
@@ -64,8 +125,8 @@ class IDevAffiliateService
 
             Log::warning('iDevAffiliate commission report failed', [
                 'order_number' => $data['order_number'],
-                'status' => $response->status(),
-                'body' => $response->body(),
+                'http_code' => $httpCode,
+                'response' => $json,
             ]);
 
             return false;

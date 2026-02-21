@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\Admin\ImpersonationService;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -81,6 +82,15 @@ class SessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        // End impersonation if active
+        $impersonationService = app(ImpersonationService::class);
+        if ($impersonationService->isImpersonating()) {
+            $admin = $impersonationService->getActualAdmin();
+            if ($admin) {
+                $impersonationService->end($admin, 'logout');
+            }
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

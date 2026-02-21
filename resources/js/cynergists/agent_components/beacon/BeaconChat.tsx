@@ -12,7 +12,6 @@ import {
     Mic,
     Send,
     Square,
-    Trash2,
 } from 'lucide-react';
 import React from 'react';
 
@@ -34,7 +33,6 @@ interface BeaconChatProps {
     onSend: (e: React.FormEvent) => void;
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFileClick: () => void;
-    onClearChat?: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
@@ -51,7 +49,6 @@ export function BeaconChat({
     agentDetails,
     scrollRef,
     onSend,
-    onClearChat,
     selectedAgentId,
     onMessageReceived,
 }: BeaconChatProps) {
@@ -237,12 +234,16 @@ export function BeaconChat({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-indigo-500/40 hover:bg-indigo-500/10"
-                        onClick={onClearChat}
-                        disabled={!selectedAgentId || messages.length === 0}
+                        className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
+                        disabled={isUploading}
+                        onClick={onFileClick}
                     >
-                        <Trash2 className="h-3 w-3" />
-                        Clear Chat
+                        {isUploading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Paperclip className="h-3 w-3" />
+                        )}
+                        Attach
                     </Button>
                 </div>
             </div>

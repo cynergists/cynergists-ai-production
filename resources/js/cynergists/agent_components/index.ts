@@ -1,4 +1,7 @@
 import type { ComponentType } from 'react';
+import { IrisChat } from './iris/IrisChat';
+import { IrisConfig } from './iris/IrisConfig';
+import IrisSidebar from './iris/IrisSidebar';
 import { AetherChat } from './aether/AetherChat';
 import { AetherConfig } from './aether/AetherConfig';
 import AetherSidebar from './aether/AetherSidebar';
@@ -20,9 +23,6 @@ import { CynessaChat } from './cynessa/CynessaChat';
 import { CynessaConfig } from './cynessa/CynessaConfig';
 import CynessaSidebar from './cynessa/CynessaSidebar';
 import { ImpulseChat } from './impulse/ImpulseChat';
-import { IrisChat } from './iris/IrisChat';
-import { IrisConfig } from './iris/IrisConfig';
-import IrisSidebar from './iris/IrisSidebar';
 import { ImpulseConfig } from './impulse/ImpulseConfig';
 import ImpulseSidebar from './impulse/ImpulseSidebar';
 import { KinetixChat } from './kinetix/KinetixChat';
@@ -44,40 +44,57 @@ import { ArsenalChat } from './arsenal/ArsenalChat';
 import { ArsenalConfig } from './arsenal/ArsenalConfig';
 import ArsenalSidebar from './arsenal/ArsenalSidebar';
 
+export interface SettingsLink {
+    label: string;
+    view: string;
+}
+
 interface AgentComponents {
     ChatComponent: ComponentType<any>;
     ConfigComponent: ComponentType<any>;
     SidebarComponent: ComponentType<any>;
     ViewComponent?: ComponentType<any>;
+    settingsLinks?: SettingsLink[];
 }
 
 const agentComponentsMap: Record<string, AgentComponents> = {
-    cynessa: {
-        ChatComponent: CynessaChat,
-        ConfigComponent: CynessaConfig,
-        SidebarComponent: CynessaSidebar,
-    },
     iris: {
         ChatComponent: IrisChat,
         ConfigComponent: IrisConfig,
         SidebarComponent: IrisSidebar,
+    },
+    cynessa: {
+        ChatComponent: CynessaChat,
+        ConfigComponent: CynessaConfig,
+        SidebarComponent: CynessaSidebar,
     },
     apex: {
         ChatComponent: ApexChat,
         ConfigComponent: ApexConfig,
         SidebarComponent: ApexSidebar,
         ViewComponent: ApexViewRouter,
+        settingsLinks: [
+            { label: 'Campaign Manager', view: 'campaigns' },
+            { label: 'Pending Actions', view: 'pending-actions' },
+        ],
     },
     briggs: {
         ChatComponent: BriggsChat,
         ConfigComponent: BriggsConfig,
         SidebarComponent: BriggsSidebar,
         ViewComponent: BriggsViewRouter,
+        settingsLinks: [
+            { label: 'Past Sessions', view: 'past-sessions' },
+            { label: 'Training Library', view: 'training-library' },
+        ],
     },
     carbon: {
         ChatComponent: CarbonChat,
         ConfigComponent: CarbonConfig,
         SidebarComponent: CarbonSidebar,
+        settingsLinks: [
+            { label: 'SEO Overview', view: 'seo-overview' },
+        ],
     },
     luna: {
         ChatComponent: LunaChat,
@@ -88,26 +105,44 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: MosaicChat,
         ConfigComponent: MosaicConfig,
         SidebarComponent: MosaicSidebar,
+        settingsLinks: [
+            { label: 'Preview', view: 'preview' },
+            { label: 'Blueprint', view: 'blueprint' },
+        ],
     },
     aether: {
         ChatComponent: AetherChat,
         ConfigComponent: AetherConfig,
         SidebarComponent: AetherSidebar,
+        settingsLinks: [
+            { label: 'Content Pipeline', view: 'content-pipeline' },
+            { label: 'Published Posts', view: 'published' },
+        ],
     },
     kinetix: {
         ChatComponent: KinetixChat,
         ConfigComponent: KinetixConfig,
         SidebarComponent: KinetixSidebar,
+        settingsLinks: [
+            { label: 'Video Library', view: 'video-library' },
+        ],
     },
     optix: {
         ChatComponent: OptixChat,
         ConfigComponent: OptixConfig,
         SidebarComponent: OptixSidebar,
+        settingsLinks: [
+            { label: 'Channel Bible', view: 'channel-bible' },
+        ],
     },
     vector: {
         ChatComponent: VectorChat,
         ConfigComponent: VectorConfig,
         SidebarComponent: VectorSidebar,
+        settingsLinks: [
+            { label: 'Campaigns', view: 'campaigns' },
+            { label: 'Analytics', view: 'analytics' },
+        ],
     },
     beacon: {
         ChatComponent: BeaconChat,
@@ -118,11 +153,17 @@ const agentComponentsMap: Record<string, AgentComponents> = {
         ChatComponent: ArsenalChat,
         ConfigComponent: ArsenalConfig,
         SidebarComponent: ArsenalSidebar,
+        settingsLinks: [
+            { label: 'Product Catalog', view: 'catalog' },
+        ],
     },
     impulse: {
         ChatComponent: ImpulseChat,
         ConfigComponent: ImpulseConfig,
         SidebarComponent: ImpulseSidebar,
+        settingsLinks: [
+            { label: 'Video Queue', view: 'video-queue' },
+        ],
     },
 };
 
@@ -132,6 +173,9 @@ export function getAgentComponents(agentName: string): AgentComponents | null {
 }
 
 export {
+    IrisChat,
+    IrisConfig,
+    IrisSidebar,
     AetherChat,
     AetherConfig,
     AetherSidebar,

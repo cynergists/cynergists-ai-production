@@ -2,13 +2,29 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ProcessPaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Handle a failed validation attempt - return JSON instead of HTML
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422)
+        );
     }
 
     /**

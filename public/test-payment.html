@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Payment Endpoint</title>
+</head>
+<body>
+    <h1>Test Payment Endpoint</h1>
+    <button onclick="testConfig()">Test Config Endpoint</button>
+    <button onclick="testProcess()">Test Process Endpoint (will fail without data)</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        async function testConfig() {
+            output.textContent = 'Testing /api/payment/config...\n';
+            try {
+                const response = await fetch('/api/payment/config');
+                const data = await response.json();
+                output.textContent += 'SUCCESS: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent += 'ERROR: ' + error.message;
+            }
+        }
+        
+        async function testProcess() {
+            output.textContent = 'Testing /api/payment/process...\n';
+            try {
+                const response = await fetch('/api/payment/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const text = await response.text();
+                output.textContent += 'Response: ' + text.substring(0, 500);
+                
+                if (text.startsWith('<!')) {
+                    output.textContent += '\n\nERROR: Got HTML instead of JSON - likely a validation error';
+                }
+            } catch (error) {
+                output.textContent += 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

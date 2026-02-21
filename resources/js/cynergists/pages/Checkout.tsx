@@ -3,6 +3,7 @@ import ConfirmationStep from '@/components/checkout/ConfirmationStep';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import { IDevTracking } from '@/services/idevTracking';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
@@ -97,6 +98,23 @@ const Checkout = () => {
 
     const handleTransactionComplete = (transaction: TransactionData) => {
         setTransactionData(transaction);
+        
+        // Track conversion with iDevAffiliate
+        const productNames = transaction.cartItems
+            .map(item => item.name)
+            .join(', ');
+        
+        const customerName = props.auth?.user?.name || 'Guest';
+        const customerEmail = props.auth?.user?.email || '';
+        
+        IDevTracking.trackConversion({
+            orderId: transaction.subscriptionId || transaction.customerId || 'unknown',
+            amount: transaction.amountPaid,
+            customerName,
+            customerEmail,
+            products: productNames,
+        });
+        
         // Remove portal agents cache so newly purchased agents appear immediately on next visit
         queryClient.removeQueries({ queryKey: ['portal-agents'] });
     };

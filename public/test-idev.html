@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>iDevAffiliate Tracking Test</title>
+</head>
+<body>
+    <h1>iDevAffiliate Tracking Test</h1>
+    <p>Check your browser's Network tab (F12) for tracking requests</p>
+    
+    <div id="status">
+        <h2>Status:</h2>
+        <ul id="results"></ul>
+    </div>
+
+    <script>
+        const log = (msg) => {
+            const li = document.createElement('li');
+            li.textContent = msg;
+            document.getElementById('results').appendChild(li);
+            console.log(msg);
+        };
+
+        // Test 1: Direct tracking pixel
+        log('Test 1: Loading tracking pixel...');
+        const img = document.createElement('img');
+        img.style.border = '0';
+        img.style.display = 'none';
+        img.style.position = 'absolute';
+        img.style.top = '-9999px';
+        img.alt = '';
+        
+        img.onload = () => log('✅ Tracking pixel loaded successfully!');
+        img.onerror = () => log('❌ Tracking pixel failed to load');
+        
+        img.src = 'https://cynergists.idevaffiliate.com/track.php?profile=72198';
+        document.body.appendChild(img);
+
+        // Test 2: Check cookies after 2 seconds
+        setTimeout(() => {
+            log('Test 2: Checking cookies...');
+            const cookies = document.cookie;
+            if (cookies.includes('idev')) {
+                log('✅ iDev cookie found: ' + cookies.split(';').find(c => c.includes('idev')));
+            } else {
+                log('⚠️  No iDev cookie found (might be blocked by browser)');
+            }
+        }, 2000);
+
+        // Test 3: Check if we're on HTTPS
+        log('Test 3: Protocol check...');
+        if (window.location.protocol === 'https:') {
+            log('✅ Using HTTPS (good for cookie tracking)');
+        } else {
+            log('⚠️  Using HTTP (cookies might be blocked)');
+        }
+    </script>
+</body>
+</html>

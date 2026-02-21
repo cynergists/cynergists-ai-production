@@ -1,5 +1,5 @@
 import calendarBackground from '@cy/assets/calendar-background.webp';
-import { supabase } from '@cy/integrations/supabase/client';
+import { apiClient } from '@cy/integrations/supabase/client';
 import { router } from '@inertiajs/react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';

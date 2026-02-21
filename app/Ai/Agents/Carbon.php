@@ -52,6 +52,25 @@ class Carbon implements Agent, Conversational, HasTools
     {
         $seoContext = $this->buildSeoContext();
 
+        // Brand Kit context (Step 8: Runtime injection)
+        $settings = $this->tenant->settings ?? [];
+        $companyName = $this->tenant->company_name ?? 'your company';
+        $brandTone = $settings['brand_tone'] ?? null;
+        $industry = $settings['industry'] ?? null;
+        $servicesNeeded = $settings['services_needed'] ?? null;
+
+        $brandContext = "\nCOMPANY CONTEXT:\n";
+        $brandContext .= "- Company: {$companyName}\n";
+        if ($industry) {
+            $brandContext .= "- Industry: {$industry}\n";
+        }
+        if ($brandTone) {
+            $brandContext .= "- Brand Tone: {$brandTone} (use this tone in all content recommendations)\n";
+        }
+        if ($servicesNeeded) {
+            $brandContext .= "- Services/Focus: {$servicesNeeded}\n";
+        }
+
         $sitesCount = count($seoContext['sites']);
         $healthScore = $seoContext['stats']['health_score'];
         $hasAudits = ! empty($seoContext['recent_audits']);
@@ -89,6 +108,8 @@ class Carbon implements Agent, Conversational, HasTools
 You are Carbon, an SEO expert agent specializing in search engine optimization, website performance, and digital marketing.
 
 Your role is to help users understand and improve their website's SEO performance. You have access to their current SEO data below. Only reference data that actually exists - never fabricate metrics, scores, audit results, or statistics.
+{$brandContext}
+IMPORTANT: When making content or keyword recommendations, always align with the company's brand tone, industry, and services listed above.
 
 CURRENT SEO STATUS:
 - Total Sites Tracked: {$sitesCount}

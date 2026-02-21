@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\Apex\LinkedInController;
 use App\Http\Controllers\Api\Apex\PendingActionController;
 use App\Http\Controllers\Api\Apex\ProspectController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\PartnerDataController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicChatController;
 use App\Http\Controllers\Api\SquareWebhookController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
 use Illuminate\Http\Request;
@@ -17,6 +19,13 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/user-cynergist-status', UserCynergistStatusController::class);
+
+/*
+|--------------------------------------------------------------------------
+| Public Chat API Routes
+|--------------------------------------------------------------------------
+*/
+Route::post('/chat', [PublicChatController::class, 'chat']);
 
 /*
 |--------------------------------------------------------------------------
@@ -121,4 +130,19 @@ Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
     Route::post('/agents/{agent}/files', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'uploadFile']);
     Route::delete('/agents/{agent}/conversation', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'clearConversation']);
     Route::get('/luna/images/{imageId}/status', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'lunaImageStatus']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Partner Portal API Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->prefix('partner')->group(function () {
+    Route::get('/commissions', [PartnerDataController::class, 'commissions']);
+    Route::get('/payouts', [PartnerDataController::class, 'payouts']);
+    Route::get('/referrals', [PartnerDataController::class, 'referrals']);
+    Route::post('/referrals', [PartnerDataController::class, 'createReferral']);
+    Route::get('/deals', [PartnerDataController::class, 'deals']);
+    Route::get('/marketing-assets', [PartnerDataController::class, 'marketingAssets']);
+    Route::get('/scheduled-reports', [PartnerDataController::class, 'scheduledReports']);
 });

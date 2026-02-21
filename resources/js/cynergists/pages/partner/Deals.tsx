@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { usePartnerContext } from '@/contexts/PartnerContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import {
     ArrowUpRight,
     Briefcase,
@@ -95,13 +95,7 @@ export default function PartnerDeals() {
         if (!partner?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('partner_deals')
-                .select('*')
-                .eq('partner_id', partner.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await apiClient.get<Deal[]>('/partner/deals');
             setDeals(data || []);
         } catch (error) {
             console.error('Error fetching deals:', error);

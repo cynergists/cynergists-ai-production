@@ -2,7 +2,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { OrbitingButton } from '@/components/ui/orbiting-button';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { useEffect, useState } from 'react';

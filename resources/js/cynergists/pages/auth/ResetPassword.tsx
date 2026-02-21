@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { router } from '@inertiajs/react';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -66,13 +66,13 @@ const ResetPassword = () => {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.updateUser({
+            const urlParams = new URLSearchParams(window.location.search);
+            await apiClient.post('/password/reset', {
+                token: urlParams.get('token'),
+                email: urlParams.get('email'),
                 password: password,
+                password_confirmation: confirmPassword,
             });
-
-            if (error) {
-                throw error;
-            }
 
             setSuccess(true);
             toast({

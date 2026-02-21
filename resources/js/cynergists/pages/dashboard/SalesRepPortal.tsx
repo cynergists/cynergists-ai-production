@@ -2,272 +2,414 @@ import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { router } from '@inertiajs/react';
 import {
-    Calendar,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { router, usePage } from '@inertiajs/react';
+import {
+    BarChart3,
+    BookOpen,
+    Building2,
+    ChevronDown,
     DollarSign,
-    Loader2,
+    ExternalLink,
     LogOut,
-    Mail,
-    Phone,
+    MessageSquare,
     Target,
     TrendingUp,
+    User,
+    UserCircle,
     Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 
-interface UserProfile {
-    first_name: string | null;
-    last_name: string | null;
-    email: string;
+interface AuthUser {
+    id: number | string;
+    email?: string | null;
+}
+
+interface AuthProfile {
+    first_name?: string | null;
+    last_name?: string | null;
+    company_name?: string | null;
+}
+
+interface PageProps {
+    auth: {
+        user: AuthUser | null;
+        roles?: string[];
+        profile?: AuthProfile | null;
+    };
 }
 
 export default function SalesRepPortal() {
-    const [loading, setLoading] = useState(true);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const { props } = usePage<PageProps>();
+    const user = props.auth?.user ?? null;
+    const roles = props.auth?.roles ?? [];
+    const profile = props.auth?.profile;
+    const isSalesRep = roles.includes('sales_rep');
+    const isAdmin = roles.includes('admin');
 
+    // Redirect if not authenticated or not a sales rep / admin
     useEffect(() => {
-        checkAuthAndLoadData();
-    }, []);
-
-    const checkAuthAndLoadData = async () => {
-        try {
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
-
-            if (!session) {
-                router.visit('/signin');
-                return;
-            }
-
-            // Check if user has sales_rep role
-            const { data: hasRole } = await supabase.rpc('has_role', {
-                _user_id: session.user.id,
-                _role: 'sales_rep',
-            });
-
-            if (!hasRole) {
-                router.visit('/signin');
-                return;
-            }
-
-            // Fetch profile data
-            const { data: profileData } = await supabase.rpc(
-                'get_user_profile',
-                {
-                    _user_id: session.user.id,
-                },
-            );
-
-            if (profileData && profileData.length > 0) {
-                setProfile(profileData[0]);
-            }
-        } catch (error) {
-            console.error('Error loading sales rep portal:', error);
-            router.visit('/signin');
-        } finally {
-            setLoading(false);
+        if (!user) {
+            router.visit('/login');
+            return;
         }
-    };
+        if (!isSalesRep && !isAdmin) {
+            router.visit('/portal');
+        }
+    }, [user, isSalesRep, isAdmin]);
 
-    const handleSignOut = async () => {
-        await supabase.auth.signOut();
-        router.visit('/signin');
+    const handleLogout = () => {
+        router.post('/logout');
     };
-
-    if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
 
     const displayName = profile?.first_name
         ? `${profile.first_name}${profile.last_name ? ` ${profile.last_name}` : ''}`
-        : 'Sales Rep';
+        : user?.email
+          ? user.email.split('@')[0]
+          : 'Sales Rep';
+
+    const userEmail = user?.email ?? '';
+    const avatarInitials = profile?.first_name
+        ? `${profile.first_name[0]}${profile.last_name ? profile.last_name[0] : ''}`.toUpperCase()
+        : (user?.email?.[0] ?? 'S').toUpperCase();
+
+    if (!user || (!isSalesRep && !isAdmin)) {
+        return null;
+    }
 
     return (
         <>
             <Helmet>
                 <title>Sales Rep Portal | Cynergists</title>
-                <meta
-                    name="description"
-                    content="Access your sales dashboard, track prospects, and manage your pipeline."
-                />
             </Helmet>
 
-            <div className="min-h-screen bg-background">
+            <div className="flex h-dvh flex-col overflow-hidden bg-background">
                 {/* Header */}
-                <header className="border-b border-border bg-card">
-                    <div className="container mx-auto flex items-center justify-between px-4 py-4">
-                        <div className="flex items-center gap-4">
-                            <img
-                                src={cynergistsLogo}
-                                alt="Cynergists"
-                                className="h-8 w-auto"
-                            />
-                            <Badge variant="secondary">Sales Rep Portal</Badge>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">
-                                Welcome, {displayName}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSignOut}
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Sign Out
+                <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={cynergistsLogo}
+                            alt="Cynergists"
+                            className="h-24 object-contain"
+                        />
+                        <Badge variant="secondary" className="hidden md:inline-flex">
+                            Sales Rep Portal
+                        </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {isAdmin && (
+                            <Button variant="outline" size="sm" asChild>
+                                <a href="/admin">
+                                    Admin
+                                </a>
                             </Button>
-                        </div>
+                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-2">
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
+                                        {avatarInitials}
+                                    </div>
+                                    <ChevronDown className="h-3 w-3" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                                <div className="px-2 py-1.5">
+                                    <p className="text-sm font-medium text-foreground">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                                </div>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <a href="/portal/account/profile" className="flex items-center gap-2">
+                                        <User className="h-4 w-4" />
+                                        My Profile
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <a href="/portal" className="flex items-center gap-2">
+                                        <UserCircle className="h-4 w-4" />
+                                        Client Portal
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    Sign Out
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </header>
 
-                {/* Main Content */}
-                <main className="container mx-auto px-4 py-8">
-                    <div className="mb-8">
-                        <h1 className="mb-2 text-3xl font-bold text-foreground">
-                            Sales Dashboard
-                        </h1>
-                        <p className="text-muted-foreground">
-                            Track your prospects, clients, and performance
-                            metrics.
-                        </p>
-                    </div>
-
-                    {/* Metrics Grid */}
-                    <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* Main layout */}
+                <div className="flex min-h-0 flex-1 gap-6 overflow-hidden p-6">
+                    {/* Sidebar */}
+                    <aside className="hidden w-64 shrink-0 flex-col gap-4 lg:flex">
+                        {/* Quick Access Links */}
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Active Prospects
+                            <CardHeader className="pb-2">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <BookOpen className="h-4 w-4 text-primary" />
+                                    Quick Access
                                 </CardTitle>
-                                <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">0</div>
-                                <p className="text-xs text-muted-foreground">
-                                    In your pipeline
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Closed This Month
-                                </CardTitle>
-                                <Target className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">0</div>
-                                <p className="text-xs text-muted-foreground">
-                                    Deals closed
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Revenue Generated
-                                </CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">$0</div>
-                                <p className="text-xs text-muted-foreground">
-                                    This month
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Commission Earned
-                                </CardTitle>
-                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">$0</div>
-                                <p className="text-xs text-muted-foreground">
-                                    This month
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Quick Actions & Pipeline */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* Quick Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Quick Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
+                            <CardContent className="space-y-1">
                                 <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start gap-2"
+                                    asChild
                                 >
-                                    <Phone className="mr-2 h-4 w-4" />
-                                    Log a Call
+                                    <a
+                                        href="https://app.gohighlevel.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        GoHighLevel (GHL)
+                                    </a>
                                 </Button>
                                 <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start gap-2"
+                                    asChild
                                 >
-                                    <Mail className="mr-2 h-4 w-4" />
-                                    Send Email
+                                    <a
+                                        href="https://cynergists.idevaffiliate.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <DollarSign className="h-4 w-4" />
+                                        Commissions Dashboard
+                                    </a>
                                 </Button>
                                 <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start gap-2"
+                                    asChild
                                 >
-                                    <Calendar className="mr-2 h-4 w-4" />
-                                    Schedule Meeting
+                                    <a
+                                        href="https://app.gohighlevel.com/contacts"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <Users className="h-4 w-4" />
+                                        Lead Management
+                                    </a>
                                 </Button>
                             </CardContent>
                         </Card>
 
-                        {/* Recent Prospects */}
-                        <Card className="lg:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Your Prospects</CardTitle>
+                        {/* Attribution */}
+                        <Card className="border-primary/20 bg-primary/5">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <TrendingUp className="h-4 w-4 text-primary" />
+                                    Attribution
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="py-8 text-center text-muted-foreground">
-                                    <Users className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                                    <p>No prospects assigned yet.</p>
-                                    <p className="text-sm">
-                                        Contact your manager to get started.
-                                    </p>
-                                </div>
+                                <p className="mb-3 text-xs text-muted-foreground">
+                                    Your affiliate link tracks all referred clients for commission attribution.
+                                </p>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full gap-2"
+                                    asChild
+                                >
+                                    <a
+                                        href="https://cynergists.idevaffiliate.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        iDevAffiliate Portal
+                                    </a>
+                                </Button>
                             </CardContent>
                         </Card>
-                    </div>
+                    </aside>
 
-                    {/* Upcoming Tasks */}
-                    <Card className="mt-6">
-                        <CardHeader>
-                            <CardTitle>Upcoming Tasks</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="py-8 text-center text-muted-foreground">
-                                <Calendar className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                                <p>No upcoming tasks.</p>
-                                <p className="text-sm">
-                                    Your scheduled activities will appear here.
+                    {/* Main content */}
+                    <ScrollArea className="flex-1">
+                        <div className="space-y-6">
+                            {/* Welcome */}
+                            <div>
+                                <h1 className="text-2xl font-bold text-foreground">
+                                    Welcome back, {profile?.first_name ?? displayName}
+                                </h1>
+                                <p className="text-muted-foreground">
+                                    Here's your sales overview for today.
                                 </p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </main>
+
+                            {/* Metrics */}
+                            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">
+                                            Active Prospects
+                                        </CardTitle>
+                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">—</div>
+                                        <p className="text-xs text-muted-foreground">
+                                            In your pipeline
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">
+                                            Closed This Month
+                                        </CardTitle>
+                                        <Target className="h-4 w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">—</div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Deals closed
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">
+                                            Revenue Generated
+                                        </CardTitle>
+                                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">—</div>
+                                        <p className="text-xs text-muted-foreground">
+                                            This month
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">
+                                            Commission Earned
+                                        </CardTitle>
+                                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">—</div>
+                                        <p className="text-xs text-muted-foreground">
+                                            This month
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Client Accounts + Performance */}
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                {/* Client Accounts */}
+                                <Card className="lg:col-span-2">
+                                    <CardHeader className="flex flex-row items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Building2 className="h-5 w-5 text-primary" />
+                                            Client Accounts
+                                        </CardTitle>
+                                        <Badge variant="outline" className="text-xs">
+                                            Assigned
+                                        </Badge>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="py-8 text-center text-muted-foreground">
+                                            <Building2 className="mx-auto mb-3 h-10 w-10 opacity-30" />
+                                            <p className="text-sm font-medium">No accounts assigned yet</p>
+                                            <p className="mt-1 text-xs">
+                                                Contact your manager to get accounts assigned to your portfolio.
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Performance */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <BarChart3 className="h-5 w-5 text-primary" />
+                                            Performance
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Quota Attainment</span>
+                                            <span className="font-medium">—</span>
+                                        </div>
+                                        <Separator />
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Win Rate</span>
+                                            <span className="font-medium">—</span>
+                                        </div>
+                                        <Separator />
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Avg Deal Size</span>
+                                            <span className="font-medium">—</span>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-2 w-full gap-2"
+                                            asChild
+                                        >
+                                            <a
+                                                href="https://cynergists.idevaffiliate.com"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                Full Report
+                                            </a>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Team Chat — Coming Soon */}
+                            <Card className="border-dashed">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                                        Team Chat
+                                        <Badge variant="secondary" className="ml-auto text-xs">
+                                            Coming Soon
+                                        </Badge>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground">
+                                        A private internal chat for Sales Reps and authorized staff. Supports 1:1 messages,
+                                        group channels, and real-time notifications — fully isolated from client data.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </ScrollArea>
+                </div>
             </div>
         </>
     );

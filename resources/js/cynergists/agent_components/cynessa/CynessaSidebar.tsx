@@ -1,3 +1,4 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -19,6 +20,8 @@ import {
 
 interface CynessaSidebarProps {
     agentDetails: any;
+    activeView?: string;
+    setActiveView?: (view: string) => void;
     setupProgress: {
         completed: number;
         total: number;
@@ -43,6 +46,8 @@ const getFileIcon = (filename: string) => {
 
 export default function CynessaSidebar({
     agentDetails,
+    activeView,
+    setActiveView,
     setupProgress,
 }: CynessaSidebarProps) {
     // Extract tenant data from agentDetails
@@ -63,6 +68,14 @@ export default function CynessaSidebar({
 
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
+            {/* Quick Links */}
+            <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-5">
+                <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
+                    Quick Links
+                </h2>
+                <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+            </div>
+
             {/* Onboarding Information */}
             <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-5">
                 <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">

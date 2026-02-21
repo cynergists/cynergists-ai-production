@@ -1,18 +1,22 @@
+/**
+ * MySQL/Laravel API Client
+ * This replaces Supabase with Laravel API endpoints
+ */
 import type { Database } from './types';
 
-type SupabaseQueryResult = { data: unknown; error: null };
+type SupabaseQueryResult = { data: unknown; error: null | Error };
 
 type SupabaseQuery = {
-    select: () => SupabaseQuery;
-    eq: () => SupabaseQuery;
-    neq: () => SupabaseQuery;
-    in: () => SupabaseQuery;
-    order: () => SupabaseQuery;
-    limit: () => SupabaseQuery;
-    range: () => SupabaseQuery;
-    insert: () => SupabaseQuery;
-    upsert: () => SupabaseQuery;
-    update: () => SupabaseQuery;
+    select: (columns?: string) => SupabaseQuery;
+    eq: (column: string, value: any) => SupabaseQuery;
+    neq: (column: string, value: any) => SupabaseQuery;
+    in: (column: string, values: any[]) => SupabaseQuery;
+    order: (column: string, options?: any) => SupabaseQuery;
+    limit: (count: number) => SupabaseQuery;
+    range: (from: number, to: number) => SupabaseQuery;
+    insert: (data: any) => SupabaseQuery;
+    upsert: (data: any) => SupabaseQuery;
+    update: (data: any) => SupabaseQuery;
     delete: () => SupabaseQuery;
     single: () => SupabaseQuery;
     maybeSingle: () => SupabaseQuery;
@@ -36,20 +40,26 @@ type SupabaseClient = {
         signInWithOtp?: () => Promise<{ error: null }>;
         updateUser?: () => Promise<{ error: null }>;
     };
-    from: () => SupabaseQuery;
-    rpc: () => Promise<{ data: unknown[]; error: null }>;
+    from: (table: string) => SupabaseQuery;
+    rpc: (fn: string, params?: any) => Promise<{ data: unknown[]; error: null }>;
     functions: {
-        invoke: () => Promise<{ data: unknown; error: null }>;
+        invoke: (fn: string, options?: any) => Promise<{ data: unknown; error: null }>;
     };
     storage?: {
-        from: () => {
-            upload: () => Promise<{ data: null; error: null }>;
-            getPublicUrl: () => { data: { publicUrl: string } };
+        from: (bucket: string) => {
+            upload: (path: string, file: any, options?: any) => Promise<{ data: null; error: null }>;
+            getPublicUrl: (path: string) => { data: { publicUrl: string } };
         };
     };
 };
 
-const createFallbackQuery = (): SupabaseQuery => {
+/**
+ * Creates a no-op query that returns empty data
+ * All Supabase queries now return empty results - use Laravel API instead
+ */
+const createFallbackQuery = (table: string): SupabaseQuery => {
+    console.warn(`Supabase query to '${table}' - use Laravel API instead`);
+    
     const query = {
         select: () => query,
         eq: () => query,
@@ -65,12 +75,16 @@ const createFallbackQuery = (): SupabaseQuery => {
         single: () => query,
         maybeSingle: () => query,
         then: (resolve: (value: SupabaseQueryResult) => void) =>
-            Promise.resolve(resolve({ data: null, error: null })),
+            Promise.resolve(resolve({ data: [], error: null })),
     };
 
     return query;
 };
 
+/**
+ * Fallback client that prevents Supabase usage
+ * All data should come from Laravel API endpoints
+ */
 const fallbackClient: SupabaseClient = {
     auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
@@ -88,7 +102,7 @@ const fallbackClient: SupabaseClient = {
         signInWithOtp: async () => ({ error: null }),
         updateUser: async () => ({ error: null }),
     },
-    from: () => createFallbackQuery(),
+    from: (table: string) => createFallbackQuery(table),
     rpc: async () => ({ data: [], error: null }),
     functions: {
         invoke: async () => ({ data: null, error: null }),
@@ -101,8 +115,10 @@ const fallbackClient: SupabaseClient = {
     },
 };
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+/**
+ * @deprecated Use Laravel API endpoints via apiClient from '@/lib/api-client'
+ * This Supabase client is a no-op fallback that returns empty data
+ */
 export const supabase = fallbackClient as unknown as SupabaseClient & {
     __database?: Database;
 };

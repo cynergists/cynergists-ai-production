@@ -1,3 +1,4 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,18 +12,27 @@ import {
     Shield,
     Upload,
     Download,
-    Trash2,
 } from 'lucide-react';
 
 interface ArsenalSidebarProps {
-    onClearChat?: () => void;
+    activeView?: string;
+    setActiveView?: (view: string) => void;
+    agentDetails?: any;
 }
 
-export default function ArsenalSidebar({ onClearChat }: ArsenalSidebarProps) {
+export default function ArsenalSidebar({ activeView, setActiveView }: ArsenalSidebarProps) {
     return (
         <div className="h-full">
             <ScrollArea className="h-full px-3 py-4">
                 <div className="space-y-4">
+                    {/* Quick Links */}
+                    <div className="flex flex-col rounded-2xl border border-primary/20 bg-card p-4">
+                        <h2 className="mb-3 shrink-0 text-base font-semibold text-foreground">
+                            Quick Links
+                        </h2>
+                        <AgentQuickLinks activeView={activeView ?? 'chat'} setActiveView={setActiveView ?? (() => {})} />
+                    </div>
+
                     {/* Agent Status */}
                     <Card className="border-orange-500/20 bg-orange-50/50 p-3 dark:bg-orange-950/20">
                         <div className="mb-2 flex items-center gap-2">
@@ -135,19 +145,6 @@ export default function ArsenalSidebar({ onClearChat }: ArsenalSidebarProps) {
                             <div>• Database exports</div>
                         </div>
                     </Card>
-
-                    {/* Session Controls */}
-                    <div className="pt-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full gap-2"
-                            onClick={onClearChat}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            Clear Session
-                        </Button>
-                    </div>
 
                     {/* Help */}
                     <Card className="border-blue-500/20 bg-blue-50/50 p-3 dark:bg-blue-950/20">

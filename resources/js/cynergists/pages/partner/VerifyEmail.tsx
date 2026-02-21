@@ -6,7 +6,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { CheckCircle2, Mail, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/logger';
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
@@ -24,11 +24,7 @@ export default function ForgotPassword() {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
-            });
-
-            if (error) throw error;
+            await apiClient.post('/password/email', { email });
 
             setSent(true);
         } catch (error: unknown) {

@@ -1,14 +1,6 @@
+import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import {
-    Film,
-    Gauge,
-    MessageSquare,
-    Palette,
-    Settings,
-    TrendingUp,
-    Video,
-} from 'lucide-react';
+import { Gauge, Settings, TrendingUp, Video } from 'lucide-react';
 
 interface KinetixSidebarProps {
     activeView: string;
@@ -29,12 +21,6 @@ export default function KinetixSidebar({
         ? Math.max(0, usage.monthly_limit - usage.current_usage)
         : 0;
 
-    const navItems = [
-        { key: 'chat', label: 'Chat', icon: MessageSquare },
-        { key: 'video-library', label: 'Video Library', icon: Film },
-        { key: 'brand-settings', label: 'Brand Settings', icon: Palette },
-    ];
-
     return (
         <div className="hidden min-h-0 w-[300px] shrink-0 flex-col gap-6 transition-all duration-300 lg:flex">
             {/* Quick Links */}
@@ -42,27 +28,7 @@ export default function KinetixSidebar({
                 <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                     Quick Links
                 </h2>
-                <nav className="flex flex-col space-y-2">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-
-                        return (
-                            <button
-                                key={item.key}
-                                onClick={() => setActiveView(item.key)}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
-                                    activeView === item.key
-                                        ? 'border-l-primary bg-primary/10 text-primary'
-                                        : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
-                                )}
-                            >
-                                <Icon className="h-5 w-5 shrink-0" />
-                                {item.label}
-                            </button>
-                        );
-                    })}
-                </nav>
+                <AgentQuickLinks activeView={activeView} setActiveView={setActiveView} />
             </div>
 
             {/* Usage & Brand */}
