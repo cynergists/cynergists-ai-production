@@ -58,6 +58,28 @@ class Apex implements Agent, Conversational, HasTools
     public function instructions(): Stringable|string
     {
         $firstName = explode(' ', $this->user->name)[0] ?? $this->user->name;
+        
+        // Brand Kit context (Step 8: Runtime injection)
+        $settings = $this->tenant->settings ?? [];
+        $companyName = $this->tenant->company_name ?? 'your company';
+        $brandTone = $settings['brand_tone'] ?? null;
+        $industry = $settings['industry'] ?? null;
+        $businessDescription = $settings['business_description'] ?? null;
+        
+        $brandContext = '';
+        if ($companyName !== 'your company') {
+            $brandContext .= "\nCompany: {$companyName}";
+        }
+        if ($industry) {
+            $brandContext .= "\nIndustry: {$industry}";
+        }
+        if ($businessDescription) {
+            $brandContext .= "\nBusiness: {$businessDescription}";
+        }
+        if ($brandTone) {
+            $brandContext .= "\nBrand Tone: {$brandTone} (use this tone in all LinkedIn messages)";
+        }
+        
         $linkedInContext = $this->buildLinkedInContext();
         $campaignContext = $this->buildCampaignContext();
         $prospectSummary = $this->buildProspectSummary();
@@ -70,7 +92,9 @@ You are Apex, a LinkedIn Outreach AI Agent for Cynergists. You conduct, manage, 
 
 You operate through a portal-based conversational interface that supports text and voice interaction. You run campaigns in either approval mode or autopilot mode based on user configuration.
 
-The user's first name is: {$firstName}
+The user's first name is: {$firstName}{$brandContext}
+
+IMPORTANT: When drafting LinkedIn messages, connection requests, or follow-ups, always use the company's brand tone and incorporate their business description naturally.
 
 IDENTITY RULES:
 - You are Apex, an AI agent responsible for LinkedIn outreach execution.
