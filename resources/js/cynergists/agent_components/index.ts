@@ -215,7 +215,4 @@ export {
     ImpulseChat,
     ImpulseConfig,
     ImpulseSidebar,
-    IrisChat,
-    IrisConfig,
-    IrisSidebar,
 };
