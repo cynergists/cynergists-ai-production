@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import {
     Loader2,
     Mic,
+    Paperclip,
     Send,
     Square,
 } from 'lucide-react';
@@ -22,9 +23,13 @@ interface VectorChatProps {
     input: string;
     setInput: (value: string) => void;
     isStreaming: boolean;
+    isUploading: boolean;
     agentDetails: any;
+    fileInputRef: React.RefObject<HTMLInputElement>;
     scrollRef: React.RefObject<HTMLDivElement>;
     onSend: (e: React.FormEvent) => void;
+    onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onFileClick: () => void;
     selectedAgentId?: string | null;
     onMessageReceived?: (message: {
         role: 'user' | 'assistant';
@@ -38,9 +43,13 @@ export function VectorChat({
     input,
     setInput,
     isStreaming,
+    isUploading,
     agentDetails,
+    fileInputRef,
     scrollRef,
     onSend,
+    onFileSelect,
+    onFileClick,
     selectedAgentId,
     onMessageReceived,
 }: VectorChatProps) {

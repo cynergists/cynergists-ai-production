@@ -22,7 +22,7 @@ it('blocks non-admin users', function () {
 
     $this->actingAs($user)
         ->get('/admin/middleware-test')
-        ->assertForbidden();
+        ->assertRedirect('/portal');
 });
 
 it('allows admin users', function () {

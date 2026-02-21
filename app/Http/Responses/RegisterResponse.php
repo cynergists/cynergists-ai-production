@@ -22,7 +22,7 @@ class RegisterResponse implements RegisterResponseContract
         }
 
         if (in_array('sales_rep', $roles, true)) {
-            return redirect()->to('/sales-rep');
+            return redirect()->to('/sales');
         }
 
         if (in_array('employee', $roles, true)) {

@@ -2,6 +2,7 @@ import Layout from '@/components/layout/Layout';
 import { MarketplaceAgentCard } from '@/components/marketplace/MarketplaceAgentCard';
 import { SuggestAgentDialog } from '@/components/marketplace/SuggestAgentDialog';
 import { type AIAgent } from '@/components/ui/AIAgentCard';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

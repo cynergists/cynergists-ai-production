@@ -19,7 +19,7 @@ class CreateUser extends CreateRecord
 
     protected function afterCreate(): void
     {
-        $selectedRoles = $this->data['roles'] ?? [];
+        $selectedRoles = $this->normalizeRoles($this->data['roles'] ?? []);
 
         foreach ($selectedRoles as $role) {
             UserRole::create([
@@ -33,5 +33,21 @@ class CreateUser extends CreateRecord
             'user' => $this->record,
             'generate_password_reset_link' => true,
         ]);
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     * @return array<int, string>
+     */
+    private function normalizeRoles(array $roles): array
+    {
+        $allowedRoles = ['admin', 'client', 'sales_rep'];
+        $filteredRoles = array_values(array_intersect($roles, $allowedRoles));
+
+        if (! in_array('client', $filteredRoles, true)) {
+            $filteredRoles[] = 'client';
+        }
+
+        return array_values(array_unique($filteredRoles));
     }
 }

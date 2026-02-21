@@ -10,6 +10,7 @@ import {
     Download,
     Loader2,
     Mic,
+    Paperclip,
     Send,
     Square,
 } from 'lucide-react';
@@ -173,9 +174,13 @@ export function LunaChat({
     input,
     setInput,
     isStreaming,
+    isUploading,
     agentDetails,
+    fileInputRef,
     scrollRef,
     onSend,
+    onFileSelect,
+    onFileClick,
     selectedAgentId,
     onMessageReceived,
 }: LunaChatProps) {

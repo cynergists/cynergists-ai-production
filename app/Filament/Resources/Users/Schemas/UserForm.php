@@ -46,14 +46,14 @@ class UserForm
                             ->schema([
                                 CheckboxList::make('roles')
                                     ->label('Roles')
-                                    ->helperText('Assign roles to control user access throughout the application.')
+                                    ->helperText('Assign access roles. Client is required and always enabled.')
                                     ->options([
                                         'admin' => 'Admin - Full access to Filament admin panel',
                                         'client' => 'Client - Portal access for customers',
-                                        'partner' => 'Partner - Partner dashboard access',
                                         'sales_rep' => 'Sales Rep - Sales tools access',
-                                        'employee' => 'Employee - Internal employee access',
                                     ])
+                                    ->default(['client'])
+                                    ->disableOptionWhen(fn (string $value): bool => $value === 'client')
                                     ->columns(2)
                                     ->bulkToggleable()
                                     ->dehydrated(false)
