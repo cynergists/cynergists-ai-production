@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { Link, router, usePage } from '@inertiajs/react';
-import { Loader2, Mail, Moon, Sun } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 
@@ -58,7 +58,7 @@ export default function SignIn() {
     const [loading, setLoading] = useState(false);
     const [checkingSession, setCheckingSession] = useState(true);
     const [redirecting, setRedirecting] = useState(false);
-    const [darkMode, setDarkMode] = useState(true);
+    const darkMode = true;
     const { toast } = useToast();
 
     useEffect(() => {
@@ -73,7 +73,7 @@ export default function SignIn() {
 
     const resolveRedirectForRoles = (roles: string[]) => {
         if (roles.includes('admin')) return '/admin/dashboard';
-        if (roles.includes('sales_rep')) return '/sales-rep';
+        if (roles.includes('sales_rep')) return '/sales';
         if (roles.includes('employee')) return '/employee';
         if (roles.includes('partner') && !roles.includes('client'))
             return '/partner';
@@ -254,19 +254,6 @@ export default function SignIn() {
             <div
                 className={`flex min-h-screen items-center justify-center p-4 ${darkMode ? 'bg-background' : 'bg-slate-100'}`}
             >
-                {/* Theme toggle */}
-                <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className="fixed top-4 right-4 rounded-lg border border-border bg-card p-2 transition-colors hover:bg-muted"
-                    aria-label="Toggle theme"
-                >
-                    {darkMode ? (
-                        <Sun className="h-5 w-5 text-foreground" />
-                    ) : (
-                        <Moon className="h-5 w-5 text-slate-700" />
-                    )}
-                </button>
-
                 <div
                     className={`w-full max-w-md ${darkMode ? 'border-border bg-card' : 'border-slate-200 bg-white'} rounded-2xl border p-8 shadow-xl`}
                 >

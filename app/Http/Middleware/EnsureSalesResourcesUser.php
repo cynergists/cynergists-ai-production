@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureAdminUser
+class EnsureSalesResourcesUser
 {
     /**
      * Handle an incoming request.
@@ -26,9 +26,11 @@ class EnsureAdminUser
             return redirect()->to('/signin?redirect='.urlencode($request->getRequestUri()));
         }
 
-        $isAdmin = $user->userRoles()->where('role', 'admin')->exists();
+        $hasAccess = $user->userRoles()
+            ->whereIn('role', ['sales_rep', 'admin'])
+            ->exists();
 
-        if (! $isAdmin) {
+        if (! $hasAccess) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 abort(403);
             }

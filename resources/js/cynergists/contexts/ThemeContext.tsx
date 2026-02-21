@@ -3,44 +3,32 @@ import {
     ReactNode,
     useContext,
     useEffect,
-    useState,
 } from 'react';
 
-type Theme = 'dark' | 'light';
+type Theme = 'dark';
 
 interface ThemeContextType {
     theme: Theme;
-    toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<Theme>(() => {
-        const stored = localStorage.getItem('theme') as Theme | null;
-        return stored || 'dark';
-    });
+    const theme: Theme = 'dark';
 
     useEffect(() => {
         const root = document.documentElement;
 
-        if (theme === 'dark') {
-            root.classList.add('dark');
-            root.classList.remove('light');
-        } else {
-            root.classList.add('light');
-            root.classList.remove('dark');
-        }
+        root.classList.add('dark');
+        root.classList.remove('light');
 
-        localStorage.setItem('theme', theme);
+        localStorage.setItem('theme', 'dark');
+        document.cookie =
+            'appearance=dark;path=/;max-age=31536000;SameSite=Lax';
     }, [theme]);
 
-    const toggleTheme = () => {
-        setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-    };
-
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme }}>
             {children}
         </ThemeContext.Provider>
     );

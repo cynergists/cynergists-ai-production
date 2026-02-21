@@ -1,5 +1,3 @@
-import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { router, usePage } from '@inertiajs/react';
@@ -10,7 +8,6 @@ import {
     Clock,
     FileText,
     Loader2,
-    LogOut,
     User,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -36,7 +33,6 @@ export default function EmployeePortal() {
     }>();
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
         const user = props.auth?.user;
@@ -52,8 +48,6 @@ export default function EmployeePortal() {
             return;
         }
 
-        setIsAdmin(roles.includes('admin'));
-
         const profileData = props.auth?.profile;
         setProfile({
             first_name: profileData?.first_name ?? null,
@@ -64,22 +58,6 @@ export default function EmployeePortal() {
         setLoading(false);
     }, [props.auth]);
 
-    const handleSignOut = () => {
-        router.post(
-            '/logout',
-            {},
-            {
-                onFinish: () => {
-                    router.visit('/signin');
-                },
-            },
-        );
-    };
-
-    const handleGoToAdmin = () => {
-        router.visit('/admin/dashboard');
-    };
-
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
@@ -87,10 +65,6 @@ export default function EmployeePortal() {
             </div>
         );
     }
-
-    const displayName = profile?.first_name
-        ? `${profile.first_name}${profile.last_name ? ` ${profile.last_name}` : ''}`
-        : 'Employee';
 
     return (
         <>
@@ -103,47 +77,6 @@ export default function EmployeePortal() {
             </Helmet>
 
             <div className="min-h-screen bg-background">
-                {/* Header */}
-                <header className="border-b border-border bg-card">
-                    <div className="container mx-auto flex items-center justify-between px-4 py-4">
-                        <div className="flex items-center gap-4">
-                            <img
-                                src={cynergistsLogo}
-                                alt="Cynergists"
-                                className="h-8 w-auto"
-                            />
-                            <Badge variant="secondary">Employee Portal</Badge>
-                            {isAdmin && (
-                                <Badge variant="default" className="bg-primary">
-                                    Admin Access
-                                </Badge>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">
-                                Welcome, {displayName}
-                            </span>
-                            {isAdmin && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleGoToAdmin}
-                                >
-                                    Admin Panel
-                                </Button>
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSignOut}
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Sign Out
-                            </Button>
-                        </div>
-                    </div>
-                </header>
-
                 {/* Main Content */}
                 <main className="container mx-auto px-4 py-8">
                     <div className="mb-8">

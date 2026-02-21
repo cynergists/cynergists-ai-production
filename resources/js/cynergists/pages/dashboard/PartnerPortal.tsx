@@ -1,6 +1,6 @@
 import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import { Button } from '@/components/ui/button';
-import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/integrations/supabase/client';
 import { router } from '@inertiajs/react';
 import {
     AlertCircle,
@@ -66,14 +66,14 @@ export default function PartnerPortal() {
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
+        } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!session) {
                 router.visit('/signin');
             }
         });
 
         return () => subscription.unsubscribe();
-    }, [navigate]);
+    }, []);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
