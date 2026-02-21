@@ -1,4 +1,4 @@
-import cynergistsLogo from '@/assets/cynergists-logo-new.png';
+import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';

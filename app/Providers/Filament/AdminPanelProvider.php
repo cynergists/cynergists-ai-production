@@ -38,6 +38,13 @@ class AdminPanelProvider extends PanelProvider
                         localStorage.setItem('_x_isOpen', 'false');
                     }
                 </script>
+                <style>
+                    .fi-topbar-start .fi-logo,
+                    .fi-sidebar-header .fi-logo {
+                        margin-top: 0.5rem;
+                        margin-bottom: 0.5rem;
+                    }
+                </style>
             HTML),
         );
     }
@@ -50,10 +57,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('filament')
             ->login()
             ->brandName('Cynergists AI')
-            ->brandLogo(asset('logo-admin.svg'))
-            ->darkModeBrandLogo(asset('logo-admin.svg'))
-            ->brandLogoHeight('2rem')
-            ->favicon(asset('favicon.svg'))
+            ->brandLogo(asset('logo-admin.webp'))
+            ->darkModeBrandLogo(asset('logo-admin.webp'))
+            ->brandLogoHeight('4rem')
+            ->favicon(asset('favicon.png'))
             ->darkMode(true)
             ->colors([
                 'primary' => '#84cc16',  // Tailwind lime-500: exact match for homepage

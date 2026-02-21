@@ -102,7 +102,7 @@ const HeroSection = () => {
                                 className="btn-primary group px-8 py-6 text-lg"
                             >
                                 <Link href="/marketplace">
-                                    Assemble Your Team
+                                    Deploy Your Agents Now
                                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </OrbitingButton>

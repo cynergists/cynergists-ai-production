@@ -17,7 +17,7 @@ class FilamentAdminUsersSeeder extends Seeder
         $adminUsers = [
             [
                 'name' => 'Mike',
-                'email' => 'mike@cynergists.com',
+                'email' => 'mike@cynergists.ai',
             ],
             [
                 'name' => 'Chris',
@@ -25,7 +25,7 @@ class FilamentAdminUsersSeeder extends Seeder
             ],
             [
                 'name' => 'Ryan',
-                'email' => 'ryan@cynergists.com',
+                'email' => 'ryan@cynergists.ai',
             ],
             [
                 'name' => 'Jeffrey',
@@ -33,7 +33,7 @@ class FilamentAdminUsersSeeder extends Seeder
             ],
             [
                 'name' => 'Andrew',
-                'email' => 'andrew@cynergists.com',
+                'email' => 'andrew@cynergists.ai',
             ],
         ];
 
