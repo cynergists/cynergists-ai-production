@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('portal_available_agents', function (Blueprint $table) {
-            $table->string('job_title')->nullable()->after('name');
+            if (! Schema::hasColumn('portal_available_agents', 'job_title')) {
+                $table->string('job_title')->nullable()->after('name');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('portal_available_agents', function (Blueprint $table) {
-            $table->dropColumn('job_title');
+            if (Schema::hasColumn('portal_available_agents', 'job_title')) {
+                $table->dropColumn('job_title');
+            }
         });
     }
 };
