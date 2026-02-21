@@ -120,13 +120,13 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <ImpersonationBanner />
                     
                     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
-                        <div>
+                        <a href="/" className="group flex items-center">
                             <img
                                 src={cynergistsLogo}
                                 alt="Cynergists AI"
-                                className="h-48 object-contain"
+                                className="logo-glow h-14 w-auto transition-transform group-hover:scale-105 md:h-24"
                             />
-                        </div>
+                        </a>
 
                         {/* Desktop nav */}
                         <div className="hidden items-center gap-3 md:flex">
