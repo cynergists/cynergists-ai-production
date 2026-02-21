@@ -1,5 +1,4 @@
 import Footer from '@/components/layout/Footer';
-import Header from '@/components/layout/Header';
 import { Briefcase } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 
@@ -13,9 +12,6 @@ const Careers = () => {
                     content="Explore career opportunities at Cynergists. Join our team and help businesses leverage AI agents for growth."
                 />
             </Helmet>
-
-            <Header />
-
             <main className="container mx-auto flex-1 px-4 py-16 md:py-24">
                 <div className="mx-auto max-w-2xl text-center">
                     <div className="mb-8 flex justify-center">

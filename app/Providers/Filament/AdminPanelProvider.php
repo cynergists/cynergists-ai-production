@@ -39,7 +39,6 @@ class AdminPanelProvider extends PanelProvider
                     }
                 </script>
                 <style>
-                    .fi-topbar-start .fi-logo,
                     .fi-sidebar-header .fi-logo {
                         margin-top: 0.5rem;
                         margin-bottom: 0.5rem;

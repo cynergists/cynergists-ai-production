@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { Link, router, usePage } from '@inertiajs/react';
-import { Loader2, Moon, Sun } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 
@@ -16,7 +16,7 @@ export default function Welcome() {
     const [email, setEmail] = useState(initialEmail);
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [darkMode, setDarkMode] = useState(true);
+    const darkMode = true;
     const { toast } = useToast();
 
     const handleSignIn = async (e: React.FormEvent) => {
@@ -65,19 +65,6 @@ export default function Welcome() {
             <div
                 className={`flex min-h-screen items-center justify-center p-4 ${darkMode ? 'bg-background' : 'bg-slate-100'}`}
             >
-                {/* Theme toggle */}
-                <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className="fixed top-4 right-4 rounded-lg border border-border bg-card p-2 transition-colors hover:bg-muted"
-                    aria-label="Toggle theme"
-                >
-                    {darkMode ? (
-                        <Sun className="h-5 w-5 text-foreground" />
-                    ) : (
-                        <Moon className="h-5 w-5 text-slate-700" />
-                    )}
-                </button>
-
                 <div
                     className={`w-full max-w-md ${darkMode ? 'border-border bg-card' : 'border-slate-200 bg-white'} rounded-2xl border p-8 shadow-xl`}
                 >

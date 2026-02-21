@@ -167,7 +167,7 @@ it('assigns correct roles when creating user', function () {
         ->set('data.name', 'Multi-Role User')
         ->set('data.email', 'multirole@example.com')
         ->set('data.is_active', true)
-        ->set('data.roles', ['client', 'partner'])
+        ->set('data.roles', ['admin', 'sales_rep'])
         ->call('create')
         ->assertHasNoErrors();
 
@@ -175,8 +175,9 @@ it('assigns correct roles when creating user', function () {
     $roles = $user->userRoles->pluck('role')->toArray();
 
     expect($roles)->toContain('client');
-    expect($roles)->toContain('partner');
-    expect(count($roles))->toBe(2);
+    expect($roles)->toContain('admin');
+    expect($roles)->toContain('sales_rep');
+    expect(count($roles))->toBe(3);
 });
 
 it('creates user successfully even if welcome email event does not exist', function () {

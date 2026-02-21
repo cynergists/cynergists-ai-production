@@ -81,7 +81,9 @@ class EditUser extends EditRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         // Load roles
-        $data['roles'] = $this->record->userRoles()->pluck('role')->toArray();
+        $data['roles'] = $this->normalizeRoles(
+            $this->record->userRoles()->pluck('role')->toArray(),
+        );
 
         // Load agents - get the agent IDs from portal_available_agents that match agent_name in agent_access
         $tenant = PortalTenant::forUser($this->record);
@@ -111,8 +113,10 @@ class EditUser extends EditRecord
 
     private function syncRoles(): void
     {
-        $selectedRoles = $this->data['roles'] ?? [];
-        $currentRoles = $this->record->userRoles()->pluck('role')->toArray();
+        $selectedRoles = $this->normalizeRoles($this->data['roles'] ?? []);
+        $currentRoles = $this->normalizeRoles(
+            $this->record->userRoles()->pluck('role')->toArray(),
+        );
 
         // Remove roles that were unchecked
         $rolesToRemove = array_diff($currentRoles, $selectedRoles);
@@ -128,6 +132,22 @@ class EditUser extends EditRecord
                 'role' => $role,
             ]);
         }
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     * @return array<int, string>
+     */
+    private function normalizeRoles(array $roles): array
+    {
+        $allowedRoles = ['admin', 'client', 'sales_rep'];
+        $filteredRoles = array_values(array_intersect($roles, $allowedRoles));
+
+        if (! in_array('client', $filteredRoles, true)) {
+            $filteredRoles[] = 'client';
+        }
+
+        return array_values(array_unique($filteredRoles));
     }
 
     private function syncAgents(): void

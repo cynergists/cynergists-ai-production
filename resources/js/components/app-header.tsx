@@ -31,7 +31,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, Search, Shield } from 'lucide-react';
+import { LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
@@ -57,19 +57,27 @@ const activeItemStyles =
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
+    const roles = auth.roles ?? [];
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
-    const isAdmin = auth.roles?.includes('admin');
-    const navigationItems = isAdmin
-        ? [
-              ...mainNavItems,
-              {
-                  title: 'Admin',
-                  href: '/admin',
-                  icon: Shield,
-              },
-          ]
-        : mainNavItems;
+    const navigationItems = mainNavItems;
+    const sectionNavItems: Array<{ key: string; label: string; href: string }> = [
+        { key: 'marketplace', label: 'Marketplace', href: '/marketplace' },
+        { key: 'portal', label: 'AI Agent Portal', href: '/portal' },
+    ];
+
+    if (roles.includes('sales_rep') || roles.includes('admin')) {
+        sectionNavItems.push({
+            key: 'sales',
+            label: 'Sales Resources',
+            href: '/sales',
+        });
+    }
+
+    if (roles.includes('admin')) {
+        sectionNavItems.push({ key: 'admin', label: 'Admin', href: '/admin' });
+    }
+
     return (
         <>
             <div className="border-sidebar-border/80 border-b">
@@ -109,6 +117,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                         <item.icon className="h-5 w-5" />
                                                     )}
                                                     <span>{item.title}</span>
+                                                </Link>
+                                            ))}
+                                            {sectionNavItems.map((item) => (
+                                                <Link
+                                                    key={item.key}
+                                                    href={item.href}
+                                                    className="flex items-center space-x-2 font-medium"
+                                                >
+                                                    <span>{item.label}</span>
                                                 </Link>
                                             ))}
                                         </div>
@@ -178,14 +195,20 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
-                        <div className="relative flex items-center space-x-1">
-                            {isAdmin && (
-                                <Button asChild size="sm" variant="outline">
-                                    <Link href="/admin" prefetch>
-                                        Admin
-                                    </Link>
+                        <div className="hidden items-center gap-1 xl:flex">
+                            {sectionNavItems.map((item) => (
+                                <Button
+                                    key={item.key}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="gap-2 text-foreground/70 hover:bg-muted/80 hover:text-foreground"
+                                    asChild
+                                >
+                                    <Link href={item.href}>{item.label}</Link>
                                 </Button>
-                            )}
+                            ))}
+                        </div>
+                        <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"
                                 size="icon"
