@@ -42,7 +42,8 @@ class PortalAvailableAgent extends Model
         'description',
         'price',
         'billing_type',
-        'category',
+        'category', // Legacy - keep for backward compatibility
+        'category_id', // New - foreign key to agent_categories
         'website_category',
         'icon',
         'features',
@@ -128,5 +129,13 @@ class PortalAvailableAgent extends Model
             })
             ->orderByPivot('priority', 'desc')
             ->first();
+    }
+
+    /**
+     * Get the category this agent belongs to.
+     */
+    public function agentCategory()
+    {
+        return $this->belongsTo(AgentCategory::class, 'category_id');
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PartnerDashboardController;
 use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
 use App\Http\Controllers\Api\Admin\AdminOnboardingController;
+use App\Http\Controllers\Api\Admin\AgentCategoryController;
 use App\Http\Controllers\Api\Admin\ImpersonationController;
 use App\Http\Controllers\Api\Portal\BrandKitController;
 use App\Http\Controllers\Api\Portal\PortalAccountController;
@@ -247,7 +248,18 @@ Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(functi
     Route::post('/admin/impersonate/end', [ImpersonationController::class, 'end']);
     Route::get('/admin/impersonate/status', [ImpersonationController::class, 'status']);
     Route::get('/admin/impersonate/logs', [ImpersonationController::class, 'logs']);
+    
+    // Agent Category routes
+    Route::get('/admin/categories', [AgentCategoryController::class, 'index']);
+    Route::post('/admin/categories', [AgentCategoryController::class, 'store']);
+    Route::put('/admin/categories/{category}', [AgentCategoryController::class, 'update']);
+    Route::post('/admin/categories/{category}/archive', [AgentCategoryController::class, 'archive']);
+    Route::post('/admin/categories/{category}/unarchive', [AgentCategoryController::class, 'unarchive']);
+    Route::post('/admin/categories/reorder', [AgentCategoryController::class, 'reorder']);
 });
+
+// Public category endpoint (for dropdowns)
+Route::get('/api/categories/active', [AgentCategoryController::class, 'active']);
 
 Route::get('/meetryan/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetRyanThankYou');
 Route::get('/meetchris/thank-you', [CynergistsPageController::class, 'page'])->defaults('component', 'MeetChrisThankYou');
