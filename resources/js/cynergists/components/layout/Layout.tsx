@@ -30,7 +30,7 @@ const Layout = ({
                 selectedCategories={selectedCategories}
                 onCategoryChange={onCategoryChange}
             />
-            <main className="flex-1 pt-20">{children}</main>
+            <main className="flex-1 pt-20 md:pt-28">{children}</main>
             <Footer />
             <AccessibilityWidget />
             <Chatbot />

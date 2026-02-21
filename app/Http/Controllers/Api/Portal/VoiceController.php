@@ -7,8 +7,8 @@ use App\Models\AgentAccess;
 use App\Models\AgentConversation;
 use App\Models\PortalAvailableAgent;
 use App\Models\PortalTenant;
-use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Aether\AetherAgentHandler;
+use App\Services\Ai\ConversationHistoryWindow;
 use App\Services\Apex\ApexAgentHandler;
 use App\Services\Beacon\BeaconAgentHandler;
 use App\Services\Briggs\BriggsAgentHandler;
@@ -210,7 +210,7 @@ class VoiceController extends Controller
                     user: $user,
                     agent: $agentAccess->availableAgent,
                     tenant: $tenant,
-                    conversationHistory: $conversationHistory,
+                    conversationHistory: $promptHistory,
                     maxTokens: 128
                 ),
                 default => "I'm sorry, voice mode is not yet available for this agent."

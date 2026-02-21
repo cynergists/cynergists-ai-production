@@ -50,10 +50,10 @@ export interface SettingsLink {
 }
 
 interface AgentComponents {
-    ChatComponent: ComponentType;
-    ConfigComponent: ComponentType;
-    SidebarComponent: ComponentType;
-    ViewComponent?: ComponentType;
+    ChatComponent: ComponentType<any>;
+    ConfigComponent: ComponentType<any>;
+    SidebarComponent: ComponentType<any>;
+    ViewComponent?: ComponentType<any>;
     settingsLinks?: SettingsLink[];
 }
 
@@ -215,4 +215,7 @@ export {
     ImpulseChat,
     ImpulseConfig,
     ImpulseSidebar,
+    IrisChat,
+    IrisConfig,
+    IrisSidebar,
 };

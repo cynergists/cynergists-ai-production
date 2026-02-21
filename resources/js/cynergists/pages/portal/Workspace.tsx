@@ -1,7 +1,4 @@
 import { getAgentComponents } from '@/agent_components';
-import { AgentQuickLinks } from '@/components/portal/AgentQuickLinks';
-import { OnboardingView } from '@/components/portal/OnboardingView';
-import { SettingsView } from '@/components/portal/SettingsView';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,13 +32,14 @@ import { cn } from '@/lib/utils';
 import { router, usePage } from '@inertiajs/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertTriangle,
+    Activity,
     Bot,
     Calendar,
     ChevronDown,
     CircleCheck,
     Globe,
     Headphones,
+    LayoutDashboard,
     Loader2,
     MessageSquare,
     Mic,
@@ -49,6 +47,8 @@ import {
     Search,
     Send,
     Sparkles,
+    Target,
+    Trash2,
     Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -72,27 +72,12 @@ interface AgentAccess {
 interface Message {
     role: 'user' | 'assistant';
     content: string;
-    timestamp?: Date;
 }
 
 export default function PortalWorkspace() {
     const { user } = usePortalContext();
     const queryClient = useQueryClient();
-    const { props } = usePage<{
-        agentId?: string;
-        auth?: { roles?: string[] };
-    }>();
-
-    // Sales reps should use their own portal, not the client portal
-    useEffect(() => {
-        const roles = props.auth?.roles ?? [];
-        const isSalesRep = roles.includes('sales_rep');
-        const isAdmin = roles.includes('admin');
-        if (isSalesRep && !isAdmin) {
-            router.visit('/sales-rep');
-        }
-    }, [props.auth?.roles]);
-
+    const { props } = usePage<{ agentId?: string }>();
     const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
         props.agentId ?? null,
     );
@@ -104,17 +89,12 @@ export default function PortalWorkspace() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeView, setActiveView] = useState<
         | 'chat'
-        | 'onboarding'
-        | 'settings'
         | 'dashboard'
         | 'campaigns'
         | 'connections'
         | 'messages'
         | 'activity'
         | 'add-site'
-        | 'content-pipeline'
-        | 'published'
-        | 'analytics'
     >('chat');
     const [supportDialogOpen, setSupportDialogOpen] = useState(false);
     const [supportCategory, setSupportCategory] = useState('agent_issue');
@@ -126,7 +106,6 @@ export default function PortalWorkspace() {
     const [addSiteDialogOpen, setAddSiteDialogOpen] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteUrl, setNewSiteUrl] = useState('');
-    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         setSelectedAgentId(props.agentId ?? null);
@@ -233,10 +212,10 @@ export default function PortalWorkspace() {
 
     // Auto-start conversation with Cynessa or Iris
     useEffect(() => {
+        const agentName = agentDetails?.agent_name?.toLowerCase();
         if (
             selectedAgentId &&
-            (agentDetails?.agent_name?.toLowerCase() === 'cynessa' ||
-                agentDetails?.agent_name?.toLowerCase() === 'iris') &&
+            (agentName === 'cynessa' || agentName === 'iris') &&
             messages.length === 0 &&
             !isStreaming &&
             !sendMessage.isPending
@@ -283,7 +262,7 @@ export default function PortalWorkspace() {
 
             const newMessages: Message[] = [
                 ...messages,
-                { role: 'user', content: messageText, timestamp: new Date() },
+                { role: 'user', content: messageText },
             ];
             setMessages(newMessages);
             setIsStreaming(true);
@@ -298,17 +277,7 @@ export default function PortalWorkspace() {
         },
         onSuccess: (response) => {
             setIsStreaming(false);
-            const serverMsgs = Array.isArray(response.messages) ? response.messages : [];
-            setMessages(prev => {
-                const prevTimestamps = new Map(
-                    prev.map(m => [`${m.role}:${m.content}`, m.timestamp])
-                );
-                return serverMsgs.map((m, i) => ({
-                    ...m,
-                    timestamp: prevTimestamps.get(`${m.role}:${m.content}`) ??
-                        (i === serverMsgs.length - 1 ? new Date() : undefined),
-                }));
-            });
+            setMessages(Array.isArray(response.messages) ? response.messages : []);
             queryClient.invalidateQueries({
                 queryKey: ['agent-details', selectedAgentId],
             });
@@ -396,6 +365,32 @@ export default function PortalWorkspace() {
         // Reset input so same file can be selected again
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+    };
+
+    const clearChat = useMutation({
+        mutationFn: async () => {
+            if (!selectedAgentId) throw new Error('No agent selected');
+
+            return apiClient.delete<{ success: boolean; deleted: boolean }>(
+                `/api/portal/agents/${selectedAgentId}/conversation`,
+            );
+        },
+        onSuccess: () => {
+            setMessages([]);
+            toast.success('Chat cleared');
+            queryClient.invalidateQueries({
+                queryKey: ['conversation', selectedAgentId],
+            });
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to clear chat: ${error.message}`);
+        },
+    });
+
+    const handleClearChat = () => {
+        if (window.confirm('Are you sure you want to clear this chat?')) {
+            clearChat.mutate();
         }
     };
 
@@ -493,8 +488,6 @@ export default function PortalWorkspace() {
                         completed: boolean;
                     }>;
                 };
-                irisOnboardingComplete: boolean;
-                agentOnboardingStates: Record<string, string>;
             }>('/api/portal/stats');
             return response;
         },
@@ -502,18 +495,15 @@ export default function PortalWorkspace() {
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         staleTime: 0,
-        // Poll every 2 seconds when talking to Iris or Cynessa to catch onboarding updates
+        // Poll every 2 seconds when talking to Cynessa or Iris to catch onboarding updates
         refetchInterval: (query) => {
             const agentName = agentDetails?.agent_name?.toLowerCase();
             return (agentName === 'cynessa' || agentName === 'iris') &&
-                !query.state.data?.irisOnboardingComplete
+                !query.state.data?.onboardingProgress?.completed
                 ? 2000
                 : false;
         },
     });
-
-    const irisOnboardingComplete = portalStats?.irisOnboardingComplete ?? true; // default true to avoid blocking on load
-    const agentOnboardingStates = portalStats?.agentOnboardingStates ?? {};
 
     // Use real onboarding progress or fallback to empty state
     const setupProgress = portalStats?.onboardingProgress
@@ -569,49 +559,8 @@ export default function PortalWorkspace() {
         meetingsScheduled: 0,
     };
 
-    // Which iris ID would be for this session (deterministic)
-    const irisAgentId = agents?.find(
-        (a) => a.agent_name.toLowerCase() === 'iris',
-    )?.id;
-
-    // Per-agent gate: show overlay when selected agent's onboarding isn't done
-    const selectedAgent = agents?.find((a) => a.id === selectedAgentId);
-    const selectedAgentName = selectedAgent?.agent_name?.toLowerCase() ?? '';
-    const isIrisAgent = selectedAgentName === 'iris';
-    const selectedAgentOnboardingState = agentOnboardingStates[selectedAgentName];
-    const showAgentOnboardingGate =
-        !isIrisAgent &&
-        selectedAgentId !== null &&
-        irisOnboardingComplete &&
-        selectedAgentOnboardingState !== 'completed' &&
-        selectedAgentOnboardingState !== undefined;
-
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-            {/* Iris onboarding banner — shown until Iris onboarding is complete */}
-            {!irisOnboardingComplete && (
-                <div className="flex shrink-0 items-center justify-between border-b border-primary/20 bg-primary/10 px-4 py-2">
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                        <AlertTriangle className="h-4 w-4 shrink-0" />
-                        <span className="font-medium">
-                            Complete your Brand Kit setup with Iris to unlock all agents.
-                        </span>
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="ml-4 shrink-0 border-primary/40 text-primary hover:bg-primary/20"
-                        onClick={() => {
-                            if (irisAgentId) {
-                                setSelectedAgentId(irisAgentId);
-                                setActiveView('chat');
-                            }
-                        }}
-                    >
-                        Start Now
-                    </Button>
-                </div>
-            )}
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-3 lg:flex-row lg:gap-6 lg:p-6">
                 {/* Agents list */}
                 <div className="hidden min-h-0 w-80 shrink-0 flex-col lg:flex">
@@ -876,38 +825,7 @@ export default function PortalWorkspace() {
                 </Sheet>
 
                 {/* Chat */}
-                <div
-                    className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card"
-                    onDragOver={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (selectedAgentId) setIsDragging(true);
-                    }}
-                    onDragLeave={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDragging(false);
-                    }}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDragging(false);
-                        const file = e.dataTransfer.files[0];
-                        if (file && selectedAgentId) {
-                            uploadFile.mutate(file);
-                        }
-                    }}
-                >
-                    {isDragging && (
-                        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/10">
-                            <div className="text-center">
-                                <Paperclip className="mx-auto h-8 w-8 text-primary" />
-                                <p className="mt-2 text-sm font-medium text-primary">
-                                    Drop file to attach
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card">
                     <div className="flex items-center justify-between border-b border-primary/20 px-4 py-2">
                         <div className="flex items-center gap-2">
                             <div
@@ -935,59 +853,23 @@ export default function PortalWorkspace() {
                                         'Select an agent'}
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
-                                    {agentDetails?.job_title ||
-                                        agentDetails?.agent_type ||
+                                    {agentDetails?.agent_type ??
                                         'Ready when you are'}
                                 </p>
                             </div>
                         </div>
-                        {/* Removed "Connected" status per spec - unclear and confusing */}
+                        {selectedAgentId && agentDetails?.is_active && (
+                            <div className="flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                                <CircleCheck className="h-3 w-3" />
+                                Connected
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col">
-                        {/* Global Onboarding View */}
-                        {activeView === 'onboarding' ? (
-                            <OnboardingView
-                                agentDetails={agentDetails}
-                                setupProgress={setupProgress}
-                            />
-                        ) : activeView === 'settings' ? (
-                            /* Global Settings View */
-                            <SettingsView
-                                agentId={selectedAgentId}
-                                agentDetails={agentDetails}
-                                settingsLinks={agentComponents?.settingsLinks}
-                                setActiveView={setActiveView as (view: string) => void}
-                                onMemoryCleared={() => setMessages([])}
-                            />
-                        ) : showAgentOnboardingGate ? (
-                            /* Per-Agent Onboarding Gate */
-                            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-                                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary/10">
-                                    {agentDetails?.avatar_url ? (
-                                        <img
-                                            src={agentDetails.avatar_url}
-                                            alt={agentDetails.agent_name}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <Bot className="h-8 w-8 text-primary" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-semibold text-foreground">
-                                        Onboarding Required
-                                    </h2>
-                                    <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-                                        Complete {agentDetails?.agent_name ?? 'this agent'}&apos;s onboarding to start chatting.
-                                    </p>
-                                </div>
-                                <Button onClick={() => setActiveView('onboarding')}>
-                                    Begin Onboarding
-                                </Button>
-                            </div>
-                        ) : agentComponents?.ViewComponent && activeView !== 'chat' ? (
-                            /* Agent-Specific View Component (non-chat views) */
+                        {/* Agent-Specific View Component (non-chat views) */}
+                        {agentComponents?.ViewComponent &&
+                        activeView !== 'chat' ? (
                             <agentComponents.ViewComponent
                                 activeView={activeView}
                                 setActiveView={setActiveView}
@@ -1011,6 +893,7 @@ export default function PortalWorkspace() {
                                 onFileClick={() =>
                                     fileInputRef.current?.click()
                                 }
+                                onClearChat={handleClearChat}
                                 selectedAgentId={selectedAgentId}
                                 onMessageReceived={(message) => {
                                     setMessages((prev) => [...prev, message]);
@@ -1085,17 +968,15 @@ export default function PortalWorkspace() {
                                                                         }
                                                                     </p>
                                                                 </Card>
-                                                                {message.timestamp && (
-                                                                    <span className="px-1 text-left text-[10px] text-muted-foreground/60">
-                                                                        {message.timestamp.toLocaleTimeString(
-                                                                            'en-US',
-                                                                            {
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit',
-                                                                            },
-                                                                        )}
-                                                                    </span>
-                                                                )}
+                                                                <span className="px-1 text-left text-[10px] text-muted-foreground/60">
+                                                                    {new Date().toLocaleTimeString(
+                                                                        'en-US',
+                                                                        {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                        },
+                                                                    )}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     ),
@@ -1198,31 +1079,24 @@ export default function PortalWorkspace() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs"
-                                            disabled
-                                            title="Coming Soon"
+                                            className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
+                                            disabled={!selectedAgentId}
                                         >
                                             <Mic className="h-3 w-3" />
                                             Voice Mode
-                                            <span className="text-muted-foreground/60">(Soon)</span>
                                         </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
+                                            onClick={handleClearChat}
                                             disabled={
-                                                !selectedAgentId || isUploading
-                                            }
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
+                                                !selectedAgentId ||
+                                                messages.length === 0
                                             }
                                         >
-                                            {isUploading ? (
-                                                <Loader2 className="h-3 w-3 animate-spin" />
-                                            ) : (
-                                                <Paperclip className="h-3 w-3" />
-                                            )}
-                                            Attach
+                                            <Trash2 className="h-3 w-3" />
+                                            Clear Chat
                                         </Button>
                                     </div>
                                 </div>
@@ -1250,7 +1124,80 @@ export default function PortalWorkspace() {
                             <h2 className="mb-4 shrink-0 text-lg font-semibold text-foreground">
                                 Quick Links
                             </h2>
-                            <AgentQuickLinks activeView={activeView} setActiveView={setActiveView as (view: string) => void} />
+                            <nav className="flex flex-col space-y-2">
+                                <button
+                                    onClick={() => setActiveView('chat')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'chat'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <MessageSquare className="h-5 w-5 shrink-0" />
+                                    Chat
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('dashboard')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'dashboard'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <LayoutDashboard className="h-5 w-5 shrink-0" />
+                                    Dashboard
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('campaigns')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'campaigns'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <Target className="h-5 w-5 shrink-0" />
+                                    Campaigns
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('connections')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'connections'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <Users className="h-5 w-5 shrink-0" />
+                                    Connections
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('messages')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'messages'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <MessageSquare className="h-5 w-5 shrink-0" />
+                                    Messages
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('activity')}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-xl border-l-3 px-4 py-3 text-left text-base font-medium transition-all duration-200',
+                                        activeView === 'activity'
+                                            ? 'border-l-primary bg-primary/10 text-primary'
+                                            : 'border-l-transparent text-foreground/70 hover:bg-muted/50 hover:text-foreground',
+                                    )}
+                                >
+                                    <Activity className="h-5 w-5 shrink-0" />
+                                    Activity Log
+                                </button>
+                            </nav>
                         </div>
 
                         {/* Today's Activity */}

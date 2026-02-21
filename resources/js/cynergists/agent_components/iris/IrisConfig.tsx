@@ -22,7 +22,7 @@ export function IrisConfig({ setupProgress }: IrisConfigProps) {
         <div className="space-y-1.5 rounded-xl border border-primary/10 bg-muted/30 p-3">
             <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
-                    Onboarding Progress
+                    Setup Progress
                 </span>
                 <span className="text-xs text-muted-foreground">
                     {setupProgress.completed}/{setupProgress.total}
@@ -52,7 +52,9 @@ export function IrisConfig({ setupProgress }: IrisConfigProps) {
                         ) : (
                             <Target className="h-3 w-3 text-muted-foreground" />
                         )}
-                        <span className="truncate text-[11px]">{step.label}</span>
+                        <span className="truncate text-[11px]">
+                            {step.label}
+                        </span>
                     </div>
                 ))}
             </div>

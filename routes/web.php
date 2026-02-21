@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDataController;
+use App\Http\Controllers\Api\AgentSuggestionController;
 use App\Http\Controllers\Api\AiAgentMediaController;
 use App\Http\Controllers\Api\Carbon\CarbonController;
 use App\Http\Controllers\Api\Carbon\CarbonPixelController;
@@ -16,7 +17,6 @@ use App\Http\Controllers\Api\Portal\PortalActivityController;
 use App\Http\Controllers\Api\Portal\PortalAgentsController;
 use App\Http\Controllers\Api\Portal\PortalBillingController;
 use App\Http\Controllers\Api\Portal\PortalBrowseController;
-use App\Http\Controllers\Api\Portal\PortalChatController;
 use App\Http\Controllers\Api\Portal\PortalProfileController;
 use App\Http\Controllers\Api\Portal\PortalStatsController;
 use App\Http\Controllers\Api\Portal\PortalSubdomainController;
@@ -33,10 +33,10 @@ use App\Http\Middleware\EnsureAdminUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CynergistsPageController::class, 'page'])
-    ->defaults('component', 'Marketplace')
+    ->defaults('component', 'Index')
     ->name('home');
 
-Route::redirect('/marketplace', '/');
+Route::get('/marketplace', [CynergistsPageController::class, 'page'])->defaults('component', 'Marketplace');
 Route::get('/marketplace/{slug}', [CynergistsPageController::class, 'page'])->defaults('component', 'AgentDetail');
 Route::get('/about', [CynergistsPageController::class, 'page'])->defaults('component', 'About');
 Route::get('/contact', [CynergistsPageController::class, 'page'])->defaults('component', 'Contact');
@@ -185,6 +185,7 @@ Route::prefix('api')->group(function () {
     Route::post('/public/products/categories', [PublicDataController::class, 'productsByCategories']);
     Route::get('/public/agents', [PublicDataController::class, 'activeAgents']);
     Route::get('/public/agents/{slug}', [PublicDataController::class, 'agentBySlug']);
+    Route::post('/public/suggest-agent', [AgentSuggestionController::class, 'store']);
 });
 
 Route::middleware('auth')->prefix('api')->group(function () {
@@ -208,12 +209,6 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/agents', [PortalAgentsController::class, 'index']);
         Route::get('/agents/{agent}', [PortalAgentsController::class, 'show']);
         Route::put('/agents/{agent}/configuration', [PortalAgentsController::class, 'updateConfiguration']);
-        Route::get('/agents/{agent}/conversation', [PortalChatController::class, 'conversation']);
-        Route::post('/agents/{agent}/message', [PortalChatController::class, 'sendMessage']);
-        Route::post('/agents/{agent}/files', [PortalChatController::class, 'uploadFile']);
-        Route::delete('/agents/{agent}/conversation', [PortalChatController::class, 'clearConversation']);
-        Route::post('/agents/{agent}/onboarding/restart', [PortalChatController::class, 'restartOnboarding']);
-        Route::get('/luna/images/{imageId}/status', [PortalChatController::class, 'lunaImageStatus']);
         Route::get('/browse', [PortalBrowseController::class, 'index']);
         Route::get('/seo/overview', [CarbonController::class, 'overview']);
         Route::post('/seo/sites', [CarbonController::class, 'storeSite']);

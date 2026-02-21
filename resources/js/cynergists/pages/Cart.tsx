@@ -1,25 +1,21 @@
+import { type AIAgent } from '@/components/ui/AIAgentCard';
 import Layout from '@/components/layout/Layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OrbitingButton } from '@/components/ui/orbiting-button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { useCart } from '@/contexts/CartContext';
+import { apiClient } from '@/lib/api-client';
 import { Link, router } from '@inertiajs/react';
+import { useQuery } from '@tanstack/react-query';
 import {
     ArrowRight,
+    Bot,
+    Check,
     Minus,
     Plus,
     ShoppingCart,
     Trash2,
-    Users,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 
 const formatCurrency = (amount: number) => {
@@ -76,109 +72,31 @@ const getTypeBadgeVariant = (type: string) => {
     }
 };
 
-// Full pool of specialists to recommend as upsells
-const allRecommendedSpecialists = [
-    {
-        id: 'administrative-assistant',
-        name: 'Administrative Assistant',
-        hourlyRate: 15,
-        partTime: 1200,
-        fullTime: 2400,
-        description:
-            'Keep your operations running smoothly with dedicated admin support.',
-    },
-    {
-        id: 'bookkeeper',
-        name: 'Bookkeeper',
-        hourlyRate: 18,
-        partTime: 1440,
-        fullTime: 2880,
-        description:
-            'Maintain accurate financials and stay IRS-ready year-round.',
-    },
-    {
-        id: 'video-editor',
-        name: 'Video Editor',
-        hourlyRate: 25,
-        partTime: 2000,
-        fullTime: 4000,
-        description:
-            'Transform raw footage into polished, professional content.',
-    },
-    {
-        id: 'seo-specialist',
-        name: 'SEO Specialist',
-        hourlyRate: 25,
-        partTime: 2000,
-        fullTime: 4000,
-        description: 'Boost your organic traffic and search engine rankings.',
-    },
-    {
-        id: 'ad-campaign-manager',
-        name: 'Ad Campaign Manager',
-        hourlyRate: 25,
-        partTime: 2000,
-        fullTime: 4000,
-        description: 'Maximize your ad spend ROI across all platforms.',
-    },
-    {
-        id: 'copywriter',
-        name: 'Copywriter',
-        hourlyRate: 20,
-        partTime: 1600,
-        fullTime: 3200,
-        description:
-            'Craft compelling copy that converts visitors into customers.',
-    },
-    {
-        id: 'executive-assistant',
-        name: 'Executive Assistant',
-        hourlyRate: 20,
-        partTime: 1600,
-        fullTime: 3200,
-        description: 'High-level support for busy executives and founders.',
-    },
-    {
-        id: 'crm-administrator',
-        name: 'CRM Administrator',
-        hourlyRate: 18,
-        partTime: 1440,
-        fullTime: 2880,
-        description: 'Keep your CRM organized and your pipeline flowing.',
-    },
-    {
-        id: 'automation-engineer',
-        name: 'Automation Engineer',
-        hourlyRate: 25,
-        partTime: 2000,
-        fullTime: 4000,
-        description: 'Eliminate manual tasks with smart automation workflows.',
-    },
-    {
-        id: 'web-developer',
-        name: 'Web Developer',
-        hourlyRate: 25,
-        partTime: 2000,
-        fullTime: 4000,
-        description: 'Build and maintain high-performance websites and apps.',
-    },
-    {
-        id: 'customer-success-manager',
-        name: 'Customer Success Manager',
-        hourlyRate: 21,
-        partTime: 1680,
-        fullTime: 3360,
-        description: 'Keep your customers happy and reduce churn.',
-    },
-    {
-        id: 'appointment-setter',
-        name: 'Appointment Setter',
-        hourlyRate: 18,
-        partTime: 1440,
-        fullTime: 2880,
-        description: 'Fill your calendar with qualified leads and meetings.',
-    },
-];
+/**
+ * Get the display price for an agent (lowest tier price, or base price).
+ */
+const getAgentDisplayPrice = (agent: AIAgent): number => {
+    if (agent.tiers && agent.tiers.length > 0) {
+        const prices = agent.tiers.map((t) =>
+            typeof t.price === 'string' ? parseFloat(t.price) : t.price,
+        );
+        return Math.min(...prices);
+    }
+    return typeof agent.price === 'string'
+        ? parseFloat(agent.price as unknown as string)
+        : agent.price;
+};
+
+/**
+ * Get the URL for a media item (prefers file upload over external URL).
+ */
+const getMediaUrl = (media: { url?: string; file?: string }): string => {
+    const src = media.file || media.url || '';
+    if (src && !src.startsWith('http') && !src.startsWith('/storage/')) {
+        return `/storage/${src}`;
+    }
+    return src;
+};
 
 const Cart = () => {
     const {
@@ -201,55 +119,29 @@ const Cart = () => {
         router.visit('/checkout');
     };
 
-    // Filter out specialists that are already in cart and limit to 4
-    const filteredRecommendations = allRecommendedSpecialists
-        .filter(
-            (specialist) =>
-                !items.some((item) => item.id.startsWith(specialist.id)),
-        )
+    // Fetch AI agents for recommendations
+    const { data: allAgents = [] } = useQuery({
+        queryKey: ['recommended-agents'],
+        queryFn: () => apiClient.get<AIAgent[]>('/api/public/agents'),
+    });
+
+    // Filter out agents already in cart and limit to 4
+    const recommendedAgents = allAgents
+        .filter((agent) => !items.some((item) => item.id === agent.id))
+        .filter((agent) => getAgentDisplayPrice(agent) > 0)
         .slice(0, 4);
 
-    // Track commitment selection for each recommended specialist
-    const [commitmentSelections, setCommitmentSelections] = useState<
-        Record<string, 'part-time' | 'full-time'>
-    >({});
-
-    // Get commitment for a specialist, defaulting to part-time
-    const getCommitment = (specialistId: string) =>
-        commitmentSelections[specialistId] || 'full-time';
-
-    const handleCommitmentChange = (
-        specialistId: string,
-        commitment: 'part-time' | 'full-time',
-    ) => {
-        setCommitmentSelections((prev) => ({
-            ...prev,
-            [specialistId]: commitment,
-        }));
-    };
-
-    const handleAddRecommended = (
-        specialist: (typeof allRecommendedSpecialists)[0],
-    ) => {
-        const commitment = getCommitment(specialist.id);
-        const price =
-            commitment === 'part-time'
-                ? specialist.partTime
-                : specialist.fullTime;
-        const hours = commitment === 'part-time' ? 80 : 160;
+    const handleAddRecommendedAgent = (agent: AIAgent) => {
+        const price = getAgentDisplayPrice(agent);
+        const tier = agent.tiers?.[0];
 
         addItem({
-            id: `${specialist.id}-${commitment}`,
-            type: 'role',
-            name: specialist.name,
-            description: `${commitment === 'part-time' ? 'Part-Time' : 'Full-Time'} – ${hours} hrs/mo`,
+            id: agent.id,
+            type: 'ai-agent',
+            name: agent.name,
+            description: tier?.description || agent.job_title || '',
             price,
             billingPeriod: 'monthly',
-            metadata: {
-                hoursPerMonth: hours,
-                commitment,
-                hourlyRate: specialist.hourlyRate,
-            },
         });
     };
 
@@ -500,117 +392,197 @@ const Cart = () => {
                             </div>
                         )}
 
-                        {/* Recommended Specialists Section */}
+                        {/* Recommended AI Agents Section */}
                         {items.length > 0 &&
-                            filteredRecommendations.length > 0 && (
+                            recommendedAgents.length > 0 && (
                                 <section className="mt-16">
                                     <div className="mb-6 flex items-center gap-3">
-                                        <Users className="h-6 w-6 text-primary" />
+                                        <Bot className="h-6 w-6 text-primary" />
                                         <h2 className="text-2xl font-bold">
-                                            Recommended Based On Your Cart
+                                            Recommended AI Agents
                                         </h2>
                                     </div>
                                     <p className="mb-8 text-muted-foreground">
-                                        Complement your team with these popular
-                                        specialists.
+                                        Supercharge your workflow with these AI
+                                        agents.
                                     </p>
 
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                        {filteredRecommendations.map(
-                                            (specialist) => {
-                                                const commitment =
-                                                    getCommitment(
-                                                        specialist.id,
-                                                    );
-                                                const price =
-                                                    commitment === 'part-time'
-                                                        ? specialist.partTime
-                                                        : specialist.fullTime;
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {recommendedAgents.map((agent) => {
+                                            const price =
+                                                getAgentDisplayPrice(agent);
+                                            const hasTiers =
+                                                (agent.tiers?.length ?? 0) > 1;
+                                            const media =
+                                                agent.card_media?.[0];
+                                            const mediaUrl = media
+                                                ? getMediaUrl(media)
+                                                : null;
+                                            const isVideo =
+                                                media?.type === 'video';
 
-                                                return (
-                                                    <div
-                                                        key={specialist.id}
-                                                        className="card-glass flex flex-col"
-                                                    >
-                                                        <h3 className="mb-2 font-semibold">
-                                                            {specialist.name}
-                                                        </h3>
-                                                        <p className="mb-4 flex-1 text-sm text-muted-foreground">
-                                                            {
-                                                                specialist.description
-                                                            }
-                                                        </p>
-
-                                                        {/* Price Display */}
-                                                        <div className="mb-3">
-                                                            <span className="text-2xl font-bold text-primary">
-                                                                {formatCurrency(
-                                                                    price,
-                                                                )}
-                                                            </span>
-                                                            <span className="text-sm text-muted-foreground">
-                                                                /mo
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Commitment Dropdown */}
-                                                        <div className="mb-3">
-                                                            <Select
-                                                                value={
-                                                                    commitment
-                                                                }
-                                                                onValueChange={(
-                                                                    value:
-                                                                        | 'part-time'
-                                                                        | 'full-time',
-                                                                ) =>
-                                                                    handleCommitmentChange(
-                                                                        specialist.id,
-                                                                        value,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <SelectTrigger className="h-9 w-full border-primary/30 bg-primary/10 text-sm font-medium text-primary hover:bg-primary/20 focus:ring-primary/30">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="part-time">
-                                                                        Part-Time
-                                                                        (80
-                                                                        hrs/mo)
-                                                                    </SelectItem>
-                                                                    <SelectItem value="full-time">
-                                                                        Full-Time
-                                                                        (160
-                                                                        hrs/mo)
-                                                                    </SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="w-full"
-                                                            onClick={() =>
-                                                                handleAddRecommended(
-                                                                    specialist,
+                                            return (
+                                                <div
+                                                    key={agent.id}
+                                                    className="rounded-xl bg-gradient-to-br from-[#81CA16] to-[#26908B] p-[3px] transition-all duration-300 hover:scale-[1.01] hover:[box-shadow:0_0_20px_rgba(132,204,22,0.2)]"
+                                                >
+                                                    <div className="flex h-[260px] flex-row overflow-hidden rounded-[9px] bg-card">
+                                                        {/* Left - Media */}
+                                                        <div className="relative h-full w-[140px] shrink-0 overflow-hidden bg-muted/30">
+                                                            {mediaUrl ? (
+                                                                isVideo ? (
+                                                                    <video
+                                                                        src={
+                                                                            mediaUrl
+                                                                        }
+                                                                        autoPlay
+                                                                        muted
+                                                                        loop
+                                                                        playsInline
+                                                                        className="absolute inset-0 h-full w-full object-cover"
+                                                                        style={{
+                                                                            objectPosition:
+                                                                                'center 15%',
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <img
+                                                                        src={
+                                                                            mediaUrl
+                                                                        }
+                                                                        alt={
+                                                                            agent.name
+                                                                        }
+                                                                        className="absolute inset-0 h-full w-full object-cover"
+                                                                    />
                                                                 )
-                                                            }
-                                                        >
-                                                            <Plus className="mr-1 h-4 w-4" />
-                                                            Add to Cart
-                                                        </Button>
+                                                            ) : (
+                                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-lime-500/20 to-lime-500/5">
+                                                                    <Bot className="h-10 w-10 text-accent/50 dark:text-lime-400/50" />
+                                                                </div>
+                                                            )}
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="absolute top-2 left-2 border-white/30 bg-black/50 text-[10px] text-white capitalize backdrop-blur-sm"
+                                                            >
+                                                                {
+                                                                    agent.category
+                                                                }
+                                                            </Badge>
+                                                        </div>
+
+                                                        {/* Right - Content */}
+                                                        <div className="flex min-w-0 flex-1 flex-col">
+                                                            <div className="flex-1 px-4 pt-3 pb-2">
+                                                                <h3 className="line-clamp-1 text-sm font-bold text-white">
+                                                                    {agent.job_title ||
+                                                                        agent.name}
+                                                                </h3>
+                                                                <p className="mt-0.5 text-xs">
+                                                                    <span className="text-muted-foreground">
+                                                                        Code
+                                                                        Name:{' '}
+                                                                    </span>
+                                                                    <span className="font-bold text-white">
+                                                                        {
+                                                                            agent.name
+                                                                        }
+                                                                    </span>
+                                                                </p>
+
+                                                                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                                                                    {stripHtmlAndTruncate(
+                                                                        agent.description,
+                                                                        120,
+                                                                    )}
+                                                                </p>
+
+                                                                {/* Features */}
+                                                                <div className="mt-2 space-y-1">
+                                                                    {agent.features
+                                                                        ?.slice(
+                                                                            0,
+                                                                            2,
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                feature,
+                                                                            ) => (
+                                                                                <div
+                                                                                    key={
+                                                                                        feature
+                                                                                    }
+                                                                                    className="flex items-center gap-1.5 text-xs"
+                                                                                >
+                                                                                    <Check className="h-3 w-3 shrink-0 text-accent dark:text-lime-400" />
+                                                                                    <span className="truncate text-muted-foreground">
+                                                                                        {
+                                                                                            feature
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                            ),
+                                                                        )}
+                                                                    {agent
+                                                                        .features
+                                                                        ?.length >
+                                                                        2 && (
+                                                                        <p className="pl-[18px] text-[10px] text-muted-foreground/70">
+                                                                            +
+                                                                            {agent
+                                                                                .features
+                                                                                .length -
+                                                                                2}{' '}
+                                                                            more
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Footer */}
+                                                            <div className="mt-auto border-t border-border/50 bg-muted/30 px-4 py-2.5">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        {hasTiers && (
+                                                                            <span className="text-[10px] text-muted-foreground">
+                                                                                Starting
+                                                                                at{' '}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="text-lg font-bold text-foreground">
+                                                                            {formatCurrency(
+                                                                                price,
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            /mo
+                                                                        </span>
+                                                                    </div>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="h-8 bg-lime-500 px-3 text-xs font-medium text-black hover:bg-lime-600"
+                                                                        onClick={() =>
+                                                                            handleAddRecommendedAgent(
+                                                                                agent,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Plus className="mr-1 h-3 w-3" />
+                                                                        Add
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                );
-                                            },
-                                        )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
                                     <div className="mt-8 text-center">
                                         <Button asChild variant="outline">
-                                            <Link href="/hourly-specialists">
-                                                View All Specialists
+                                            <Link href="/marketplace">
+                                                View All AI Agents
                                                 <ArrowRight className="ml-2 h-4 w-4" />
                                             </Link>
                                         </Button>

@@ -1,4 +1,4 @@
-import cynergistsLogo from '@/assets/cynergists-logo-new.png';
+import cynergistsLogo from '@/assets/logos/cynergists-ai-full.webp';
 import {
     Accordion,
     AccordionContent,
@@ -77,7 +77,7 @@ export default function SignIn() {
         if (roles.includes('employee')) return '/employee';
         if (roles.includes('partner') && !roles.includes('client'))
             return '/partner';
-        return '/';
+        return '/portal';
     };
 
     const handleSignIn = async (e: React.FormEvent) => {

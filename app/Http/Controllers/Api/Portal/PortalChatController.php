@@ -19,8 +19,7 @@ use App\Services\Carbon\CarbonAgentHandler;
 use App\Services\Cynessa\CynessaAgentHandler;
 use App\Services\Cynessa\OnboardingService;
 use App\Services\Impulse\ImpulseAgentHandler;
-use App\Services\Iris\IrisChatHandler;
-use App\Services\Portal\AgentOnboardingService;
+use App\Services\Iris\IrisAgentHandler;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Mosaic\MosaicAgentHandler;
@@ -38,11 +37,11 @@ class PortalChatController extends Controller
         private AetherAgentHandler $aetherAgentHandler,
         private ApexAgentHandler $apexAgentHandler,
         private BeaconAgentHandler $beaconAgentHandler,
-
         private BriggsAgentHandler $briggsAgentHandler,
         private CarbonAgentHandler $carbonAgentHandler,
         private CynessaAgentHandler $cynessaAgentHandler,
         private ImpulseAgentHandler $impulseAgentHandler,
+        private IrisAgentHandler $irisAgentHandler,
         private KinetixAgentHandler $kinetixAgentHandler,
         private LunaAgentHandler $lunaAgentHandler,
         private MosaicAgentHandler $mosaicAgentHandler,
@@ -50,20 +49,17 @@ class PortalChatController extends Controller
         private OptixAgentHandler $optixAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService,
-        private IrisChatHandler $irisChatHandler,
-        private AgentOnboardingService $agentOnboardingService,
         private ConversationHistoryWindow $conversationHistoryWindow
     ) {}
 
     /**
-     * Get or create a virtual agent access for Iris or Cynessa (always available to all users).
-     *
-     * Iris IDs are deterministic (`iris-{tenant_id}`).
-     * Cynessa IDs are random UUIDs (existing behaviour).
+     * Get or create a virtual agent access for Cynessa or Iris.
+     * Looks up the PortalAvailableAgent by ID to determine agent name,
+     * falling back to Cynessa for backward compatibility.
      */
-    private function getOrCreateCynessaAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
+    private function getOrCreateVirtualAgentAccess(string $agentId, PortalTenant $tenant): ?AgentAccess
     {
-        // First check if user actually has this agent access in the DB
+        // First check if the user has a real agent access record
         $agentAccess = AgentAccess::query()
             ->where('tenant_id', $tenant->id)
             ->where('id', $agentId)
@@ -73,37 +69,27 @@ class PortalChatController extends Controller
             return $agentAccess;
         }
 
-        // Iris uses a deterministic ID pattern: `iris-{tenant_id}`
-        if ($agentId === 'iris-'.$tenant->id) {
-            $irisAgent = new AgentAccess([
-                'id' => $agentId,
-                'agent_type' => 'iris',
-                'agent_name' => 'Iris',
-                'configuration' => null,
-                'is_active' => true,
-                'usage_count' => 0,
-                'usage_limit' => null,
-                'last_used_at' => null,
-                'tenant_id' => $tenant->id,
-            ]);
-            $irisAgent->exists = false;
-
-            return $irisAgent;
-        }
-
-        // Fall back to virtual Cynessa for any other unrecognised ID
-        $cynessaAvailable = PortalAvailableAgent::query()
-            ->where('name', 'Cynessa')
+        // Try to determine the virtual agent by looking up PortalAvailableAgent by ID
+        $availableAgent = PortalAvailableAgent::query()
+            ->whereIn('name', ['Cynessa', 'Iris'])
+            ->where('id', $agentId)
             ->first();
 
-        if (! $cynessaAvailable) {
+        // Fall back to Cynessa for backward compatibility
+        if (! $availableAgent) {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', 'Cynessa')
+                ->first();
+        }
+
+        if (! $availableAgent) {
             return null;
         }
 
-        $cynessaAgent = new AgentAccess([
+        $virtualAgent = new AgentAccess([
             'id' => $agentId,
             'agent_type' => 'assistant',
-            'agent_name' => 'Cynessa',
+            'agent_name' => $availableAgent->name,
             'configuration' => null,
             'is_active' => true,
             'usage_count' => 0,
@@ -111,9 +97,10 @@ class PortalChatController extends Controller
             'last_used_at' => null,
             'tenant_id' => $tenant->id,
         ]);
-        $cynessaAgent->exists = false;
 
-        return $cynessaAgent;
+        $virtualAgent->exists = false;
+
+        return $virtualAgent;
     }
 
     public function conversation(Request $request, string $agent): JsonResponse
@@ -128,7 +115,7 @@ class PortalChatController extends Controller
             return response()->json(['conversation' => null], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['conversation' => null], 404);
@@ -157,29 +144,10 @@ class PortalChatController extends Controller
             return response()->json(['success' => false], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false], 404);
-        }
-
-        // Two-tier onboarding gate — Iris and Cynessa (legacy onboarding agent) are always reachable
-        if (! in_array(strtolower($agentAccess->agent_name), ['iris', 'cynessa'])) {
-            if (! $this->agentOnboardingService->isIrisComplete($tenant)) {
-                return response()->json([
-                    'error' => 'onboarding_required',
-                    'message' => 'Complete your Iris onboarding before using other agents.',
-                    'agent' => 'iris',
-                ], 403);
-            }
-
-            if (! $this->agentOnboardingService->isComplete($tenant, strtolower($agentAccess->agent_name))) {
-                return response()->json([
-                    'error' => 'agent_onboarding_required',
-                    'message' => "Complete this agent's onboarding before chatting.",
-                    'agent' => strtolower($agentAccess->agent_name),
-                ], 403);
-            }
         }
 
         $conversation = AgentConversation::query()
@@ -245,17 +213,6 @@ class PortalChatController extends Controller
     {
         $tenant = PortalTenant::forUser($user);
 
-        // Check if this is the Iris onboarding agent
-        if (strtolower($agentAccess->agent_name) === 'iris') {
-            $availableAgent = PortalAvailableAgent::query()
-                ->where('name', 'Cynessa')
-                ->first();
-
-            if ($availableAgent && $tenant) {
-                return $this->irisChatHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
-            }
-        }
-
         // Check if this is the Apex agent
         if (strtolower($agentAccess->agent_name) === 'apex') {
             $availableAgent = PortalAvailableAgent::query()
@@ -275,6 +232,17 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->cynessaAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        // Check if this is the Iris agent
+        if (strtolower($agentAccess->agent_name) === 'iris') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->firstOrNew(['name' => $agentAccess->agent_name]);
+
+            if ($tenant) {
+                return $this->irisAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 
@@ -399,11 +367,9 @@ class PortalChatController extends Controller
 
                 try {
                     $response = $arsenalAgent->prompt($message);
-
                     return (string) $response;
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Arsenal agent error: '.$e->getMessage());
-
                     return 'I\'m experiencing technical difficulties processing your catalog request. This has been logged for review. Please ensure your data sources are properly formatted.';
                 }
             }
@@ -431,7 +397,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
@@ -483,7 +449,8 @@ class PortalChatController extends Controller
             ->first();
 
         $confirmationMessage = null;
-        if ($conversation && in_array(strtolower($agentAccess->agent_name), ['cynessa', 'mosaic'], true)) {
+        $agentNameLower = strtolower($agentAccess->agent_name);
+        if ($conversation && in_array($agentNameLower, ['cynessa', 'iris', 'mosaic'], true)) {
             $messages = $conversation->messages ?? [];
 
             // Add user message about the file upload
@@ -513,7 +480,7 @@ class PortalChatController extends Controller
                     array_slice($messages, 0, -1)
                 );
 
-                if (strtolower($agentAccess->agent_name) === 'cynessa') {
+                if ($agentNameLower === 'cynessa') {
                     $confirmationMessage = $this->cynessaAgentHandler->handle(
                         $userMessage,
                         $user,
@@ -521,7 +488,15 @@ class PortalChatController extends Controller
                         $tenant,
                         $historyBeforeUpload
                     );
-                } elseif (strtolower($agentAccess->agent_name) === 'mosaic') {
+                } elseif ($agentNameLower === 'iris') {
+                    $confirmationMessage = $this->irisAgentHandler->handle(
+                        $userMessage,
+                        $user,
+                        $availableAgent,
+                        $tenant,
+                        $historyBeforeUpload
+                    );
+                } elseif ($agentNameLower === 'mosaic') {
                     $confirmationMessage = $this->mosaicAgentHandler->handle(
                         $userMessage,
                         $user,
@@ -571,7 +546,7 @@ class PortalChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
         }
 
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
+        $agentAccess = $this->getOrCreateVirtualAgentAccess($agent, $tenant);
 
         if (! $agentAccess) {
             return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
@@ -586,72 +561,6 @@ class PortalChatController extends Controller
         return response()->json([
             'success' => true,
             'deleted' => $deleted > 0,
-        ]);
-    }
-
-    /**
-     * Restart onboarding for the tenant: clears onboarding data and conversation history.
-     */
-    public function restartOnboarding(Request $request, string $agent): JsonResponse
-    {
-        $user = $request->user();
-        if (! $user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        $tenant = PortalTenant::forUser($user);
-        if (! $tenant) {
-            return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
-        }
-
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
-        if (! $agentAccess) {
-            return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
-        }
-
-        $onboardingService = app(OnboardingService::class);
-        $onboardingService->resetOnboarding($tenant);
-
-        AgentConversation::query()
-            ->where('agent_access_id', $agentAccess->id)
-            ->where('status', 'active')
-            ->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Onboarding restarted successfully.',
-        ]);
-    }
-
-    /**
-     * Mark an agent's per-agent onboarding as complete.
-     *
-     * Called by the frontend after the user finishes the agent's onboarding form.
-     */
-    public function completeAgentOnboarding(Request $request, string $agent): JsonResponse
-    {
-        $user = $request->user();
-        if (! $user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        $tenant = PortalTenant::forUser($user);
-        if (! $tenant) {
-            return response()->json(['success' => false, 'message' => 'Tenant not found'], 404);
-        }
-
-        $agentAccess = $this->getOrCreateCynessaAccess($agent, $tenant);
-        if (! $agentAccess) {
-            return response()->json(['success' => false, 'message' => 'Agent not found'], 404);
-        }
-
-        $agentName = strtolower($agentAccess->agent_name);
-        $state = $this->agentOnboardingService->markCompleted($tenant, $agentName, $user);
-
-        return response()->json([
-            'success' => true,
-            'state' => $state->state,
-            'agent' => $agentName,
         ]);
     }
 

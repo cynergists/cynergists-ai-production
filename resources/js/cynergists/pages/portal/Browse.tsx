@@ -262,7 +262,7 @@ export default function PortalBrowse() {
                                             ) : (
                                                 <>
                                                     <span className="text-2xl font-bold text-foreground">
-                                                        ${agent.price}
+                                                        ${Math.floor(agent.price)}
                                                     </span>
                                                     <span className="text-sm text-muted-foreground">
                                                         /mo

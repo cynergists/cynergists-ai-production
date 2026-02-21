@@ -2,13 +2,15 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { cn } from '@/lib/utils';
-import { Loader2, Paperclip, Send } from 'lucide-react';
+import { Loader2, Mic, Paperclip, Send, Square, Trash2 } from 'lucide-react';
 import React from 'react';
 
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    isVoiceGenerated?: boolean;
 }
 
 interface IrisChatProps {
@@ -23,8 +25,13 @@ interface IrisChatProps {
     onSend: (e: React.FormEvent) => void;
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFileClick: () => void;
+    onClearChat?: () => void;
     selectedAgentId?: string | null;
-    onMessageReceived?: (message: { role: 'user' | 'assistant'; content: string }) => void;
+    onMessageReceived?: (message: {
+        role: 'user' | 'assistant';
+        content: string;
+        isVoiceGenerated?: boolean;
+    }) => void;
 }
 
 export function IrisChat({
@@ -39,16 +46,38 @@ export function IrisChat({
     onSend,
     onFileSelect,
     onFileClick,
+    onClearChat,
+    selectedAgentId,
+    onMessageReceived,
 }: IrisChatProps) {
+    const {
+        isListening,
+        isProcessing,
+        isSpeaking,
+        isActive,
+        toggleVoiceMode,
+    } = useVoiceMode({
+        agentId: selectedAgentId ?? null,
+        onTranscriptReceived: (text) => {
+            onMessageReceived?.({ role: 'user', content: text, isVoiceGenerated: true });
+        },
+        onResponseReceived: (response) => {
+            onMessageReceived?.({ role: 'assistant', content: response.text, isVoiceGenerated: true });
+        },
+    });
+
     return (
         <>
             {/* Messages */}
-            <ScrollArea className="min-h-0 flex-1 px-4 py-3" ref={scrollRef}>
+            <ScrollArea
+                className="min-h-0 flex-1 px-4 py-3"
+                ref={scrollRef}
+            >
                 <div className="space-y-3">
                     {messages.length === 0 ? (
                         <div className="animate-in py-8 text-center text-sm text-muted-foreground duration-300 fade-in">
                             Start the conversation with{' '}
-                            {agentDetails?.agent_name ?? 'Iris'}.
+                            {agentDetails?.agent_name ?? 'your agent'}.
                         </div>
                     ) : (
                         messages.map((message, index) => (
@@ -86,10 +115,13 @@ export function IrisChat({
                                         </p>
                                     </Card>
                                     <span className="px-1 text-left text-[10px] text-muted-foreground/60">
-                                        {new Date().toLocaleTimeString('en-US', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
+                                        {new Date().toLocaleTimeString(
+                                            'en-US',
+                                            {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            },
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -165,16 +197,46 @@ export function IrisChat({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
-                        disabled={isUploading}
-                        onClick={onFileClick}
-                    >
-                        {isUploading ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                            <Paperclip className="h-3 w-3" />
+                        className={cn(
+                            'h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs',
+                            isActive
+                                ? 'border-primary bg-primary/20 hover:bg-primary/30'
+                                : 'hover:border-primary/40 hover:bg-primary/10',
                         )}
-                        Attach
+                        onClick={toggleVoiceMode}
+                        disabled={!selectedAgentId}
+                    >
+                        {isListening ? (
+                            <>
+                                <Mic className="h-3 w-3 animate-pulse" />
+                                Listening...
+                            </>
+                        ) : isProcessing ? (
+                            <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Processing...
+                            </>
+                        ) : isSpeaking ? (
+                            <>
+                                <Square className="h-3 w-3 animate-pulse" />
+                                Speaking...
+                            </>
+                        ) : (
+                            <>
+                                <Mic className="h-3 w-3" />
+                                Voice Mode
+                            </>
+                        )}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 rounded-button border-border-strong px-3 text-xs hover:border-primary/40 hover:bg-primary/10"
+                        onClick={onClearChat}
+                        disabled={!selectedAgentId || messages.length === 0}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                        Clear Chat
                     </Button>
                 </div>
             </div>

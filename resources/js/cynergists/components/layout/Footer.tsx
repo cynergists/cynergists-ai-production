@@ -29,7 +29,6 @@ const Footer = () => {
         { label: 'Blog', href: '/blog' },
         { label: 'Podcasts', href: '/podcasts' },
         { label: 'Case Studies', href: '/case-studies' },
-        { label: 'Sample Work', href: '/sample-work' },
     ];
 
     const socialLinks = [
@@ -70,7 +69,7 @@ const Footer = () => {
                             <img
                                 src={cynergistsLogo}
                                 alt="Cynergists"
-                                className="h-44 w-auto"
+                                className="logo-glow h-44 w-auto"
                             />
                         </Link>
                         <div className="flex gap-4">
