@@ -25,6 +25,7 @@ use App\Services\Luna\LunaAgentHandler;
 use App\Services\Mosaic\MosaicAgentHandler;
 use App\Services\Mosaic\MosaicMediaService;
 use App\Services\Optix\OptixAgentHandler;
+use App\Services\Specter\SpecterAgentHandler;
 use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,13 +48,14 @@ class PortalChatController extends Controller
         private MosaicAgentHandler $mosaicAgentHandler,
         private MosaicMediaService $mosaicMediaService,
         private OptixAgentHandler $optixAgentHandler,
+        private SpecterAgentHandler $specterAgentHandler,
         private VectorAgentHandler $vectorAgentHandler,
         private OnboardingService $onboardingService,
         private ConversationHistoryWindow $conversationHistoryWindow
     ) {}
 
     /**
-     * Get or create a virtual agent access for Cynessa or Iris.
+     * Get or create a virtual agent access for Cynessa, Iris, or Specter.
      * Looks up the PortalAvailableAgent by ID to determine agent name,
      * falling back to Cynessa for backward compatibility.
      */
@@ -71,7 +73,7 @@ class PortalChatController extends Controller
 
         // Try to determine the virtual agent by looking up PortalAvailableAgent by ID
         $availableAgent = PortalAvailableAgent::query()
-            ->whereIn('name', ['Cynessa', 'Iris'])
+            ->whereIn('name', ['Cynessa', 'Iris', 'Specter'])
             ->where('id', $agentId)
             ->first();
 
@@ -331,6 +333,16 @@ class PortalChatController extends Controller
 
             if ($availableAgent && $tenant) {
                 return $this->optixAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
+            }
+        }
+
+        if (strtolower($agentAccess->agent_name) === 'specter') {
+            $availableAgent = PortalAvailableAgent::query()
+                ->where('name', $agentAccess->agent_name)
+                ->first();
+
+            if ($availableAgent && $tenant) {
+                return $this->specterAgentHandler->handle($message, $user, $availableAgent, $tenant, $conversationHistory);
             }
         }
 

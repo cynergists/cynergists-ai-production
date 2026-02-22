@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PartnerDataController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicChatController;
+use App\Http\Controllers\Api\SpecterController;
 use App\Http\Controllers\Api\SquareWebhookController;
 use App\Http\Controllers\Api\UserCynergistStatusController;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ Route::get('/user-cynergist-status', UserCynergistStatusController::class);
 |--------------------------------------------------------------------------
 */
 Route::post('/chat', [PublicChatController::class, 'chat']);
+Route::post('/specter/ingest', [SpecterController::class, 'ingest']);
 
 /*
 |--------------------------------------------------------------------------
@@ -130,6 +132,17 @@ Route::middleware('auth:sanctum')->prefix('portal')->group(function () {
     Route::post('/agents/{agent}/files', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'uploadFile']);
     Route::delete('/agents/{agent}/conversation', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'clearConversation']);
     Route::get('/luna/images/{imageId}/status', [\App\Http\Controllers\Api\Portal\PortalChatController::class, 'lunaImageStatus']);
+
+    // Specter operations
+    Route::prefix('specter')->group(function () {
+        Route::post('/score', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'score']);
+        Route::post('/resolve', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'resolveIdentity']);
+        Route::post('/sync', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'sync']);
+        Route::post('/escalate', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'escalate']);
+        Route::post('/trigger', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'trigger']);
+        Route::get('/rules', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'rules']);
+        Route::put('/rules', [\App\Http\Controllers\Api\Portal\SpecterOpsController::class, 'upsertRules']);
+    });
 });
 
 /*

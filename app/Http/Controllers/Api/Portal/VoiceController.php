@@ -18,6 +18,7 @@ use App\Services\ElevenLabsService;
 use App\Services\Kinetix\KinetixAgentHandler;
 use App\Services\Luna\LunaAgentHandler;
 use App\Services\Optix\OptixAgentHandler;
+use App\Services\Specter\SpecterAgentHandler;
 use App\Services\Vector\VectorAgentHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,18 +59,25 @@ class VoiceController extends Controller
                 ->where('tenant_id', $tenant->id)
                 ->first();
 
-            // If agent not found, check if it's Cynessa (always available)
+            // If agent not found, check if it's a virtual agent (always available)
             if (! $agentAccess) {
-                $cynessaAvailable = PortalAvailableAgent::with('apiKeys')
-                    ->where('name', 'Cynessa')
+                $virtualAvailable = PortalAvailableAgent::with('apiKeys')
+                    ->whereIn('name', ['Cynessa', 'Iris', 'Specter'])
+                    ->where('id', $agentId)
                     ->first();
 
-                if ($cynessaAvailable) {
-                    // Create a virtual agent access for Cynessa
+                if (! $virtualAvailable) {
+                    $virtualAvailable = PortalAvailableAgent::with('apiKeys')
+                        ->where('name', 'Cynessa')
+                        ->first();
+                }
+
+                if ($virtualAvailable) {
+                    // Create a virtual agent access
                     $agentAccess = new AgentAccess([
                         'id' => $agentId,
                         'agent_type' => 'assistant',
-                        'agent_name' => 'Cynessa',
+                        'agent_name' => $virtualAvailable->name,
                         'configuration' => null,
                         'is_active' => true,
                         'usage_count' => 0,
@@ -78,7 +86,7 @@ class VoiceController extends Controller
                         'tenant_id' => $tenant->id,
                     ]);
                     $agentAccess->exists = false;
-                    $agentAccess->setRelation('availableAgent', $cynessaAvailable);
+                    $agentAccess->setRelation('availableAgent', $virtualAvailable);
                 } else {
                     return response()->json(['error' => 'Agent not found'], 404);
                 }
@@ -190,6 +198,14 @@ class VoiceController extends Controller
                     maxTokens: 128
                 ),
                 'optix' => app(OptixAgentHandler::class)->handle(
+                    message: $voiceMessage,
+                    user: $user,
+                    agent: $agentAccess->availableAgent,
+                    tenant: $tenant,
+                    conversationHistory: $promptHistory,
+                    maxTokens: 128
+                ),
+                'specter' => app(SpecterAgentHandler::class)->handle(
                     message: $voiceMessage,
                     user: $user,
                     agent: $agentAccess->availableAgent,

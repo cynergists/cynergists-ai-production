@@ -11,6 +11,7 @@ use App\Portal\Apex\Config\ApexSidebarConfig;
 use App\Portal\Briggs\Config\BriggsSidebarConfig;
 use App\Portal\Carbon\Config\CarbonSidebarConfig;
 use App\Portal\Luna\Config\LunaSidebarConfig;
+use App\Portal\Specter\Config\SpecterSidebarConfig;
 use App\Portal\Vector\Config\VectorSidebarConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,9 +49,9 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
-        // Always ensure virtual agents (Cynessa, Iris) are available to all users
+        // Always ensure virtual agents (Cynessa, Iris, Specter) are available to all users
         $virtualAgents = PortalAvailableAgent::query()
-            ->whereIn('name', ['Cynessa', 'Iris'])
+            ->whereIn('name', ['Cynessa', 'Iris', 'Specter'])
             ->orderBy('sort_order')
             ->get(['id', 'name', 'avatar', 'redirect_url', 'job_title', 'is_beta', 'sort_order']);
 
@@ -120,10 +121,10 @@ class PortalAgentsController extends Controller
             ->where('id', $agent)
             ->first();
 
-        // If agent not found, check if it's a virtual agent (Cynessa or Iris) by ID
+        // If agent not found, check if it's a virtual agent by ID
         if (! $agentAccess) {
             $virtualAvailableAgent = PortalAvailableAgent::query()
-                ->whereIn('name', ['Cynessa', 'Iris'])
+                ->whereIn('name', ['Cynessa', 'Iris', 'Specter'])
                 ->where('id', $agent)
                 ->first(['id', 'name', 'avatar', 'redirect_url', 'job_title', 'is_beta']);
 
@@ -174,6 +175,10 @@ class PortalAgentsController extends Controller
                     $agentAccess->vector_data = VectorSidebarConfig::getConfig($tenant);
                 }
 
+                if (strtolower($agentAccess->agent_name) === 'specter') {
+                    $agentAccess->specter_data = SpecterSidebarConfig::getConfig($tenant);
+                }
+
                 return response()->json([
                     'agent' => $agentAccess,
                 ]);
@@ -220,6 +225,10 @@ class PortalAgentsController extends Controller
         // Include Vector-specific media buying data for sidebar
         if (strtolower($agentAccess->agent_name) === 'vector') {
             $agentAccess->vector_data = VectorSidebarConfig::getConfig($tenant);
+        }
+
+        if (strtolower($agentAccess->agent_name) === 'specter') {
+            $agentAccess->specter_data = SpecterSidebarConfig::getConfig($tenant);
         }
 
         return response()->json([

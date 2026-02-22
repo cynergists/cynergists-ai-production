@@ -37,6 +37,9 @@ import MosaicSidebar from './mosaic/MosaicSidebar';
 import { OptixChat } from './optix/OptixChat';
 import { OptixConfig } from './optix/OptixConfig';
 import OptixSidebar from './optix/OptixSidebar';
+import { SpecterChat } from './specter/SpecterChat';
+import { SpecterConfig } from './specter/SpecterConfig';
+import SpecterSidebar from './specter/SpecterSidebar';
 import { VectorChat } from './vector/VectorChat';
 import { VectorConfig } from './vector/VectorConfig';
 import VectorSidebar from './vector/VectorSidebar';
@@ -135,6 +138,15 @@ const agentComponentsMap: Record<string, AgentComponents> = {
             { label: 'Channel Bible', view: 'channel-bible' },
         ],
     },
+    specter: {
+        ChatComponent: SpecterChat,
+        ConfigComponent: SpecterConfig,
+        SidebarComponent: SpecterSidebar,
+        settingsLinks: [
+            { label: 'Signals', view: 'signals' },
+            { label: 'Scoring Rules', view: 'scoring-rules' },
+        ],
+    },
     vector: {
         ChatComponent: VectorChat,
         ConfigComponent: VectorConfig,
@@ -206,6 +218,9 @@ export {
     OptixChat,
     OptixConfig,
     OptixSidebar,
+    SpecterChat,
+    SpecterConfig,
+    SpecterSidebar,
     VectorChat,
     VectorConfig,
     VectorSidebar,
