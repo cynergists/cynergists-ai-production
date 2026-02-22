@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PartnerSettingsController;
 use App\Http\Controllers\Api\PaymentSettingsController;
 use App\Http\Controllers\Api\Admin\AdminOnboardingController;
 use App\Http\Controllers\Api\Admin\AgentCategoryController;
+use App\Http\Controllers\Api\Admin\CouponController;
 use App\Http\Controllers\Api\Admin\ImpersonationController;
 use App\Http\Controllers\Api\Portal\BrandKitController;
 use App\Http\Controllers\Api\Portal\PortalAccountController;
@@ -256,6 +257,14 @@ Route::middleware(['auth', EnsureAdminUser::class])->prefix('api')->group(functi
     Route::post('/admin/categories/{category}/archive', [AgentCategoryController::class, 'archive']);
     Route::post('/admin/categories/{category}/unarchive', [AgentCategoryController::class, 'unarchive']);
     Route::post('/admin/categories/reorder', [AgentCategoryController::class, 'reorder']);
+    
+    // Coupon routes
+    Route::get('/admin/coupons', [CouponController::class, 'index']);
+    Route::post('/admin/coupons', [CouponController::class, 'store']);
+    Route::put('/admin/coupons/{coupon}', [CouponController::class, 'update']);
+    Route::delete('/admin/coupons/{coupon}', [CouponController::class, 'destroy']);
+    Route::post('/admin/coupons/validate', [CouponController::class, 'validate']);
+    Route::post('/admin/coupons/redeem', [CouponController::class, 'redeem']);
 });
 
 // Public category endpoint (for dropdowns)
