@@ -1,4 +1,4 @@
-<?php
+                                                                                                                                                                                                                                                                                   <?php
 
 namespace App\Http\Controllers\Api\Portal;
 
@@ -48,11 +48,11 @@ class PortalAgentsController extends Controller
                 'subscription_id',
             ]);
 
-        // Always ensure virtual agents (Cynessa, Iris) are available to all users
+        // Per Google Doc spec: Only Iris is shown in portal, Cynessa stays as front chatbot
+        // Iris is mandatory and always first
         $virtualAgents = PortalAvailableAgent::query()
-            ->whereIn('name', ['Cynessa', 'Iris'])
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'avatar', 'redirect_url', 'job_title', 'is_beta', 'sort_order']);
+            ->where('name', 'Iris')
+            ->get(['id', 'name', 'avatar', 'redirect_url', 'job_title', 'is_beta']);
 
         $virtualAgentsToAdd = collect();
 
@@ -77,7 +77,16 @@ class PortalAgentsController extends Controller
             }
         }
 
-        $agents = $virtualAgentsToAdd->concat($agents);
+        // Filter out Cynessa from portal agent list (she's front chatbot only)
+        $agents = $agents->reject(function ($agent) {
+            return strtolower($agent->agent_name) === 'cynessa';
+        });
+
+        // Iris first, then alphabetical order for all other agents
+        $irisAgents = $virtualAgentsToAdd->filter(fn($a) => strtolower($a->agent_name) === 'iris');
+        $otherAgents = $agents->sortBy(fn($a) => strtolower($a->agent_name));
+        
+        $agents = $irisAgents->concat($otherAgents);
 
         // Get avatars, redirect URLs, and job titles from portal_available_agents
         $agentNames = $agents->pluck('agent_name')->unique()->toArray();
@@ -120,10 +129,10 @@ class PortalAgentsController extends Controller
             ->where('id', $agent)
             ->first();
 
-        // If agent not found, check if it's a virtual agent (Cynessa or Iris) by ID
+        // If agent not found, check if it's Iris (Cynessa removed from portal per spec)
         if (! $agentAccess) {
             $virtualAvailableAgent = PortalAvailableAgent::query()
-                ->whereIn('name', ['Cynessa', 'Iris'])
+                ->where('name', 'Iris')
                 ->where('id', $agent)
                 ->first(['id', 'name', 'avatar', 'redirect_url', 'job_title', 'is_beta']);
 
